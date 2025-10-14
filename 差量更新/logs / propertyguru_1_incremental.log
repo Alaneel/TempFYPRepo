@@ -1,0 +1,102 @@
+2025-10-10 19:04:34.745 | SUCCESS  | __main__:init_database:143 - 数据库初始化成功: data/propertyguru_1.db
+2025-10-10 19:04:34.745 | INFO     | __main__:main:649 - 开始爬取，模式: 差量更新
+2025-10-10 19:07:15.627 | SUCCESS  | __main__:init_database:143 - 数据库初始化成功: data/propertyguru_1.db
+2025-10-10 19:07:15.628 | INFO     | __main__:main:649 - 开始爬取，模式: 差量更新
+2025-10-10 19:07:15.628 | INFO     | __main__:get_data:538 - 开始请求：property-for-rent/1
+2025-10-10 19:07:15.891 | ERROR    | __main__:fetch:374 - 请求失败第 1 次: property-for-rent/1
+2025-10-10 19:07:16.093 | ERROR    | __main__:fetch:374 - 请求失败第 2 次: property-for-rent/1
+2025-10-10 19:07:16.350 | ERROR    | __main__:fetch:374 - 请求失败第 3 次: property-for-rent/1
+2025-10-10 19:07:16.353 | ERROR    | __main__:get_data:541 - 请求失败：property-for-rent/1
+2025-10-10 19:07:16.356 | INFO     | __main__:update_crawl_progress:186 - 更新爬取进度: property-for-rent 第 2 页
+2025-10-10 19:07:17.363 | INFO     | __main__:get_data:538 - 开始请求：property-for-rent/2
+2025-10-10 19:07:17.556 | ERROR    | __main__:fetch:374 - 请求失败第 1 次: property-for-rent/2
+2025-10-10 19:07:17.817 | ERROR    | __main__:fetch:374 - 请求失败第 2 次: property-for-rent/2
+2025-10-10 19:07:18.026 | ERROR    | __main__:fetch:374 - 请求失败第 3 次: property-for-rent/2
+2025-10-10 19:07:18.029 | ERROR    | __main__:get_data:541 - 请求失败：property-for-rent/2
+2025-10-10 19:07:18.031 | INFO     | __main__:update_crawl_progress:186 - 更新爬取进度: property-for-rent 第 3 页
+2025-10-10 19:07:19.038 | INFO     | __main__:get_data:538 - 开始请求：property-for-rent/3
+2025-10-10 19:07:19.219 | ERROR    | __main__:fetch:374 - 请求失败第 1 次: property-for-rent/3
+2025-10-10 19:07:19.483 | ERROR    | __main__:fetch:374 - 请求失败第 2 次: property-for-rent/3
+2025-10-10 19:07:19.691 | ERROR    | __main__:fetch:374 - 请求失败第 3 次: property-for-rent/3
+2025-10-10 19:07:19.694 | ERROR    | __main__:get_data:541 - 请求失败：property-for-rent/3
+2025-10-10 19:07:19.696 | INFO     | __main__:update_crawl_progress:186 - 更新爬取进度: property-for-rent 第 4 页
+2025-10-10 19:28:21.970 | SUCCESS  | __main__:init_database:143 - 数据库初始化成功: data/propertyguru_1.db
+2025-10-10 19:28:21.971 | INFO     | __main__:main:649 - 开始爬取，模式: 差量更新
+2025-10-10 19:28:21.971 | INFO     | __main__:get_data:538 - 开始请求：property-for-rent/1
+2025-10-10 19:28:22.179 | ERROR    | __main__:fetch:374 - 请求失败第 1 次: property-for-rent/1
+2025-10-10 19:28:22.434 | ERROR    | __main__:fetch:374 - 请求失败第 2 次: property-for-rent/1
+2025-10-10 19:28:22.625 | ERROR    | __main__:fetch:374 - 请求失败第 3 次: property-for-rent/1
+2025-10-10 19:28:22.627 | ERROR    | __main__:get_data:541 - 请求失败：property-for-rent/1
+2025-10-10 19:28:22.631 | INFO     | __main__:update_crawl_progress:186 - 更新爬取进度: property-for-rent 第 2 页
+2025-10-10 19:28:23.635 | INFO     | __main__:get_data:538 - 开始请求：property-for-rent/2
+2025-10-10 19:28:23.839 | ERROR    | __main__:fetch:374 - 请求失败第 1 次: property-for-rent/2
+2025-10-10 19:28:24.099 | ERROR    | __main__:fetch:374 - 请求失败第 2 次: property-for-rent/2
+2025-10-10 19:28:24.298 | ERROR    | __main__:fetch:374 - 请求失败第 3 次: property-for-rent/2
+2025-10-10 19:28:24.301 | ERROR    | __main__:get_data:541 - 请求失败：property-for-rent/2
+2025-10-10 19:28:24.304 | INFO     | __main__:update_crawl_progress:186 - 更新爬取进度: property-for-rent 第 3 页
+2025-10-10 19:28:25.311 | INFO     | __main__:get_data:538 - 开始请求：property-for-rent/3
+2025-10-10 19:28:25.577 | ERROR    | __main__:fetch:374 - 请求失败第 1 次: property-for-rent/3
+2025-10-10 19:28:25.778 | ERROR    | __main__:fetch:374 - 请求失败第 2 次: property-for-rent/3
+2025-10-10 19:28:25.956 | ERROR    | __main__:fetch:374 - 请求失败第 3 次: property-for-rent/3
+2025-10-10 19:28:25.959 | ERROR    | __main__:get_data:541 - 请求失败：property-for-rent/3
+2025-10-10 19:28:25.962 | INFO     | __main__:update_crawl_progress:186 - 更新爬取进度: property-for-rent 第 4 页
+2025-10-10 19:28:26.968 | INFO     | __main__:get_data:538 - 开始请求：property-for-rent/4
+2025-10-10 19:28:27.248 | ERROR    | __main__:fetch:374 - 请求失败第 1 次: property-for-rent/4
+2025-10-10 19:28:27.448 | ERROR    | __main__:fetch:374 - 请求失败第 2 次: property-for-rent/4
+2025-10-10 19:28:27.720 | ERROR    | __main__:fetch:374 - 请求失败第 3 次: property-for-rent/4
+2025-10-10 19:28:27.722 | ERROR    | __main__:get_data:541 - 请求失败：property-for-rent/4
+2025-10-10 19:28:27.725 | INFO     | __main__:update_crawl_progress:186 - 更新爬取进度: property-for-rent 第 5 页
+2025-10-10 19:29:25.751 | SUCCESS  | __main__:init_database:143 - 数据库初始化成功: data/propertyguru_1.db
+2025-10-10 19:29:25.751 | INFO     | __main__:main:649 - 开始爬取，模式: 差量更新
+2025-10-10 19:29:25.751 | INFO     | __main__:crawl_category:556 - 继续上次进度，从第 5 页开始爬取 property-for-rent
+2025-10-10 19:29:25.751 | INFO     | __main__:get_data:538 - 开始请求：property-for-rent/5
+2025-10-10 19:29:25.997 | ERROR    | __main__:fetch:374 - 请求失败第 1 次: property-for-rent/5
+2025-10-10 19:29:26.193 | ERROR    | __main__:fetch:374 - 请求失败第 2 次: property-for-rent/5
+2025-10-10 19:29:26.445 | ERROR    | __main__:fetch:374 - 请求失败第 3 次: property-for-rent/5
+2025-10-10 19:29:26.447 | ERROR    | __main__:get_data:541 - 请求失败：property-for-rent/5
+2025-10-10 19:29:26.449 | INFO     | __main__:update_crawl_progress:186 - 更新爬取进度: property-for-rent 第 6 页
+2025-10-10 19:29:27.456 | INFO     | __main__:get_data:538 - 开始请求：property-for-rent/6
+2025-10-10 19:29:27.649 | ERROR    | __main__:fetch:374 - 请求失败第 1 次: property-for-rent/6
+2025-10-10 19:29:27.923 | ERROR    | __main__:fetch:374 - 请求失败第 2 次: property-for-rent/6
+2025-10-10 19:29:28.110 | ERROR    | __main__:fetch:374 - 请求失败第 3 次: property-for-rent/6
+2025-10-10 19:29:28.112 | ERROR    | __main__:get_data:541 - 请求失败：property-for-rent/6
+2025-10-10 19:29:28.114 | INFO     | __main__:update_crawl_progress:186 - 更新爬取进度: property-for-rent 第 7 页
+2025-10-10 19:29:29.120 | INFO     | __main__:get_data:538 - 开始请求：property-for-rent/7
+2025-10-10 19:29:29.321 | ERROR    | __main__:fetch:374 - 请求失败第 1 次: property-for-rent/7
+2025-10-10 19:29:29.585 | ERROR    | __main__:fetch:374 - 请求失败第 2 次: property-for-rent/7
+2025-10-10 19:29:29.784 | ERROR    | __main__:fetch:374 - 请求失败第 3 次: property-for-rent/7
+2025-10-10 19:29:29.786 | ERROR    | __main__:get_data:541 - 请求失败：property-for-rent/7
+2025-10-10 19:29:29.789 | INFO     | __main__:update_crawl_progress:186 - 更新爬取进度: property-for-rent 第 8 页
+2025-10-10 19:29:30.794 | INFO     | __main__:get_data:538 - 开始请求：property-for-rent/8
+2025-10-10 19:29:31.067 | ERROR    | __main__:fetch:374 - 请求失败第 1 次: property-for-rent/8
+2025-10-10 19:29:31.273 | ERROR    | __main__:fetch:374 - 请求失败第 2 次: property-for-rent/8
+2025-10-10 19:29:31.478 | ERROR    | __main__:fetch:374 - 请求失败第 3 次: property-for-rent/8
+2025-10-10 19:29:31.480 | ERROR    | __main__:get_data:541 - 请求失败：property-for-rent/8
+2025-10-10 19:29:31.483 | INFO     | __main__:update_crawl_progress:186 - 更新爬取进度: property-for-rent 第 9 页
+2025-10-10 19:29:32.492 | INFO     | __main__:get_data:538 - 开始请求：property-for-rent/9
+2025-10-10 19:29:32.767 | ERROR    | __main__:fetch:374 - 请求失败第 1 次: property-for-rent/9
+2025-10-10 19:29:32.970 | ERROR    | __main__:fetch:374 - 请求失败第 2 次: property-for-rent/9
+2025-10-10 19:29:33.256 | ERROR    | __main__:fetch:374 - 请求失败第 3 次: property-for-rent/9
+2025-10-10 19:29:33.257 | ERROR    | __main__:get_data:541 - 请求失败：property-for-rent/9
+2025-10-10 19:29:33.259 | INFO     | __main__:update_crawl_progress:186 - 更新爬取进度: property-for-rent 第 10 页
+2025-10-10 19:29:34.266 | INFO     | __main__:get_data:538 - 开始请求：property-for-rent/10
+2025-10-10 19:29:34.470 | ERROR    | __main__:fetch:374 - 请求失败第 1 次: property-for-rent/10
+2025-10-10 19:29:34.740 | ERROR    | __main__:fetch:374 - 请求失败第 2 次: property-for-rent/10
+2025-10-10 19:29:34.944 | ERROR    | __main__:fetch:374 - 请求失败第 3 次: property-for-rent/10
+2025-10-10 19:29:34.946 | ERROR    | __main__:get_data:541 - 请求失败：property-for-rent/10
+2025-10-10 19:29:34.948 | INFO     | __main__:update_crawl_progress:186 - 更新爬取进度: property-for-rent 第 11 页
+2025-10-10 19:29:35.955 | INFO     | __main__:get_data:538 - 开始请求：property-for-rent/11
+2025-10-10 19:29:36.146 | ERROR    | __main__:fetch:374 - 请求失败第 1 次: property-for-rent/11
+2025-10-10 19:29:36.405 | ERROR    | __main__:fetch:374 - 请求失败第 2 次: property-for-rent/11
+2025-10-10 19:29:36.607 | ERROR    | __main__:fetch:374 - 请求失败第 3 次: property-for-rent/11
+2025-10-10 19:29:36.609 | ERROR    | __main__:get_data:541 - 请求失败：property-for-rent/11
+2025-10-10 19:29:36.611 | INFO     | __main__:update_crawl_progress:186 - 更新爬取进度: property-for-rent 第 12 页
+2025-10-10 19:29:37.618 | INFO     | __main__:get_data:538 - 开始请求：property-for-rent/12
+2025-10-10 19:29:37.882 | ERROR    | __main__:fetch:374 - 请求失败第 1 次: property-for-rent/12
+2025-10-10 19:29:38.071 | ERROR    | __main__:fetch:374 - 请求失败第 2 次: property-for-rent/12
+2025-10-10 19:29:38.260 | ERROR    | __main__:fetch:374 - 请求失败第 3 次: property-for-rent/12
+2025-10-10 19:29:38.263 | ERROR    | __main__:get_data:541 - 请求失败：property-for-rent/12
+2025-10-10 19:29:38.266 | INFO     | __main__:update_crawl_progress:186 - 更新爬取进度: property-for-rent 第 13 页
+2025-10-10 19:29:39.272 | INFO     | __main__:get_data:538 - 开始请求：property-for-rent/13
+2025-10-10 19:29:39.549 | ERROR    | __main__:fetch:374 - 请求失败第 1 次: property-for-rent/13
+2025-10-10 19:29:39.739 | ERROR    | __main__:fetch:374 - 请求失败第 2 次: property-for-rent/13
