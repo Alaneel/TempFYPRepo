@@ -10,9 +10,10 @@ import urllib3
 urllib3.disable_warnings()
 import sqlite3
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timedelta
 
-logger.add("logs/propertyguru_2_incremental.log", level ="INFO")
+logger.add("logs/propertyguru_2_incremental.log", level="INFO")
+
 
 class propertyguru:
 
@@ -28,8 +29,14 @@ class propertyguru:
         os.makedirs(self.data_dir, exist_ok=True)
 
         self.db_path = os.path.join(self.data_dir, "propertyguru_2.db")
-        self.init_database()
 
+        # 代理信息过期时间（天数）
+        self.AGENT_INFO_EXPIRY_DAYS = 90  # 90天后重新获取
+
+        # 最大重试次数
+        self.MAX_RETRIES = 3
+
+        self.init_database()
 
     def init_database(self):
         """初始化数据库，创建表结构"""
@@ -41,30 +48,60 @@ class propertyguru:
             cursor.execute('''
                            CREATE TABLE IF NOT EXISTS propertyguru
                            (
-                               ID TEXT,
-                               localizedTitle TEXT,
-                               fullAddress TEXT,
-                               price_pretty TEXT,
-                               beds TEXT,
-                               baths TEXT,
-                               area_sqft TEXT,
-                               price_psf TEXT,
-                               nearbyText TEXT,
-                               built_year TEXT,
-                               property_type TEXT,
-                               tenure TEXT,
-                               url_path TEXT PRIMARY KEY,
-                               recency_text TEXT,
-                               agent_id TEXT,
-                               agent_name TEXT,
-                               agent_description TEXT,
-                               agent_url_path TEXT,
-                               CEA TEXT,
-                               mobile TEXT,
-                               rating TEXT,
-                               buy_rent TEXT,
-                               created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                               updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                               ID
+                               TEXT,
+                               localizedTitle
+                               TEXT,
+                               fullAddress
+                               TEXT,
+                               price_pretty
+                               TEXT,
+                               beds
+                               TEXT,
+                               baths
+                               TEXT,
+                               area_sqft
+                               TEXT,
+                               price_psf
+                               TEXT,
+                               nearbyText
+                               TEXT,
+                               built_year
+                               TEXT,
+                               property_type
+                               TEXT,
+                               tenure
+                               TEXT,
+                               url_path
+                               TEXT
+                               PRIMARY
+                               KEY,
+                               recency_text
+                               TEXT,
+                               agent_id
+                               TEXT,
+                               agent_name
+                               TEXT,
+                               agent_description
+                               TEXT,
+                               agent_url_path
+                               TEXT,
+                               CEA
+                               TEXT,
+                               mobile
+                               TEXT,
+                               rating
+                               TEXT,
+                               buy_rent
+                               TEXT,
+                               created_at
+                               TIMESTAMP
+                               DEFAULT
+                               CURRENT_TIMESTAMP,
+                               updated_at
+                               TIMESTAMP
+                               DEFAULT
+                               CURRENT_TIMESTAMP
                            )
                            ''')
 
@@ -72,23 +109,43 @@ class propertyguru:
             cursor.execute('''
                            CREATE TABLE IF NOT EXISTS propertyguru_spider
                            (
-                               url_path TEXT PRIMARY KEY,
-                               status TEXT,
-                               retry_count INTEGER
-                               DEFAULT 0,
-                               last_error TEXT,
-                               crawled_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                               url_path
+                               TEXT
+                               PRIMARY
+                               KEY,
+                               status
+                               TEXT,
+                               retry_count
+                               INTEGER
+                               DEFAULT
+                               0,
+                               last_error
+                               TEXT,
+                               crawled_at
+                               TIMESTAMP
+                               DEFAULT
+                               CURRENT_TIMESTAMP
                            )
                            ''')
 
-            # 失败记录表（新增）
+            # 失败记录表
             cursor.execute('''
                            CREATE TABLE IF NOT EXISTS failed_records
                            (
-                               url_path TEXT PRIMARY KEY,
-                               error_message TEXT,
-                               retry_count INTEGER DEFAULT 0,
-                               last_attempt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                               url_path
+                               TEXT
+                               PRIMARY
+                               KEY,
+                               error_message
+                               TEXT,
+                               retry_count
+                               INTEGER
+                               DEFAULT
+                               0,
+                               last_attempt
+                               TIMESTAMP
+                               DEFAULT
+                               CURRENT_TIMESTAMP
                            )
                            ''')
 
@@ -101,14 +158,12 @@ class propertyguru:
             if conn:
                 conn.close()
 
-
     def insert_spider_record(self, url_path, status, error_msg=None):
         """向爬虫记录表中插入记录"""
         try:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
 
-            # 获取当前重试次数
             cursor.execute("SELECT retry_count FROM propertyguru_spider WHERE url_path = ?", (url_path,))
             result = cursor.fetchone()
             retry_count = result[0] + 1 if result else 0
@@ -126,9 +181,11 @@ class propertyguru:
             if conn:
                 conn.close()
 
-
-    def check_spider_record(self, url_path):
+    def check_spider_record(self, url_path, force_update=False):
         """检查爬虫记录表中是否存在成功记录"""
+        if force_update:
+            return False  # 强制更新模式，跳过检查
+
         try:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
@@ -144,7 +201,6 @@ class propertyguru:
         finally:
             if conn:
                 conn.close()
-
 
     def add_failed_record(self, url_path, error_msg):
         """添加失败记录"""
@@ -170,9 +226,11 @@ class propertyguru:
             if conn:
                 conn.close()
 
-
-    def get_failed_records(self, max_retries=3):
+    def get_failed_records(self, max_retries=None):
         """获取需要重试的失败记录"""
+        if max_retries is None:
+            max_retries = self.MAX_RETRIES
+
         try:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
@@ -189,7 +247,6 @@ class propertyguru:
             if conn:
                 conn.close()
 
-
     def insert_record(self, result):
         """向数据库中插入或更新记录"""
         try:
@@ -198,7 +255,6 @@ class propertyguru:
 
             url_path = result.get("url_path", '无url_path')
 
-            # 检查记录是否存在
             cursor.execute("SELECT CEA, mobile, rating FROM propertyguru WHERE url_path = ?", (url_path,))
             existing = cursor.fetchone()
 
@@ -225,7 +281,8 @@ class propertyguru:
                                INSERT INTO propertyguru (ID, localizedTitle, fullAddress, price_pretty, beds, baths,
                                                          area_sqft, price_psf, nearbyText, built_year, property_type,
                                                          tenure, url_path, recency_text, agent_id, agent_name,
-                                                         agent_description, agent_url_path, CEA, mobile, rating, buy_rent)
+                                                         agent_description, agent_url_path, CEA, mobile, rating,
+                                                         buy_rent)
                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                                ''', (
                                    result.get("ID", '无id'),
@@ -263,7 +320,6 @@ class propertyguru:
             if conn:
                 conn.close()
 
-
     def check_record_exists(self, url_path):
         """检查 url 记录是否存在"""
         try:
@@ -279,14 +335,12 @@ class propertyguru:
             if conn:
                 conn.close()
 
-
     def get_incomplete_records(self):
         """获取代理信息不完整的记录"""
         try:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
 
-            # 查找CEA、mobile或rating为空的记录
             cursor.execute('''
                            SELECT url_path
                            FROM propertyguru
@@ -307,11 +361,67 @@ class propertyguru:
             if conn:
                 conn.close()
 
+    def get_expired_records(self, days=None):
+        """获取代理信息过期的记录（新增）"""
+        if days is None:
+            days = self.AGENT_INFO_EXPIRY_DAYS
+
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+
+            expiry_date = datetime.now() - timedelta(days=days)
+
+            cursor.execute('''
+                           SELECT url_path, updated_at
+                           FROM propertyguru
+                           WHERE updated_at < ?
+                             AND CEA IS NOT NULL
+                             AND CEA != '' AND CEA != '无CEA'
+                  AND mobile IS NOT NULL AND mobile != '' AND mobile != '无手机'
+                  AND rating IS NOT NULL AND rating != '' AND rating != '无评分'
+                           ''', (expiry_date,))
+
+            results = cursor.fetchall()
+            url_paths = [row[0] for row in results]
+
+            if url_paths:
+                logger.info(f"找到 {len(url_paths)} 条代理信息已过期的记录（超过{days}天未更新）")
+            else:
+                logger.info(f"没有过期的代理信息（阈值: {days}天）")
+
+            return url_paths
+
+        except Exception as e:
+            logger.error(f"获取过期记录失败: {str(e)}")
+            return []
+        finally:
+            if conn:
+                conn.close()
+
+    def get_all_records(self):
+        """获取所有记录（用于全量更新）"""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+
+            cursor.execute('SELECT url_path FROM propertyguru')
+            results = cursor.fetchall()
+            url_paths = [row[0] for row in results]
+
+            logger.info(f"找到 {len(url_paths)} 条记录需要更新代理信息")
+            return url_paths
+
+        except Exception as e:
+            logger.error(f"获取所有记录失败: {str(e)}")
+            return []
+        finally:
+            if conn:
+                conn.close()
 
     @func_set_timeout(60)
     def get_request(self, method, url, headers):
         return requests.request(method, url, headers=headers, verify=False)
-
 
     def fetch(self, url_path, max_try=2):
         """请求网页"""
@@ -340,7 +450,6 @@ class propertyguru:
                 continue
         return None
 
-
     def get_property_detail(self, url_path):
         """获取详细页代理信息"""
         try:
@@ -353,8 +462,8 @@ class propertyguru:
             with open(os.path.join(self.html_dir, f'detail_{file_name}.html'), 'w', encoding='utf-8') as f:
                 f.write(response.text)
 
-            data_json = re.findall('<script id="__NEXT_DATA__" type="application/json".*?>(.*?)</script>', response.text,
-                                   re.S)
+            data_json = re.findall('<script id="__NEXT_DATA__" type="application/json".*?>(.*?)</script>',
+                                   response.text, re.S)
             if not data_json:
                 logger.error(f"data_json 获取失败：{url_path}")
                 return None
@@ -392,7 +501,6 @@ class propertyguru:
         except Exception as e:
             logger.error(f"获取详细页失败: {url_path} - {str(e)}")
             return None
-
 
     def export_csv(self):
         """导出数据库数据到CSV文件"""
@@ -451,6 +559,57 @@ class propertyguru:
             if conn:
                 conn.close()
 
+    def process_records(self, url_paths, force_update=False):
+        """通用的记录处理函数（新增）"""
+        if not url_paths:
+            logger.info("没有需要处理的记录")
+            return
+
+        total = len(url_paths)
+        success = 0
+        failed = 0
+        skipped = 0
+
+        logger.info(f"开始处理 {total} 条记录")
+
+        for index, url_path in enumerate(url_paths, 1):
+            # 检查是否已成功爬取（强制更新模式会跳过）
+            if not force_update and self.check_spider_record(url_path):
+                logger.info(f"[{index}/{total}] 已处理: {url_path}")
+                skipped += 1
+                continue
+
+            logger.info(f"[{index}/{total}] 正在处理: {url_path}")
+
+            # 获取代理信息
+            agent_detail = self.get_property_detail(url_path)
+
+            if not agent_detail:
+                logger.error(f"获取代理信息失败: {url_path}")
+                self.add_failed_record(url_path, "获取代理信息失败")
+                self.insert_spider_record(url_path, '失败', "获取代理信息失败")
+                failed += 1
+                continue
+
+            # 更新记录
+            dic = {
+                "url_path": url_path,
+                "CEA": agent_detail.get("CEA", ''),
+                "mobile": agent_detail.get("mobile", ''),
+                "rating": agent_detail.get("rating", '')
+            }
+
+            if self.insert_record(dic):
+                self.insert_spider_record(url_path, '已爬取')
+                success += 1
+                logger.success(f"[{index}/{total}] 处理成功: {url_path}")
+            else:
+                self.add_failed_record(url_path, "数据库更新失败")
+                failed += 1
+
+            time.sleep(0.5)  # 避免请求过快
+
+        logger.success(f"处理完成！总数: {total}, 成功: {success}, 失败: {failed}, 跳过: {skipped}")
 
     def process_from_csv(self, csv_path):
         """从CSV文件中处理数据（保留原有功能）"""
@@ -465,13 +624,11 @@ class propertyguru:
         for index, row in df.iterrows():
             url_path = row['url_path']
 
-            # 检查是否已成功爬取
             if self.check_spider_record(url_path):
                 logger.info(f"[{index + 1}/{total}] 已处理: {url_path}")
                 processed += 1
                 continue
 
-            # 检查是否需要补充代理信息
             needs_update = (
                     pd.isna(row.get('CEA')) or row.get('CEA', '') in ['', '无CEA'] or
                     pd.isna(row.get('mobile')) or row.get('mobile', '') in ['', '无手机'] or
@@ -485,7 +642,6 @@ class propertyguru:
 
             logger.info(f"[{index + 1}/{total}] 正在处理: {url_path}")
 
-            # 获取代理信息
             agent_detail = self.get_property_detail(url_path)
 
             if not agent_detail:
@@ -495,7 +651,6 @@ class propertyguru:
                 failed += 1
                 continue
 
-            # 构建记录字典
             dic = {
                 'ID': row['ID'],
                 "localizedTitle": row['localizedTitle'],
@@ -529,65 +684,29 @@ class propertyguru:
                 self.add_failed_record(url_path, "数据库插入失败")
                 failed += 1
 
-            time.sleep(0.5)  # 避免请求过快
+            time.sleep(0.5)
 
         logger.success(f"处理完成！总数: {total}, 成功: {success}, 失败: {failed}, 跳过: {processed}")
-
 
     def process_incomplete_records(self):
         """处理代理信息不完整的记录"""
         url_paths = self.get_incomplete_records()
+        self.process_records(url_paths, force_update=False)
 
-        if not url_paths:
-            logger.info("没有需要补充代理信息的记录")
-            return
+    def process_expired_records(self, days=None):
+        """处理代理信息过期的记录（新增）"""
+        url_paths = self.get_expired_records(days)
+        if url_paths:
+            logger.info(f"🔄 开始更新过期的代理信息")
+            self.process_records(url_paths, force_update=True)
 
-        total = len(url_paths)
-        success = 0
-        failed = 0
+    def process_all_records(self):
+        """强制更新所有记录的代理信息（新增）"""
+        logger.warning("⚠️  强制更新模式：将重新获取所有记录的代理信息")
+        url_paths = self.get_all_records()
+        self.process_records(url_paths, force_update=True)
 
-        logger.info(f"开始处理 {total} 条不完整记录")
-
-        for index, url_path in enumerate(url_paths, 1):
-            # 检查是否已成功爬取
-            if self.check_spider_record(url_path):
-                logger.info(f"[{index}/{total}] 已处理: {url_path}")
-                continue
-
-            logger.info(f"[{index}/{total}] 正在处理: {url_path}")
-
-            # 获取代理信息
-            agent_detail = self.get_property_detail(url_path)
-
-            if not agent_detail:
-                logger.error(f"获取代理信息失败: {url_path}")
-                self.add_failed_record(url_path, "获取代理信息失败")
-                self.insert_spider_record(url_path, '失败', "获取代理信息失败")
-                failed += 1
-                continue
-
-            # 更新记录
-            dic = {
-                "url_path": url_path,
-                "CEA": agent_detail.get("CEA", ''),
-                "mobile": agent_detail.get("mobile", ''),
-                "rating": agent_detail.get("rating", '')
-            }
-
-            if self.insert_record(dic):
-                self.insert_spider_record(url_path, '已爬取')
-                success += 1
-                logger.success(f"[{index}/{total}] 处理成功: {url_path}")
-            else:
-                self.add_failed_record(url_path, "数据库更新失败")
-                failed += 1
-
-            time.sleep(0.5)  # 避免请求过快
-
-        logger.success(f"处理完成！总数: {total}, 成功: {success}, 失败: {failed}")
-
-
-    def retry_failed_records(self, max_retries=3):
+    def retry_failed_records(self, max_retries=None):
         """重试失败的记录"""
         failed_urls = self.get_failed_records(max_retries)
 
@@ -640,28 +759,49 @@ class propertyguru:
 
         logger.success(f"重试完成！总数: {total}, 成功: {success}, 仍失败: {still_failed}")
 
-
-    def main(self, mode='incremental', csv_path=None):
+    def main(self, mode='incremental', csv_path=None, expiry_days=None):
         """
         主函数
-        mode: 'incremental' - 差量更新（只处理不完整的记录）
-              'csv' - 从CSV文件处理
-              'retry' - 重试失败的记录
-        csv_path: 当mode='csv'时需要提供CSV文件路径
+        mode选项：
+        - 'incremental': 差量更新（只处理不完整的记录）
+        - 'expired': 更新过期的代理信息（超过指定天数）
+        - 'full': 强制更新所有记录的代理信息
+        - 'csv': 从CSV文件处理
+        - 'retry': 重试失败的记录
+
+        参数：
+        - csv_path: 当mode='csv'时需要提供CSV文件路径
+        - expiry_days: 当mode='expired'时指定过期天数（默认90天）
         """
-        logger.info(f"开始运行，模式: {mode}")
+        logger.info(f"🚀 开始运行，模式: {mode}")
 
         if mode == 'csv':
             if not csv_path:
                 logger.error("CSV模式需要提供csv_path参数")
                 return
             self.process_from_csv(csv_path)
+
         elif mode == 'incremental':
-            # 差量更新模式：只处理代理信息不完整的记录
+            # 差量更新：只处理代理信息不完整的记录
+            logger.info("⚡ 差量更新：补充缺失的代理信息")
             self.process_incomplete_records()
+
+        elif mode == 'expired':
+            # 更新过期记录：处理超过指定天数未更新的记录
+            days = expiry_days if expiry_days else self.AGENT_INFO_EXPIRY_DAYS
+            logger.info(f"⏰ 过期更新：更新超过{days}天的代理信息")
+            self.process_expired_records(days)
+
+        elif mode == 'full':
+            # 全量更新：强制重新获取所有记录的代理信息
+            logger.warning("🔥 全量更新：重新获取所有代理信息（慎用）")
+            self.process_all_records()
+
         elif mode == 'retry':
             # 重试失败的记录
+            logger.info("🔄 重试失败的记录")
             self.retry_failed_records()
+
         else:
             logger.error(f"未知的模式: {mode}")
             return
@@ -669,17 +809,23 @@ class propertyguru:
         # 导出数据库为CSV
         self.export_csv()
 
-        logger.success("所有任务完成")
+        logger.success("🎉 所有任务完成")
 
 
 if __name__ == '__main__':
     pg = propertyguru()
 
-# 模式1：差量更新（推荐）- 自动从数据库中找出代理信息不完整的记录并补充
-pg.main(mode='incremental')
+    # 模式1：差量更新（推荐日常使用）- 只补充缺失的代理信息
+    pg.main(mode='incremental')
 
-# 模式2：从CSV文件处理（兼容原有功能）
-# pg.main(mode='csv', csv_path=r'data\export\propertyguru_export_20250903_220506.csv')
+    # 模式2：过期更新（推荐定期运行）- 更新超过90天的代理信息
+    # pg.main(mode='expired', expiry_days=90)
 
-# 模式3：重试失败的记录
-# pg.main(mode='retry')
+    # 模式3：全量更新（慎用）- 重新获取所有代理信息
+    # pg.main(mode='full')
+
+    # 模式4：从CSV文件处理
+    # pg.main(mode='csv', csv_path=r'data\export\propertyguru_export_20250903_220506.csv')
+
+    # 模式5：重试失败的记录
+    # pg.main(mode='retry')
