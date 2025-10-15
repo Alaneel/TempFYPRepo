@@ -1,0 +1,5 @@
+requests>=2.31.0
+loguru>=0.7.0
+func-timeout>=4.3.5
+urllib3>=2.0.0
+pandas>=2.0.0

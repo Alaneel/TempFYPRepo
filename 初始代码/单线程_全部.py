@@ -8,18 +8,16 @@ from func_timeout import func_set_timeout
 import urllib3
 urllib3.disable_warnings()
 import sqlite3
-import pandas as pd
-import csv
 
-logger.add("logs/propertyguru_1.log",level="INFO")
+logger.add("log.log",level="INFO")
 
 class propertyguru:
 
     def __init__(self):
 
-        self.apikey = ''
-        self.proxy = ''
-        self.data_dir = "data"
+        self.apikey = ' '
+        self.proxy = ' '
+        self.data_dir = "../data"
         self.html_dir = os.path.join(self.data_dir, "html")
         self.json_dir = os.path.join(self.data_dir, "json")
         
@@ -28,7 +26,7 @@ class propertyguru:
         os.makedirs(self.data_dir, exist_ok=True)
 
         # 数据库路径
-        self.db_path = os.path.join(self.data_dir, "propertyguru_1.db")
+        self.db_path = os.path.join(self.data_dir, "propertyguru.db")
 
 
          # 初始化数据库
@@ -185,8 +183,8 @@ class propertyguru:
     def get_request(self,method, url, headers):
         return requests.request(method, url, headers=headers,verify=False)
 
-    # fetch
-    def fetch(self,url_path,max_try = 3):
+    # fecth
+    def fecth(self,url_path,max_try = 2):
         for _ in range(max_try):
             try:
                 url = f"https://api.cloudbypass.com/{url_path}"
@@ -223,7 +221,7 @@ class propertyguru:
 
     # 获取详细页
     def get_property_detail(self,url_path):
-        response = self.fetch(url_path)
+        response = self.fecth(url_path)
         if not response:
             logger.error(f"请求失败：{url_path}")
             return
@@ -361,12 +359,6 @@ class propertyguru:
                     property_type = badge_text
                 elif badge_name == "tenure":
                     tenure = badge_text
-            
-            if tenure == '未知':
-                try:
-                    tenure = listingData.get('additionalData',{}).get('tenure')
-                except:
-                    tenure = "未知"
 
             url_path = listingData.get("url").replace('https://www.propertyguru.com.sg/','')
 
@@ -376,8 +368,8 @@ class propertyguru:
                 continue
             
             # 获取代理信息
-            # agent_detail = self.get_property_detail(url_path)
-            agent_detail = {}
+            agent_detail = self.get_property_detail(url_path)
+            # agent_detail = {}
 
             recency_text = listingData.get("recency",{}).get("text",'无更新时间')
 
@@ -426,12 +418,12 @@ class propertyguru:
                 "agent_name":agent_name,
                 "agent_description":agent_description,
                 "agent_url_path":agent_url_path,
-                "CEA" : agent_detail.get("CEA",''),
-                "mobile" : agent_detail.get("mobile",''),
-                "rating" : agent_detail.get("rating",''),
+                "CEA" : agent_detail.get("CEA",'无CEA'),
+                "mobile" : agent_detail.get("mobile",'无手机'),
+                "rating" : agent_detail.get("rating",'无评分'),
                 "buy_rent" : html_name
             }
-            # logger.info(dic)
+            logger.info(dic)
             self.insert_record(dic)
 
 
@@ -441,7 +433,7 @@ class propertyguru:
             logger.info(f"url_path已存在: {url_path}")
             return
         logger.info(f"请求：{url_path}")
-        response = self.fetch(url_path)
+        response = self.fecth(url_path)
         if not response:
             logger.error(f"请求失败：{url_path}")
             return
@@ -458,7 +450,7 @@ class propertyguru:
             self.get_data(url_path,page,'property-for-rent')
 
 
-    # 2662 页
+    # 2662
     def get_property_for_sale(self,sale_start_page,sale_end_page):
 
         for page in range(sale_start_page, sale_end_page):
@@ -466,71 +458,12 @@ class propertyguru:
             self.get_data(url_path,page,'property-for-sale')
 
 
-    
-    # 使用pandas 导出数据库为csv
-    def export_csv(self):
-        """导出数据库数据到CSV文件"""
-        try:
-            # 创建导出目录
-            export_dir = os.path.join(self.data_dir, "export")
-            os.makedirs(export_dir, exist_ok=True)
-            
-            # 连接数据库
-            conn = sqlite3.connect(self.db_path)
-            
-            # 查询所有数据
-            query = "SELECT * FROM propertyguru"
-            df = pd.read_sql_query(query, conn)
-            
-            # 导出到CSV
-            timestamp = time.strftime("%Y%m%d_%H%M%S")
-            csv_path = os.path.join(export_dir, f"propertyguru_export_{timestamp}.csv")
-            df.to_csv(csv_path, index=False, encoding='utf-8-sig')
-            
-            # 分别导出租房和买房数据
-            rent_df = df[df['buy_rent'] == 'property-for-rent']
-            sale_df = df[df['buy_rent'] == 'property-for-sale']
-            
-            rent_csv_path = os.path.join(export_dir, f"propertyguru_rent_{timestamp}.csv")
-            sale_csv_path = os.path.join(export_dir, f"propertyguru_sale_{timestamp}.csv")
-            
-            rent_df.to_csv(rent_csv_path, index=False, encoding='utf-8-sig')
-            sale_df.to_csv(sale_csv_path, index=False, encoding='utf-8-sig')
-            
-            # 导出统计信息
-            stats = {
-                "total_records": len(df),
-                "rent_records": len(rent_df),
-                "sale_records": len(sale_df)
-            }
-            
-            stats_path = os.path.join(export_dir, f"propertyguru_stats_{timestamp}.json")
-            with open(stats_path, 'w', encoding='utf-8') as f:
-                json.dump(stats, f, ensure_ascii=False, indent=4)
-            
-            logger.success(f"数据导出成功: {csv_path}")
-            logger.success(f"租房数据: {rent_csv_path}, 共 {len(rent_df)} 条记录")
-            logger.success(f"买房数据: {sale_csv_path}, 共 {len(sale_df)} 条记录")
-            
-            return csv_path
-            
-        except Exception as e:
-            logger.error(f"导出CSV失败: {str(e)}")
-            return None
-        finally:
-            if conn:
-                conn.close()
-
-
     def main(self):
         # 爬取租房 1483页
-        self.get_property_for_rent(1, 1484)
+        self.get_property_for_rent(1, 3)
 
         # 爬取买房 2662页
-        self.get_property_for_sale(1, 2663)
-        
-        # 导出数据到CSV
-        self.export_csv()
+        self.get_property_for_sale(1, 3)
 
 if __name__ == '__main__':
     propertyguru = propertyguru()

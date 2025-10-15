@@ -19,7 +19,7 @@ class propertyguru:
 
         self.apikey = ''
         self.proxy = ''
-        self.data_dir = "data"
+        self.data_dir = "../data"
         self.html_dir = os.path.join(self.data_dir, "html")
         self.json_dir = os.path.join(self.data_dir, "json")
         
