@@ -1,0 +1,20 @@
+2025-10-15 12:52:38.910 | ERROR    | __main__:init_database:100 - 数据库初始化失败: near ".": syntax error
+2025-10-15 12:52:38.910 | INFO     | __main__:main:603 - 开始爬取，模式: 差量更新
+2025-10-15 12:52:38.911 | INFO     | __main__:get_data:492 - 开始请求：property-for-rent/1
+2025-10-15 12:52:39.198 | ERROR    | __main__:fetch:328 - 请求失败第 1 次: property-for-rent/1
+2025-10-15 12:52:39.387 | ERROR    | __main__:fetch:328 - 请求失败第 2 次: property-for-rent/1
+2025-10-15 12:52:39.573 | ERROR    | __main__:fetch:328 - 请求失败第 3 次: property-for-rent/1
+2025-10-15 12:52:39.575 | ERROR    | __main__:get_data:495 - 请求失败：property-for-rent/1
+2025-10-15 12:52:39.578 | INFO     | __main__:update_crawl_progress:140 - 更新爬取进度: property-for-rent 第 2 页
+2025-10-15 12:52:40.582 | INFO     | __main__:get_data:492 - 开始请求：property-for-rent/2
+2025-10-15 12:52:40.766 | ERROR    | __main__:fetch:328 - 请求失败第 1 次: property-for-rent/2
+2025-10-15 12:52:40.938 | ERROR    | __main__:fetch:328 - 请求失败第 2 次: property-for-rent/2
+2025-10-15 12:52:41.135 | ERROR    | __main__:fetch:328 - 请求失败第 3 次: property-for-rent/2
+2025-10-15 12:52:41.137 | ERROR    | __main__:get_data:495 - 请求失败：property-for-rent/2
+2025-10-15 12:52:41.140 | INFO     | __main__:update_crawl_progress:140 - 更新爬取进度: property-for-rent 第 3 页
+2025-10-15 12:52:42.145 | INFO     | __main__:get_data:492 - 开始请求：property-for-rent/3
+2025-10-15 12:52:42.340 | ERROR    | __main__:fetch:328 - 请求失败第 1 次: property-for-rent/3
+2025-10-15 12:52:42.528 | ERROR    | __main__:fetch:328 - 请求失败第 2 次: property-for-rent/3
+2025-10-15 12:52:42.696 | ERROR    | __main__:fetch:328 - 请求失败第 3 次: property-for-rent/3
+2025-10-15 12:52:42.696 | ERROR    | __main__:get_data:495 - 请求失败：property-for-rent/3
+2025-10-15 12:52:42.698 | INFO     | __main__:update_crawl_progress:140 - 更新爬取进度: property-for-rent 第 4 页
