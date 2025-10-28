@@ -1,0 +1,6 @@
+2025-10-15 14:52:43.280 | SUCCESS  | __main__:init_database:153 - 数据库初始化成功: data/propertyguru_2.db
+2025-10-15 14:52:43.280 | INFO     | __main__:main:776 - 🚀 开始运行，模式: incremental
+2025-10-15 14:52:43.280 | INFO     | __main__:main:786 - ⚡ 差量更新：补充缺失的代理信息
+2025-10-15 14:52:43.281 | INFO     | __main__:get_incomplete_records:354 - 找到 45 条代理信息不完整的记录
+2025-10-15 14:52:43.281 | INFO     | __main__:process_records:573 - 开始处理 45 条记录
+2025-10-15 14:52:43.281 | INFO     | __main__:process_records:582 - [1/45] 正在处理: listing/for-rent-leonie-condotel-25600968

@@ -4,7 +4,7 @@ import os
 from datetime import datetime
 from loguru import logger
 
-logger.add("logs/init_database.log", level="INFO")
+logger.add("logs / init_database.log", level ="INFO")
 
 class DatabaseInitializer:
 
@@ -34,27 +34,75 @@ class DatabaseInitializer:
             cursor.execute("DROP TABLE IF EXISTS propertyguru_spider")
             cursor.execute("DROP TABLE IF EXISTS crawl_progress")
             cursor.execute("DROP TABLE IF EXISTS failed_records")
-            cursor.execute("DROP TABLE IF EXISTS failed_pages")
 
             # 创建主数据表
-            cursor.execute('''CREATE TABLE propertyguru (ID TEXT, localizedTitle TEXT, fullAddress TEXT, price_pretty TEXT, beds TEXT, baths TEXT, area_sqft TEXT, price_psf TEXT, nearbyText TEXT, built_year TEXT, property_type TEXT, tenure TEXT, url_path TEXT PRIMARY KEY, recency_text TEXT, agent_id TEXT, agent_name TEXT, agent_description TEXT, agent_url_path TEXT, CEA TEXT, mobile TEXT, rating TEXT, buy_rent TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
+            cursor.execute('''
+                           CREATE TABLE propertyguru
+                           (
+                               ID                TEXT,
+                               localizedTitle    TEXT,
+                               fullAddress       TEXT,
+                               price_pretty      TEXT,
+                               beds              TEXT,
+                               baths             TEXT,
+                               area_sqft         TEXT,
+                               price_psf         TEXT,
+                               nearbyText        TEXT,
+                               built_year        TEXT,
+                               property_type     TEXT,
+                               tenure            TEXT,
+                               url_path          TEXT PRIMARY KEY,
+                               recency_text      TEXT,
+                               agent_id          TEXT,
+                               agent_name        TEXT,
+                               agent_description TEXT,
+                               agent_url_path    TEXT,
+                               CEA               TEXT,
+                               mobile            TEXT,
+                               rating            TEXT,
+                               buy_rent          TEXT,
+                               created_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                               updated_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                           )
+                           ''')
             logger.success("主数据表创建成功")
 
             # 创建爬虫记录表
-            cursor.execute('''CREATE TABLE propertyguru_spider (url_path TEXT PRIMARY KEY, status TEXT, retry_count INTEGER DEFAULT 0, last_error TEXT, crawled_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
+            cursor.execute('''
+                           CREATE TABLE propertyguru_spider
+                           (
+                               url_path    TEXT PRIMARY KEY,
+                               status      TEXT,
+                               retry_count INTEGER   DEFAULT 0,
+                               last_error  TEXT,
+                               crawled_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                           )
+                           ''')
             logger.success("爬虫记录表创建成功")
 
             # 创建爬取进度表
-            cursor.execute('''CREATE TABLE crawl_progress (category TEXT PRIMARY KEY, last_page INTEGER, total_pages INTEGER, last_update TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
+            cursor.execute('''
+                           CREATE TABLE crawl_progress
+                           (
+                               category    TEXT PRIMARY KEY,
+                               last_page   INTEGER,
+                               total_pages INTEGER,
+                               last_update TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                           )
+                           ''')
             logger.success("爬取进度表创建成功")
 
             # 创建失败记录表
-            cursor.execute('''CREATE TABLE failed_records (url_path TEXT PRIMARY KEY, error_message TEXT, retry_count INTEGER DEFAULT 0, last_attempt TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
+            cursor.execute('''
+                           CREATE TABLE failed_records
+                           (
+                               url_path      TEXT PRIMARY KEY,
+                               error_message TEXT,
+                               retry_count   INTEGER   DEFAULT 0,
+                               last_attempt  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                           )
+                           ''')
             logger.success("失败记录表创建成功")
-
-            # 创建失败页面表
-            cursor.execute('''CREATE TABLE failed_pages (url_path TEXT PRIMARY KEY, error_message TEXT, retry_count INTEGER DEFAULT 0, last_attempt TIMESTAMP)''')
-            logger.success("失败页面表创建成功")
 
             conn.commit()
             logger.success(f"数据库结构初始化完成: {self.db_path}")
