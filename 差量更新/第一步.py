@@ -39,6 +39,11 @@ class propertyguru:
         # 回溯检查页数
         self.REVIEW_PAGES = 10
 
+        self.new_count = 0
+        self.update_count = 0
+        self.skip_count = 0
+        self.fail_count = 0
+
         self.init_database()
 
     def init_database(self):
@@ -334,9 +339,11 @@ class propertyguru:
                                        url_path
                                    ))
                     logger.info(f"记录强制更新: {url_path}")
+                    self.update_count += 1
                 else:
                     # 普通模式：记录已存在，跳过
                     logger.debug(f"记录已存在，跳过: {url_path}")
+                    self.skip_count += 1
                     return False
             else:
                 # 插入新记录
@@ -372,6 +379,7 @@ class propertyguru:
                                    result.get("buy_rent", '无buy_rent')
                                ))
                 logger.info(f"记录插入成功: {url_path}")
+                self.new_count += 1
 
             conn.commit()
             return True
@@ -394,6 +402,23 @@ class propertyguru:
         except Exception as e:
             logger.error(f"检查记录失败: {url_path}, 错误: {str(e)}")
             return False
+        finally:
+            if conn:
+                conn.close()
+
+    def add_failed_page(self, url_path, error_msg, retry_count=0):
+        """记录失败的页面，后续重试"""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            cursor.execute('''
+                INSERT OR REPLACE INTO failed_pages 
+                (url_path, error_message, retry_count, last_attempt) 
+                VALUES (?, ?, ?, ?)
+            ''', (url_path, error_msg, retry_count, datetime.now()))
+            conn.commit()
+        except Exception as e:
+            logger.error(f"记录失败页面失败: {url_path}, 错误: {str(e)}")
         finally:
             if conn:
                 conn.close()
@@ -422,17 +447,23 @@ class propertyguru:
                 if response and response.status_code == 200:
                     return response
                 else:
-                    logger.error(f"请求失败第 {attempt + 1} 次: {url_path}")
+                    error_msg = f"请求失败: status_code={response.status_code if response else 'N/A'}"
+                    logger.error(f"{error_msg} 第 {attempt + 1} 次: {url_path}")
                     if response:
                         code = response.json().get('code')
                         if code in ['CLOUDFLARE_CHALLENGE_TIMEOUT']:
                             continue
                         if code in ["PROXY_CONNECT_ABORTED", 'APIKEY_INVALID', 'INSUFFICIENT_BALANCE']:
                             logger.error(f"致命错误: {url_path} - {response.text}")
+                            self.add_failed_page(url_path, response.text, attempt + 1)
                             os._exit(0)
+                    self.add_failed_page(url_path, error_msg, attempt + 1)
             except Exception as e:
-                logger.error(f"请求异常第 {attempt + 1} 次: {url_path} - {str(e)}")
+                error_msg = f"请求异常: {str(e)}"
+                logger.error(f"{error_msg} 第 {attempt + 1} 次: {url_path}")
+                self.add_failed_page(url_path, error_msg, attempt + 1)
                 continue
+        self.fail_count += 1
         return None
 
     def analysis_list_page(self, response, page, html_name, force_update=False):
@@ -732,7 +763,58 @@ class propertyguru:
         # 导出数据到CSV
         self.export_csv()
 
+        self.print_statistics()
+
         logger.success("🎉 所有任务完成")
+
+
+    def print_statistics(self):
+        """打印差量更新统计"""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            cursor.execute("SELECT COUNT(*) FROM propertyguru")
+            total = cursor.fetchone()[0]
+        except Exception as e:
+            logger.error(f"获取总记录数失败: {str(e)}")
+            total = "N/A"
+        finally:
+            if conn:
+                conn.close()
+
+        print(f"""
+        📊 更新统计
+        ─────────────────────
+        总记录数: {total}
+        本次新增: {self.new_count}
+        本次更新: {self.update_count}
+        跳过记录: {self.skip_count}
+        失败记录: {self.fail_count}
+        """)
+
+    def print_statistics(self):
+        """打印差量更新统计"""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            cursor.execute("SELECT COUNT(*) FROM propertyguru")
+            total = cursor.fetchone()[0]
+        except Exception as e:
+            logger.error(f"获取总记录数失败: {str(e)}")
+            total = "N/A"
+        finally:
+            if conn:
+                conn.close()
+
+        print(f"""
+        📊 更新统计
+        ─────────────────────
+        总记录数: {total}
+        本次新增: {self.new_count}
+        本次更新: {self.update_count}
+        跳过记录: {self.skip_count}
+        失败记录: {self.fail_count}
+        """)
 
 
 if __name__ == '__main__':
