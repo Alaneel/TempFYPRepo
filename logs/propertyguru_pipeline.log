@@ -1,0 +1,98 @@
+2025-10-28 16:07:51.496 | SUCCESS  | propertyguru_pipeline:init_database:119 - 数据库初始化成功: data/propertyguru_integrated.db
+2025-10-28 16:07:51.496 | INFO     | propertyguru_pipeline:run_pipeline:1047 - 🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀
+2025-10-28 16:07:51.496 | INFO     | propertyguru_pipeline:run_pipeline:1048 - PropertyGuru Pipeline 启动
+2025-10-28 16:07:51.496 | INFO     | propertyguru_pipeline:run_pipeline:1049 - 🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀
+2025-10-28 16:07:51.497 | INFO     | propertyguru_pipeline:step1_crawl_listings:599 - ============================================================
+2025-10-28 16:07:51.497 | INFO     | propertyguru_pipeline:step1_crawl_listings:600 - Step 1: 开始爬取房产列表
+2025-10-28 16:07:51.497 | INFO     | propertyguru_pipeline:step1_crawl_listings:601 - ============================================================
+2025-10-28 16:07:51.497 | INFO     | propertyguru_pipeline:step1_crawl_listings:604 - 📊 执行全量爬取
+2025-10-28 16:07:51.498 | INFO     | propertyguru_pipeline:get_data:544 - 开始请求：property-for-rent/1
+2025-10-28 16:07:51.873 | ERROR    | propertyguru_pipeline:fetch:383 - 请求失败第 1 次: property-for-rent/1
+2025-10-28 16:07:52.158 | ERROR    | propertyguru_pipeline:fetch:383 - 请求失败第 2 次: property-for-rent/1
+2025-10-28 16:07:52.407 | ERROR    | propertyguru_pipeline:fetch:383 - 请求失败第 3 次: property-for-rent/1
+2025-10-28 16:07:52.408 | ERROR    | propertyguru_pipeline:get_data:547 - 请求失败：property-for-rent/1
+2025-10-28 16:07:52.411 | WARNING  | propertyguru_pipeline:add_failed_record:699 - 添加失败记录: property-for-rent/1, 重试次数: 5
+2025-10-28 16:07:52.411 | INFO     | propertyguru_pipeline:crawl_category:581 - ⚠️  第 1 页无新记录（连续第1页）
+2025-10-28 16:07:53.418 | INFO     | propertyguru_pipeline:get_data:544 - 开始请求：property-for-rent/2
+2025-10-28 16:07:53.670 | ERROR    | propertyguru_pipeline:fetch:383 - 请求失败第 1 次: property-for-rent/2
+2025-10-28 16:07:53.922 | ERROR    | propertyguru_pipeline:fetch:383 - 请求失败第 2 次: property-for-rent/2
+2025-10-28 16:07:54.173 | ERROR    | propertyguru_pipeline:fetch:383 - 请求失败第 3 次: property-for-rent/2
+2025-10-28 16:07:54.176 | ERROR    | propertyguru_pipeline:get_data:547 - 请求失败：property-for-rent/2
+2025-10-28 16:07:54.178 | WARNING  | propertyguru_pipeline:add_failed_record:699 - 添加失败记录: property-for-rent/2, 重试次数: 5
+2025-10-28 16:07:54.179 | INFO     | propertyguru_pipeline:crawl_category:581 - ⚠️  第 2 页无新记录（连续第2页）
+2025-10-28 16:07:55.185 | INFO     | propertyguru_pipeline:get_data:544 - 开始请求：property-for-rent/3
+2025-10-28 16:07:55.476 | ERROR    | propertyguru_pipeline:fetch:383 - 请求失败第 1 次: property-for-rent/3
+2025-10-28 16:07:55.767 | ERROR    | propertyguru_pipeline:fetch:383 - 请求失败第 2 次: property-for-rent/3
+2025-10-28 16:07:56.044 | ERROR    | propertyguru_pipeline:fetch:383 - 请求失败第 3 次: property-for-rent/3
+2025-10-28 16:07:56.045 | ERROR    | propertyguru_pipeline:get_data:547 - 请求失败：property-for-rent/3
+2025-10-28 16:07:56.047 | WARNING  | propertyguru_pipeline:add_failed_record:699 - 添加失败记录: property-for-rent/3, 重试次数: 5
+2025-10-28 16:07:56.047 | INFO     | propertyguru_pipeline:crawl_category:581 - ⚠️  第 3 页无新记录（连续第3页）
+2025-10-28 16:07:57.053 | INFO     | propertyguru_pipeline:get_data:544 - 开始请求：property-for-rent/4
+2025-10-28 16:07:57.330 | ERROR    | propertyguru_pipeline:fetch:383 - 请求失败第 1 次: property-for-rent/4
+2025-10-28 16:07:57.624 | ERROR    | propertyguru_pipeline:fetch:383 - 请求失败第 2 次: property-for-rent/4
+2025-10-28 16:07:57.934 | ERROR    | propertyguru_pipeline:fetch:383 - 请求失败第 3 次: property-for-rent/4
+2025-10-28 16:07:57.937 | ERROR    | propertyguru_pipeline:get_data:547 - 请求失败：property-for-rent/4
+2025-10-28 16:07:57.939 | WARNING  | propertyguru_pipeline:add_failed_record:699 - 添加失败记录: property-for-rent/4, 重试次数: 5
+2025-10-28 16:07:57.939 | INFO     | propertyguru_pipeline:crawl_category:581 - ⚠️  第 4 页无新记录（连续第4页）
+2025-10-28 16:07:58.945 | INFO     | propertyguru_pipeline:get_data:544 - 开始请求：property-for-rent/5
+2025-10-28 16:07:59.252 | ERROR    | propertyguru_pipeline:fetch:383 - 请求失败第 1 次: property-for-rent/5
+2025-10-28 16:07:59.540 | ERROR    | propertyguru_pipeline:fetch:383 - 请求失败第 2 次: property-for-rent/5
+2025-10-28 16:07:59.801 | ERROR    | propertyguru_pipeline:fetch:383 - 请求失败第 3 次: property-for-rent/5
+2025-10-28 16:07:59.804 | ERROR    | propertyguru_pipeline:get_data:547 - 请求失败：property-for-rent/5
+2025-10-28 16:07:59.806 | WARNING  | propertyguru_pipeline:add_failed_record:699 - 添加失败记录: property-for-rent/5, 重试次数: 5
+2025-10-28 16:07:59.806 | INFO     | propertyguru_pipeline:crawl_category:581 - ⚠️  第 5 页无新记录（连续第5页）
+2025-10-28 16:07:59.806 | WARNING  | propertyguru_pipeline:crawl_category:587 - 连续 5 页无新记录（阈值: 5），停止爬取
+2025-10-28 16:07:59.806 | SUCCESS  | propertyguru_pipeline:crawl_category:595 - property-for-rent 爬取完成
+2025-10-28 16:07:59.807 | INFO     | propertyguru_pipeline:get_data:544 - 开始请求：property-for-sale/1
+2025-10-28 16:08:00.078 | ERROR    | propertyguru_pipeline:fetch:383 - 请求失败第 1 次: property-for-sale/1
+2025-10-28 16:08:00.356 | ERROR    | propertyguru_pipeline:fetch:383 - 请求失败第 2 次: property-for-sale/1
+2025-10-28 16:08:00.637 | ERROR    | propertyguru_pipeline:fetch:383 - 请求失败第 3 次: property-for-sale/1
+2025-10-28 16:08:00.639 | ERROR    | propertyguru_pipeline:get_data:547 - 请求失败：property-for-sale/1
+2025-10-28 16:08:00.642 | WARNING  | propertyguru_pipeline:add_failed_record:699 - 添加失败记录: property-for-sale/1, 重试次数: 5
+2025-10-28 16:08:00.642 | INFO     | propertyguru_pipeline:crawl_category:581 - ⚠️  第 1 页无新记录（连续第1页）
+2025-10-28 16:08:01.649 | INFO     | propertyguru_pipeline:get_data:544 - 开始请求：property-for-sale/2
+2025-10-28 16:08:01.911 | ERROR    | propertyguru_pipeline:fetch:383 - 请求失败第 1 次: property-for-sale/2
+2025-10-28 16:08:02.188 | ERROR    | propertyguru_pipeline:fetch:383 - 请求失败第 2 次: property-for-sale/2
+2025-10-28 16:08:02.480 | ERROR    | propertyguru_pipeline:fetch:383 - 请求失败第 3 次: property-for-sale/2
+2025-10-28 16:08:02.482 | ERROR    | propertyguru_pipeline:get_data:547 - 请求失败：property-for-sale/2
+2025-10-28 16:08:02.484 | WARNING  | propertyguru_pipeline:add_failed_record:699 - 添加失败记录: property-for-sale/2, 重试次数: 5
+2025-10-28 16:08:02.484 | INFO     | propertyguru_pipeline:crawl_category:581 - ⚠️  第 2 页无新记录（连续第2页）
+2025-10-28 16:08:03.488 | INFO     | propertyguru_pipeline:get_data:544 - 开始请求：property-for-sale/3
+2025-10-28 16:08:03.759 | ERROR    | propertyguru_pipeline:fetch:383 - 请求失败第 1 次: property-for-sale/3
+2025-10-28 16:08:03.999 | ERROR    | propertyguru_pipeline:fetch:383 - 请求失败第 2 次: property-for-sale/3
+2025-10-28 16:08:04.260 | ERROR    | propertyguru_pipeline:fetch:383 - 请求失败第 3 次: property-for-sale/3
+2025-10-28 16:08:04.262 | ERROR    | propertyguru_pipeline:get_data:547 - 请求失败：property-for-sale/3
+2025-10-28 16:08:04.264 | WARNING  | propertyguru_pipeline:add_failed_record:699 - 添加失败记录: property-for-sale/3, 重试次数: 5
+2025-10-28 16:08:04.264 | INFO     | propertyguru_pipeline:crawl_category:581 - ⚠️  第 3 页无新记录（连续第3页）
+2025-10-28 16:08:05.268 | INFO     | propertyguru_pipeline:get_data:544 - 开始请求：property-for-sale/4
+2025-10-28 16:08:05.546 | ERROR    | propertyguru_pipeline:fetch:383 - 请求失败第 1 次: property-for-sale/4
+2025-10-28 16:08:05.807 | ERROR    | propertyguru_pipeline:fetch:383 - 请求失败第 2 次: property-for-sale/4
+2025-10-28 16:08:06.077 | ERROR    | propertyguru_pipeline:fetch:383 - 请求失败第 3 次: property-for-sale/4
+2025-10-28 16:08:06.079 | ERROR    | propertyguru_pipeline:get_data:547 - 请求失败：property-for-sale/4
+2025-10-28 16:08:06.081 | WARNING  | propertyguru_pipeline:add_failed_record:699 - 添加失败记录: property-for-sale/4, 重试次数: 5
+2025-10-28 16:08:06.081 | INFO     | propertyguru_pipeline:crawl_category:581 - ⚠️  第 4 页无新记录（连续第4页）
+2025-10-28 16:08:07.088 | INFO     | propertyguru_pipeline:get_data:544 - 开始请求：property-for-sale/5
+2025-10-28 16:08:07.389 | ERROR    | propertyguru_pipeline:fetch:383 - 请求失败第 1 次: property-for-sale/5
+2025-10-28 16:08:07.663 | ERROR    | propertyguru_pipeline:fetch:383 - 请求失败第 2 次: property-for-sale/5
+2025-10-28 16:08:07.923 | ERROR    | propertyguru_pipeline:fetch:383 - 请求失败第 3 次: property-for-sale/5
+2025-10-28 16:08:07.925 | ERROR    | propertyguru_pipeline:get_data:547 - 请求失败：property-for-sale/5
+2025-10-28 16:08:07.928 | WARNING  | propertyguru_pipeline:add_failed_record:699 - 添加失败记录: property-for-sale/5, 重试次数: 5
+2025-10-28 16:08:07.928 | INFO     | propertyguru_pipeline:crawl_category:581 - ⚠️  第 5 页无新记录（连续第5页）
+2025-10-28 16:08:07.928 | WARNING  | propertyguru_pipeline:crawl_category:587 - 连续 5 页无新记录（阈值: 5），停止爬取
+2025-10-28 16:08:07.928 | SUCCESS  | propertyguru_pipeline:crawl_category:595 - property-for-sale 爬取完成
+2025-10-28 16:08:07.928 | SUCCESS  | propertyguru_pipeline:step1_crawl_listings:612 - Step 1 完成：房产列表爬取完成
+2025-10-28 16:08:07.928 | INFO     | propertyguru_pipeline:step2_crawl_agent_info:837 - ============================================================
+2025-10-28 16:08:07.928 | INFO     | propertyguru_pipeline:step2_crawl_agent_info:838 - Step 2: 开始爬取代理信息（多线程）
+2025-10-28 16:08:07.928 | INFO     | propertyguru_pipeline:step2_crawl_agent_info:839 - ============================================================
+2025-10-28 16:08:07.928 | INFO     | propertyguru_pipeline:step2_crawl_agent_info:842 - ⚡ 差量更新：补充缺失的代理信息
+2025-10-28 16:08:07.929 | INFO     | propertyguru_pipeline:get_incomplete_records:633 - 找到 0 条代理信息不完整的记录
+2025-10-28 16:08:07.929 | INFO     | propertyguru_pipeline:process_records_multithread:790 - 没有需要处理的记录
+2025-10-28 16:08:07.929 | SUCCESS  | propertyguru_pipeline:step2_crawl_agent_info:856 - Step 2 完成：代理信息爬取完成
+2025-10-28 16:08:07.929 | INFO     | propertyguru_pipeline:run_pipeline:1065 - ============================================================
+2025-10-28 16:08:07.929 | INFO     | propertyguru_pipeline:run_pipeline:1066 - 开始导出数据
+2025-10-28 16:08:07.929 | INFO     | propertyguru_pipeline:run_pipeline:1067 - ============================================================
+2025-10-28 16:08:07.939 | SUCCESS  | propertyguru_pipeline:export_csv:1017 - 数据导出成功: data/export/propertyguru_export_20251028_160807.csv
+2025-10-28 16:08:07.939 | SUCCESS  | propertyguru_pipeline:export_csv:1018 - 租房数据: data/export/propertyguru_rent_20251028_160807.csv, 共 0 条记录
+2025-10-28 16:08:07.940 | SUCCESS  | propertyguru_pipeline:export_csv:1019 - 买房数据: data/export/propertyguru_sale_20251028_160807.csv, 共 0 条记录
+2025-10-28 16:08:07.940 | SUCCESS  | propertyguru_pipeline:export_csv:1020 - 完整记录: 0/0 (0%)
+2025-10-28 16:08:07.940 | SUCCESS  | propertyguru_pipeline:run_pipeline:1071 - 🎉 Pipeline 完成！总耗时: 16.44 秒
