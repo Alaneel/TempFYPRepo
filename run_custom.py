@@ -36,7 +36,7 @@ def main():
     # ==================== 运行Pipeline ====================
     # 根据需要修改以下参数
     
-    pipeline.run_full_pipeline(
+    pipeline.run_pipeline(
         # 是否运行Stage1（列表页爬取）
         run_stage1=True,
         

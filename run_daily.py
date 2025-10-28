@@ -5,36 +5,43 @@
 """
 
 from propertyguru_pipeline import PropertyGuruPipeline
-from config import config
 import sys
 
 def main():
     print("=" * 60)
     print("PropertyGuru 日常增量更新")
     print("=" * 60)
-    
+
     try:
-        # 创建Pipeline实例
-        pipeline = PropertyGuruPipeline(config)
-        
+        # 配置
+        config = {
+            'apikey': 'YOUR_API_KEY',  # 填入你的API密钥
+            'proxy': 'YOUR_PROXY',  # 填入你的代理
+        }
+
+        # 创建Pipeline实例（使用5个线程）
+        pipeline = PropertyGuruPipeline(max_workers=5)
+        pipeline.apikey = config['apikey']
+        pipeline.proxy = config['proxy']
+
         # 运行智能增量更新
-        # Stage1: 智能判断是否需要全量爬取
-        # Stage2: 补充缺失的代理信息
-        pipeline.run_full_pipeline(
-            run_stage1=True,
-            run_stage2=True,
-            stage1_mode='smart_incremental',
-            stage2_mode='incomplete'
+        pipeline.run_pipeline(
+            step1_mode='smart_incremental',  # Stage1: 智能增量
+            step2_mode='incremental',  # Stage2: 补充缺失
+            skip_step1=False,  # 运行Stage1
+            skip_step2=False  # 运行Stage2
         )
-        
+
         print("\n✅ 日常更新完成！")
         return 0
-        
+
     except KeyboardInterrupt:
         print("\n❌ 用户中断")
         return 1
     except Exception as e:
         print(f"\n❌ 错误: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return 1
 
 if __name__ == '__main__':

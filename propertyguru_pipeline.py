@@ -545,6 +545,7 @@ class PropertyGuruPipeline:
         response = self.fetch(url_path)
         if not response:
             logger.error(f"请求失败：{url_path}")
+            self.add_failed_record(url_path, "请求失败")
             return 0, 0
 
         logger.info(f"请求成功：{url_path}")
@@ -853,6 +854,120 @@ class PropertyGuruPipeline:
             return
 
         logger.success("Step 2 完成：代理信息爬取完成")
+
+    # ==================== Step 3: 重试失败记录 ====================
+
+    def get_failed_records(self):
+        """获取所有失败的记录"""
+        try:
+            with self.db_lock:
+                conn = sqlite3.connect(self.db_path)
+                cursor = conn.cursor()
+                cursor.execute('SELECT url_path FROM failed_records')
+                results = cursor.fetchall()
+                url_paths = [row[0] for row in results]
+                if url_paths:
+                    logger.info(f"找到 {len(url_paths)} 条失败的记录需要重试")
+                return url_paths
+        except Exception as e:
+            logger.error(f"获取失败记录失败: {str(e)}")
+            return []
+        finally:
+            if conn:
+                conn.close()
+
+    def remove_failed_record(self, url_path):
+        """移除成功的失败记录"""
+        try:
+            with self.db_lock:
+                conn = sqlite3.connect(self.db_path)
+                cursor = conn.cursor()
+                cursor.execute("DELETE FROM failed_records WHERE url_path = ?", (url_path,))
+                conn.commit()
+                logger.success(f"已从失败列表移除: {url_path}")
+        except Exception as e:
+            logger.error(f"移除失败记录失败: {url_path}, {str(e)}")
+        finally:
+            if conn:
+                conn.close()
+
+    def retry_failed_records(self):
+        """Step 3: 重试之前失败的记录"""
+        logger.info("=" * 60)
+        logger.info("Step 3: 开始重试失败的记录")
+        logger.info("=" * 60)
+
+        failed_urls = self.get_failed_records()
+        if not failed_urls:
+            logger.info("没有失败的记录需要重试")
+            return
+
+        list_page_urls = []
+        detail_page_urls = []
+        for url in failed_urls:
+            if re.match(r'(property-for-rent|property-for-sale)/\d+', url):
+                list_page_urls.append(url)
+            else:
+                detail_page_urls.append(url)
+
+        # 1. 处理列表页
+        if list_page_urls:
+            logger.info(f"开始重试 {len(list_page_urls)} 个列表页...")
+            for url_path in list_page_urls:
+                page = url_path.split('/')[-1]
+                category = url_path.split('/')[0]
+                logger.info(f"开始请求：{url_path}")
+                response = self.fetch(url_path)
+                if response:
+                    logger.info(f"请求成功：{url_path}")
+                    self.analysis_list_page(response, page, category, force_update=True)
+                    self.insert_spider_record(url_path, '已爬取')
+                    self.remove_failed_record(url_path)
+                else:
+                    logger.error(f"重试失败：{url_path}")
+                time.sleep(1)
+            logger.success("列表页重试完成")
+        else:
+            logger.info("没有失败的列表页需要重试")
+
+        # 2. 处理详细页
+        if detail_page_urls:
+            logger.info(f"开始重试 {len(detail_page_urls)} 个详细页（多线程）...")
+            total = len(detail_page_urls)
+            success = 0
+            failed = 0
+
+            with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
+                future_to_url = {
+                    executor.submit(self.process_single_record, url_path, force_update=True): url_path
+                    for url_path in detail_page_urls
+                }
+
+                for index, future in enumerate(as_completed(future_to_url), 1):
+                    url_path = future_to_url[future]
+                    try:
+                        result = future.result()
+                        if result['status'] == 'success':
+                            success += 1
+                            self.remove_failed_record(url_path)
+                            logger.success(f"[{index}/{total}] ✅ 重试成功: {url_path}")
+                        else:
+                            failed += 1
+                            logger.error(f"[{index}/{total}] ❌ 重试失败: {url_path}")
+
+                        if index % 10 == 0:
+                            logger.info(f"进度: {index}/{total} | 成功: {success} | 失败: {failed}")
+
+                    except Exception as exc:
+                        logger.error(f"[{index}/{total}] 处理异常: {url_path} - {str(exc)}")
+                        failed += 1
+            
+            logger.success(f"详细页重试完成！总数: {total}, 成功: {success}, 失败: {failed}")
+        else:
+            logger.info("没有失败的详细页需要重试")
+
+        logger.success("Step 3 完成：失败记录重试完成")
+
 
     # ==================== 导出功能 ====================
 
