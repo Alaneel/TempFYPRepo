@@ -1,10 +1,18 @@
+import sys
+import os
+
+# 添加项目根目录到 Python 路径（修复导入错误）
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+sys.path.insert(0, PROJECT_ROOT)
+
 from itemadapter import ItemAdapter
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import IntegrityError
 from datetime import datetime
 
-from property_aggregator.database import engine, SessionLocal
+from property_aggregator.database import SessionLocal
 from property_aggregator.models import Listing
+
 
 class PostgreSQLPipeline:
     def __init__(self):
