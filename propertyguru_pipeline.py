@@ -31,8 +31,9 @@ class PropertyGuruPipeline:
         os.makedirs(self.data_dir, exist_ok=True)
         os.makedirs("logs", exist_ok=True)
         
-        self.db_path = os.path.join(self.data_dir, "propertyguru_integrated.db")
-        
+        # 使用新的数据库文件名，避免与其他分支冲突
+        self.db_path = os.path.join(self.data_dir, "propertyguru_v2.db")
+
         # Step 1 配置
         self.PAGES_WITHOUT_NEW_THRESHOLD = 5  # 连续无新记录页数阈值
         self.TIME_WINDOW_DAYS = 7  # 时间窗口阈值（天数）
@@ -49,14 +50,15 @@ class PropertyGuruPipeline:
 
     def init_database(self):
         """初始化数据库，创建表结构"""
+        conn = None  # ✅ 初始化 conn 变量
         try:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
 
-            # 主数据表
+            # 主数据表 - 使用 ID 作为主键
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS propertyguru (
-                    ID TEXT,
+                    ID TEXT PRIMARY KEY,
                     localizedTitle TEXT,
                     fullAddress TEXT,
                     price_pretty TEXT,
@@ -68,7 +70,7 @@ class PropertyGuruPipeline:
                     built_year TEXT,
                     property_type TEXT,
                     tenure TEXT,
-                    url_path TEXT PRIMARY KEY,
+                    url_path TEXT,
                     recency_text TEXT,
                     agent_id TEXT,
                     agent_name TEXT,
@@ -85,10 +87,21 @@ class PropertyGuruPipeline:
                 )
             ''')
 
-            # 爬虫记录表
+            # 为 url_path 创建索引以提高查询速度
+            cursor.execute('''
+                CREATE INDEX IF NOT EXISTS idx_url_path ON propertyguru(url_path)
+            ''')
+
+            # 为 is_active 创建索引
+            cursor.execute('''
+                CREATE INDEX IF NOT EXISTS idx_is_active ON propertyguru(is_active)
+            ''')
+
+            # 爬虫记录表 - 记录已爬取的页面URL（列表页或详情页）
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS propertyguru_spider (
-                    url_path TEXT PRIMARY KEY,
+                    page_url TEXT PRIMARY KEY,
+                    url_path TEXT,
                     status TEXT,
                     retry_count INTEGER DEFAULT 0,
                     last_error TEXT,
@@ -187,32 +200,32 @@ class PropertyGuruPipeline:
             if conn:
                 conn.close()
 
-    def insert_spider_record(self, url_path, status, error_msg=None):
+    def insert_spider_record(self, property_id, url_path, status, error_msg=None):
         """向爬虫记录表中插入记录"""
         try:
             with self.db_lock:
                 conn = sqlite3.connect(self.db_path)
                 cursor = conn.cursor()
 
-                cursor.execute("SELECT retry_count FROM propertyguru_spider WHERE url_path = ?", (url_path,))
+                cursor.execute("SELECT retry_count FROM propertyguru_spider WHERE page_url = ?", (property_id,))
                 result = cursor.fetchone()
                 retry_count = result[0] + 1 if result else 0
 
                 cursor.execute('''
                     INSERT OR REPLACE INTO propertyguru_spider 
-                    (url_path, status, retry_count, last_error, crawled_at) 
-                    VALUES (?, ?, ?, ?, ?)
-                ''', (url_path, status, retry_count, error_msg, datetime.now()))
+                    (page_url, url_path, status, retry_count, last_error, crawled_at) 
+                    VALUES (?, ?, ?, ?, ?, ?)
+                ''', (property_id, url_path, status, retry_count, error_msg, datetime.now()))
 
                 conn.commit()
         except Exception as e:
-            logger.error(f"爬虫记录插入失败: {url_path}, 错误: {str(e)}")
+            logger.error(f"爬虫记录插入失败: {property_id}, 错误: {str(e)}")
         finally:
             if conn:
                 conn.close()
 
-    def check_spider_record(self, url_path, force_update=False):
-        """检查爬虫记录表中是否存在成功记录"""
+    def check_spider_record(self, property_id, force_update=False):
+        """检查爬虫记录表中是否存在成功记录（基于property_id）"""
         if force_update:
             return False
 
@@ -221,27 +234,30 @@ class PropertyGuruPipeline:
                 conn = sqlite3.connect(self.db_path)
                 cursor = conn.cursor()
                 cursor.execute(
-                    "SELECT status FROM propertyguru_spider WHERE url_path = ? AND status = '已爬取'",
-                    (url_path,)
+                    "SELECT status FROM propertyguru_spider WHERE page_url = ? AND status = '已爬取'",
+                    (property_id,)
                 )
                 result = cursor.fetchone()
                 return result is not None
         except Exception as e:
-            logger.error(f"检查爬虫记录失败: {url_path}, 错误: {str(e)}")
+            logger.error(f"检查爬虫记录失败: {property_id}, 错误: {str(e)}")
             return False
         finally:
             if conn:
                 conn.close()
 
     def insert_record(self, result, force_update=False, update_agent_only=False):
-        """向数据库中插入或更新记录"""
+        """向数据库中插入或更新记录（基于ID去重）"""
         try:
             with self.db_lock:
                 conn = sqlite3.connect(self.db_path)
                 cursor = conn.cursor()
 
+                property_id = result.get("ID", '无id')
                 url_path = result.get("url_path", '无url_path')
-                cursor.execute("SELECT * FROM propertyguru WHERE url_path = ?", (url_path,))
+
+                # 基于ID检查记录是否存在
+                cursor.execute("SELECT * FROM propertyguru WHERE ID = ?", (property_id,))
                 existing = cursor.fetchone()
 
                 if existing:
@@ -249,27 +265,27 @@ class PropertyGuruPipeline:
                         # 只更新代理信息
                         cursor.execute('''
                             UPDATE propertyguru
-                            SET CEA=?, mobile=?, rating=?, updated_at=?, is_active=1
-                            WHERE url_path = ?
+                            SET CEA=?, mobile=?, rating=?, updated_at=?, is_active=1, url_path=?
+                            WHERE ID = ?
                         ''', (
                             result.get("CEA", ''),
                             result.get("mobile", ''),
                             result.get("rating", ''),
                             datetime.now(),
-                            url_path
+                            url_path,
+                            property_id
                         ))
-                        logger.info(f"代理信息更新成功: {url_path}")
+                        logger.info(f"代理信息更新成功: ID={property_id}")
                     elif force_update:
                         # 更新所有字段
                         cursor.execute('''
                             UPDATE propertyguru
-                            SET ID=?, localizedTitle=?, fullAddress=?, price_pretty=?, beds=?, baths=?,
+                            SET localizedTitle=?, fullAddress=?, price_pretty=?, beds=?, baths=?,
                                 area_sqft=?, price_psf=?, nearbyText=?, built_year=?, property_type=?,
-                                tenure=?, recency_text=?, agent_id=?, agent_name=?, agent_description=?,
+                                tenure=?, url_path=?, recency_text=?, agent_id=?, agent_name=?, agent_description=?,
                                 agent_url_path=?, CEA=?, mobile=?, rating=?, buy_rent=?, updated_at=?, is_active=1
-                            WHERE url_path = ?
+                            WHERE ID = ?
                         ''', (
-                            result.get("ID", '无id'),
                             result.get("localizedTitle", '无标题'),
                             result.get("fullAddress", '无地址'),
                             result.get("price_pretty", '无价格'),
@@ -281,6 +297,7 @@ class PropertyGuruPipeline:
                             result.get("built_year", '无建造年份'),
                             result.get("property_type", '无物业类型'),
                             result.get("tenure", '无产权'),
+                            url_path,
                             result.get("recency_text", '无更新时间'),
                             result.get("agent_id", '无id'),
                             result.get("agent_name", '无名字'),
@@ -291,17 +308,17 @@ class PropertyGuruPipeline:
                             result.get("rating", ''),
                             result.get("buy_rent", '无buy_rent'),
                             datetime.now(),
-                            url_path
+                            property_id
                         ))
-                        logger.info(f"记录强制更新: {url_path}")
+                        logger.info(f"记录强制更新: ID={property_id}")
                     else:
-                        # 即使不更新其他字段，也要标记为活跃
+                        # 即使不更新其他字段，也要更新url_path和标记为活跃
                         cursor.execute('''
                             UPDATE propertyguru
-                            SET is_active=1, updated_at=?
-                            WHERE url_path = ?
-                        ''', (datetime.now(), url_path))
-                        logger.debug(f"记录已存在，标记为活跃: {url_path}")
+                            SET is_active=1, updated_at=?, url_path=?
+                            WHERE ID = ?
+                        ''', (datetime.now(), url_path, property_id))
+                        logger.debug(f"记录已存在，标记为活跃: ID={property_id}")
                         conn.commit()
                         return False
                 else:
@@ -313,7 +330,7 @@ class PropertyGuruPipeline:
                                                   agent_description, agent_url_path, CEA, mobile, rating, buy_rent)
                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ''', (
-                        result.get("ID", '无id'),
+                        property_id,
                         result.get("localizedTitle", '无标题'),
                         result.get("fullAddress", '无地址'),
                         result.get("price_pretty", '无价格'),
@@ -336,29 +353,54 @@ class PropertyGuruPipeline:
                         result.get("rating", ''),
                         result.get("buy_rent", '无buy_rent')
                     ))
-                    logger.info(f"记录插入成功: {url_path}")
+                    logger.info(f"记录插入成功: ID={property_id}")
 
                 conn.commit()
                 return True
 
         except Exception as e:
-            logger.error(f"记录操作失败: {url_path}, 错误: {str(e)}")
+            logger.error(f"记录操作失败: ID={property_id}, 错误: {str(e)}")
             return False
         finally:
             if conn:
                 conn.close()
 
-    def check_record_exists(self, url_path):
-        """检查记录是否存在"""
+    def check_records_exist_batch(self, property_ids):
+        """批量检查记录是否存在（基于ID列表）"""
+        if not property_ids:
+            return set()
+
         try:
             with self.db_lock:
                 conn = sqlite3.connect(self.db_path)
                 cursor = conn.cursor()
-                cursor.execute("SELECT url_path FROM propertyguru WHERE url_path = ?", (url_path,))
+
+                # 使用 IN 查询批量检查
+                placeholders = ','.join('?' * len(property_ids))
+                query = f"SELECT ID FROM propertyguru WHERE ID IN ({placeholders})"
+                cursor.execute(query, property_ids)
+
+                existing_ids = {row[0] for row in cursor.fetchall()}
+                return existing_ids
+
+        except Exception as e:
+            logger.error(f"批量检查记录失败: {str(e)}")
+            return set()
+        finally:
+            if conn:
+                conn.close()
+
+    def check_record_exists(self, property_id):
+        """检查记录是否存在（基于ID）"""
+        try:
+            with self.db_lock:
+                conn = sqlite3.connect(self.db_path)
+                cursor = conn.cursor()
+                cursor.execute("SELECT ID FROM propertyguru WHERE ID = ?", (property_id,))
                 result = cursor.fetchone()
                 return result is not None
         except Exception as e:
-            logger.error(f"检查记录失败: {url_path}, 错误: {str(e)}")
+            logger.error(f"检查记录失败: ID={property_id}, 错误: {str(e)}")
             return False
         finally:
             if conn:
@@ -402,7 +444,7 @@ class PropertyGuruPipeline:
         return None
 
     def analysis_list_page(self, response, page, html_name, force_update=False):
-        """解析列表页"""
+        """解析列表页（批量ID去重优化）"""
         consecutive_exists = 0
         new_records = 0
 
@@ -424,20 +466,40 @@ class PropertyGuruPipeline:
             'listingsData', [])
         logger.info(f"{html_name} {page}页数据数量：{len(listingsData)}")
 
+        if not listingsData:
+            return consecutive_exists, new_records
+
+        # ====== 批量检查优化：先提取所有ID，一次性查询数据库 ======
+        all_ids = []
         for item in listingsData:
             listingData = item.get('listingData', {})
+            id_ = listingData.get('id', '无id')
+            if id_ and id_ != '无id':
+                all_ids.append(str(id_))
+
+        # 批量检查这些ID是否已存在
+        existing_ids = set()
+        if not force_update and all_ids:
+            existing_ids = self.check_records_exist_batch(all_ids)
+            logger.info(f"批量检查完成: {len(existing_ids)}/{len(all_ids)} 条记录已存在")
+        # ============================================================
+
+        for item in listingsData:
+            listingData = item.get('listingData', {})
+
+            # 提取数据
+            id_ = str(listingData.get('id', '无id'))
             url_path = listingData.get("url", "").replace('https://www.propertyguru.com.sg/', '')
 
-            if not force_update and self.check_record_exists(url_path):
+            # 使用批量检查的结果判断是否存在
+            if not force_update and id_ in existing_ids:
                 consecutive_exists += 1
-                logger.debug(f"记录已存在: {url_path} (连续第{consecutive_exists}条)")
+                logger.debug(f"记录已存在: ID={id_} (连续第{consecutive_exists}条)")
                 continue
             else:
                 consecutive_exists = 0
                 new_records += 1
 
-            # 提取数据
-            id_ = listingData.get('id', '无id')
             localizedTitle = listingData.get('localizedTitle', '无标题')
             fullAddress = listingData.get('fullAddress', '无地址')
             price_pretty = listingData.get('price', {}).get('pretty', '无价格')
@@ -545,7 +607,10 @@ class PropertyGuruPipeline:
 
     def get_data(self, url_path, page, html_name, force_update=False):
         """获取页面数据"""
-        if not force_update and self.check_spider_record(url_path):
+        # For list pages, we use the url_path as the property_id since it's a page URL
+        page_id = url_path
+
+        if not force_update and self.check_spider_record(page_id):
             logger.info(f"页面已爬取: {url_path}")
             return 0, 0
 
@@ -558,7 +623,7 @@ class PropertyGuruPipeline:
 
         logger.info(f"请求成功：{url_path}")
         consecutive_exists, new_records = self.analysis_list_page(response, page, html_name, force_update)
-        self.insert_spider_record(url_path, '已爬取')
+        self.insert_spider_record(page_id, url_path, '已爬取')
 
         return consecutive_exists, new_records
 
@@ -800,11 +865,34 @@ class PropertyGuruPipeline:
 
         if not agent_detail:
             self.add_failed_record(url_path, "获取代理信息失败")
-            self.insert_spider_record(url_path, '失败', "获取代理信息失败")
+            self.insert_spider_record(url_path, url_path, '失败', "获取代理信息失败")
             return {'status': 'failed', 'url_path': url_path}
 
-        # 更新记录
+        # 先通过 url_path 查询房源ID
+        conn = None
+        try:
+            with self.db_lock:
+                conn = sqlite3.connect(self.db_path)
+                cursor = conn.cursor()
+                cursor.execute("SELECT ID FROM propertyguru WHERE url_path = ?", (url_path,))
+                result = cursor.fetchone()
+
+                if not result:
+                    logger.error(f"未找到对应的房源记录: {url_path}")
+                    self.add_failed_record(url_path, "数据库中不存在该房源")
+                    return {'status': 'failed', 'url_path': url_path}
+
+                property_id = result[0]
+        except Exception as e:
+            logger.error(f"查询房源ID失败: {url_path} - {str(e)}")
+            return {'status': 'failed', 'url_path': url_path}
+        finally:
+            if conn:
+                conn.close()
+
+        # 更新记录（传入ID）
         dic = {
+            "ID": property_id,  # ✅ 传入房源ID
             "url_path": url_path,
             "CEA": agent_detail.get("CEA", ''),
             "mobile": agent_detail.get("mobile", ''),
@@ -812,7 +900,7 @@ class PropertyGuruPipeline:
         }
 
         if self.insert_record(dic, update_agent_only=True):
-            self.insert_spider_record(url_path, '已爬取')
+            self.insert_spider_record(url_path, url_path, '已爬取')
             return {'status': 'success', 'url_path': url_path}
         else:
             self.add_failed_record(url_path, "数据库更新失败")
@@ -955,7 +1043,7 @@ class PropertyGuruPipeline:
                 if response:
                     logger.info(f"请求成功：{url_path}")
                     self.analysis_list_page(response, page, category, force_update=True)
-                    self.insert_spider_record(url_path, '已爬取')
+                    self.insert_spider_record(url_path, url_path, '已爬取')
                     self.remove_failed_record(url_path)
                 else:
                     logger.error(f"重试失败：{url_path}")
