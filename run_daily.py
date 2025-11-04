@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 """
 日常增量更新脚本
-适合每天定时运行
+适合每天定时运行，自动完成：
+1. 增量爬取新增listings
+2. 补充缺失的代理信息
+3. 自动标记活跃listings（爬到的=活跃，未爬到的=过期）
 """
 
 from propertyguru_pipeline import PropertyGuruPipeline
@@ -25,14 +28,19 @@ def main():
         pipeline.proxy = config['proxy']
 
         # 运行智能增量更新
+        # 注意：每次增量爬取时，爬到的listings会自动标记为活跃（is_active=1）
+        # 未爬到的listings会保持之前的状态，可通过定期运行 run_cleanup.py 清理过期数据
         pipeline.run_pipeline(
-            step1_mode='smart_incremental',  # Stage1: 智能增量
-            step2_mode='incremental',  # Stage2: 补充缺失
-            skip_step1=False,  # 运行Stage1
-            skip_step2=False  # 运行Stage2
+            step1_mode='smart_incremental',  # Stage1: 智能增量爬取
+            step2_mode='incremental',  # Stage2: 补充缺失的代理信息
+            skip_step1=False,
+            skip_step2=False
         )
 
         print("\n✅ 日常更新完成！")
+        print("\n💡 提示：")
+        print("  - 爬取到的listings已自动标记为活跃状态")
+        print("  - 建议每周运行一次 run_cleanup.py 清理过期数据")
         return 0
 
     except KeyboardInterrupt:

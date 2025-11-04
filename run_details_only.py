@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-只更新详情页脚本
+只更新代理详情脚本
 适合已有列表数据，只需补充代理信息的情况
 """
 
@@ -9,25 +9,8 @@ import sys
 
 def main():
     print("=" * 60)
-    print("PropertyGuru 详情页更新")
+    print("PropertyGuru 代理信息更新")
     print("=" * 60)
-
-    print("\n选择模式:")
-    print("1. incremental - 补充缺失的代理信息（推荐）")
-    print("2. expired     - 更新过期的代理信息（90天前）")
-
-    choice = input("\n请选择 (1/2): ").strip()
-
-    if choice == '1':
-        mode = 'incremental'
-        expiry_days = None
-    elif choice == '2':
-        mode = 'expired'
-        days_input = input("过期天数（默认90天，直接回车使用默认值）: ").strip()
-        expiry_days = int(days_input) if days_input else 90
-    else:
-        print("❌ 无效选择")
-        return 1
 
     try:
         # 配置
@@ -41,15 +24,14 @@ def main():
         pipeline.apikey = config['apikey']
         pipeline.proxy = config['proxy']
 
-        # ✅ 修复：使用正确的方法名和参数名
+        # 只运行 Step 2：补充缺失的代理信息
         pipeline.run_pipeline(
-            step2_mode=mode,
-            step2_expiry_days=expiry_days,
-            skip_step1=True,  # 跳过Stage1
-            skip_step2=False  # 运行Stage2
+            step2_mode='incremental',
+            skip_step1=True,   # 跳过列表页爬取
+            skip_step2=False   # 运行代理信息爬取
         )
 
-        print(f"\n✅ 详情页更新完成 (模式: {mode})！")
+        print("\n✅ 代理信息更新完成！")
         return 0
 
     except KeyboardInterrupt:

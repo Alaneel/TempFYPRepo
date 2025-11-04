@@ -40,8 +40,7 @@ class PropertyGuruPipeline:
         
         # Step 2 配置
         self.AGENT_INFO_EXPIRY_DAYS = 90  # 代理信息过期时间（天数）
-        self.MAX_RETRIES = 3  # 最大重试次数
-        
+
         # 多线程配置
         self.max_workers = max_workers
         self.db_lock = Lock()  # 数据库操作锁
@@ -80,7 +79,9 @@ class PropertyGuruPipeline:
                     rating TEXT,
                     buy_rent TEXT,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    first_seen_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    is_active INTEGER DEFAULT 1
                 )
             ''')
 
@@ -248,7 +249,7 @@ class PropertyGuruPipeline:
                         # 只更新代理信息
                         cursor.execute('''
                             UPDATE propertyguru
-                            SET CEA=?, mobile=?, rating=?, updated_at=?
+                            SET CEA=?, mobile=?, rating=?, updated_at=?, is_active=1
                             WHERE url_path = ?
                         ''', (
                             result.get("CEA", ''),
@@ -265,7 +266,7 @@ class PropertyGuruPipeline:
                             SET ID=?, localizedTitle=?, fullAddress=?, price_pretty=?, beds=?, baths=?,
                                 area_sqft=?, price_psf=?, nearbyText=?, built_year=?, property_type=?,
                                 tenure=?, recency_text=?, agent_id=?, agent_name=?, agent_description=?,
-                                agent_url_path=?, CEA=?, mobile=?, rating=?, buy_rent=?, updated_at=?
+                                agent_url_path=?, CEA=?, mobile=?, rating=?, buy_rent=?, updated_at=?, is_active=1
                             WHERE url_path = ?
                         ''', (
                             result.get("ID", '无id'),
@@ -294,10 +295,17 @@ class PropertyGuruPipeline:
                         ))
                         logger.info(f"记录强制更新: {url_path}")
                     else:
-                        logger.debug(f"记录已存在，跳过: {url_path}")
+                        # 即使不更新其他字段，也要标记为活跃
+                        cursor.execute('''
+                            UPDATE propertyguru
+                            SET is_active=1, updated_at=?
+                            WHERE url_path = ?
+                        ''', (datetime.now(), url_path))
+                        logger.debug(f"记录已存在，标记为活跃: {url_path}")
+                        conn.commit()
                         return False
                 else:
-                    # 插入新记录
+                    # 插入新记录（默认is_active=1）
                     cursor.execute('''
                         INSERT INTO propertyguru (ID, localizedTitle, fullAddress, price_pretty, beds, baths,
                                                   area_sqft, price_psf, nearbyText, built_year, property_type,
@@ -614,7 +622,7 @@ class PropertyGuruPipeline:
     # ==================== Step 2: 详细页爬取（多线程） ====================
 
     def get_incomplete_records(self):
-        """获取代理信息不完整的记录"""
+        """获取代理信息不完整的记录（只查询活跃的）"""
         try:
             with self.db_lock:
                 conn = sqlite3.connect(self.db_path)
@@ -623,14 +631,15 @@ class PropertyGuruPipeline:
                 cursor.execute('''
                     SELECT url_path
                     FROM propertyguru
-                    WHERE (CEA IS NULL OR CEA = '' OR CEA = '无CEA')
+                    WHERE is_active = 1
+                      AND ((CEA IS NULL OR CEA = '' OR CEA = '无CEA')
                        OR (mobile IS NULL OR mobile = '' OR mobile = '无手机')
-                       OR (rating IS NULL OR rating = '' OR rating = '无评分')
+                       OR (rating IS NULL OR rating = '' OR rating = '无评分'))
                 ''')
 
                 results = cursor.fetchall()
                 url_paths = [row[0] for row in results]
-                logger.info(f"找到 {len(url_paths)} 条代理信息不完整的记录")
+                logger.info(f"找到 {len(url_paths)} 条活跃记录的代理信息不完整")
                 return url_paths
 
         except Exception as e:
@@ -699,6 +708,31 @@ class PropertyGuruPipeline:
                 logger.warning(f"添加失败记录: {url_path}, 重试次数: {retry_count}")
         except Exception as e:
             logger.error(f"添加失败记录失败: {str(e)}")
+        finally:
+            if conn:
+                conn.close()
+
+    def update_failed_record(self, url_path, error_msg):
+        """更新失败记录的重试次数和时间"""
+        try:
+            with self.db_lock:
+                conn = sqlite3.connect(self.db_path)
+                cursor = conn.cursor()
+
+                cursor.execute("SELECT retry_count FROM failed_records WHERE url_path = ?", (url_path,))
+                result = cursor.fetchone()
+                retry_count = result[0] + 1 if result else 1
+
+                cursor.execute('''
+                    UPDATE failed_records 
+                    SET retry_count = ?, error_message = ?, last_attempt = ?
+                    WHERE url_path = ?
+                ''', (retry_count, error_msg, datetime.now(), url_path))
+
+                conn.commit()
+                logger.warning(f"更新失败记录: {url_path}, 重试次数: {retry_count}")
+        except Exception as e:
+            logger.error(f"更新失败记录失败: {str(e)}")
         finally:
             if conn:
                 conn.close()
@@ -925,6 +959,7 @@ class PropertyGuruPipeline:
                     self.remove_failed_record(url_path)
                 else:
                     logger.error(f"重试失败：{url_path}")
+                    self.update_failed_record(url_path, "列表页请求失败")
                 time.sleep(1)
             logger.success("列表页重试完成")
         else:
@@ -953,6 +988,8 @@ class PropertyGuruPipeline:
                             logger.success(f"[{index}/{total}] ✅ 重试成功: {url_path}")
                         else:
                             failed += 1
+                            # 重试失败时更新失败记录
+                            self.update_failed_record(url_path, "详细页获取失败")
                             logger.error(f"[{index}/{total}] ❌ 重试失败: {url_path}")
 
                         if index % 10 == 0:
@@ -960,6 +997,8 @@ class PropertyGuruPipeline:
 
                     except Exception as exc:
                         logger.error(f"[{index}/{total}] 处理异常: {url_path} - {str(exc)}")
+                        # 异常时也要更新失败记录
+                        self.update_failed_record(url_path, f"处理异常: {str(exc)}")
                         failed += 1
             
             logger.success(f"详细页重试完成！总数: {total}, 成功: {success}, 失败: {failed}")
@@ -968,11 +1007,119 @@ class PropertyGuruPipeline:
 
         logger.success("Step 3 完成：失败记录重试完成")
 
+    # ==================== 数据维护功能 ====================
+
+    def mark_listings_inactive(self, days=30):
+        """将超过指定天数未更新的listings标记为不活跃"""
+        try:
+            with self.db_lock:
+                conn = sqlite3.connect(self.db_path)
+                cursor = conn.cursor()
+
+                cutoff_date = datetime.now() - timedelta(days=days)
+
+                cursor.execute('''
+                    UPDATE propertyguru
+                    SET is_active = 0
+                    WHERE updated_at < ? AND is_active = 1
+                ''', (cutoff_date,))
+
+                affected_rows = cursor.rowcount
+                conn.commit()
+
+                logger.info(f"标记为不活跃：{affected_rows} 条记录（超过{days}天未更新）")
+                return affected_rows
+
+        except Exception as e:
+            logger.error(f"标记不活跃记录失败: {str(e)}")
+            return 0
+        finally:
+            if conn:
+                conn.close()
+
+    def cleanup_expired_data(self, days=30, permanent_delete=False):
+        """清理过期数据（推荐定期运行）
+
+        参数:
+        - days: 过期天数（默认30天）
+        - permanent_delete: 是否永久删除过期数据（默认False，只标记）
+        """
+        logger.info("=" * 60)
+        logger.info(f"开始清理过期数据（超过{days}天）")
+        if permanent_delete:
+            logger.warning("⚠️  永久删除模式：过期数据将被彻底删除！")
+        logger.info("=" * 60)
+
+        # 1. 标记不活跃的listings
+        inactive_count = self.mark_listings_inactive(days=days)
+
+        # 2. 如果需要永久删除（注意：此功能暂未启用）
+        delete_count = 0
+        if permanent_delete:
+            try:
+                with self.db_lock:
+                    conn = sqlite3.connect(self.db_path)
+                    cursor = conn.cursor()
+
+                    cutoff_date = datetime.now() - timedelta(days=days)
+
+                    # 统计要删除的数量
+                    cursor.execute('''
+                        SELECT COUNT(*) FROM propertyguru
+                        WHERE is_active = 0 AND updated_at < ?
+                    ''', (cutoff_date,))
+                    delete_count = cursor.fetchone()[0]
+
+                    if delete_count > 0:
+                        # 永久删除
+                        cursor.execute('''
+                            DELETE FROM propertyguru
+                            WHERE is_active = 0 AND updated_at < ?
+                        ''', (cutoff_date,))
+                        conn.commit()
+                        logger.warning(f"🗑️  永久删除 {delete_count} 条过期数据")
+                    else:
+                        logger.info("没有需要删除的过期数据")
+
+            except Exception as e:
+                logger.error(f"删除过期数据失败: {str(e)}")
+            finally:
+                if conn:
+                    conn.close()
+
+        # 3. 获取统计信息
+        conn = None
+        try:
+            with self.db_lock:
+                conn = sqlite3.connect(self.db_path)
+                cursor = conn.cursor()
+
+                cursor.execute("SELECT COUNT(*) FROM propertyguru WHERE is_active = 1")
+                active_count = cursor.fetchone()[0]
+
+                cursor.execute("SELECT COUNT(*) FROM propertyguru WHERE is_active = 0")
+                inactive_total = cursor.fetchone()[0]
+
+                logger.info(f"📊 数据统计：")
+                logger.info(f"  - 活跃listings: {active_count}")
+                logger.info(f"  - 不活跃listings: {inactive_total}")
+                logger.info(f"  - 本次标记为不活跃: {inactive_count}")
+                if permanent_delete and delete_count > 0:
+                    logger.info(f"  - 本次永久删除: {delete_count}")
+
+        except Exception as e:
+            logger.error(f"获取统计信息失败: {str(e)}")
+        finally:
+            if conn:
+                conn.close()
+
+        logger.success("过期数据清理完成")
 
     # ==================== 导出功能 ====================
 
     def export_csv(self):
         """导出数据库数据到CSV文件"""
+        conn = None
         try:
             export_dir = os.path.join(self.data_dir, "export")
             os.makedirs(export_dir, exist_ok=True)

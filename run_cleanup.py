@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-重试失败记录脚本
-自动重试之前失败的请求
+定期清理过期数据脚本
+建议每周运行一次，清理超过30天未更新的listings
 """
 
 from propertyguru_pipeline import PropertyGuruPipeline
@@ -9,17 +9,17 @@ import sys
 
 def main():
     print("=" * 60)
-    print("PropertyGuru 失败记录重试")
+    print("PropertyGuru 数据清理")
     print("=" * 60)
 
     try:
-        # 创建Pipeline实例（使用10个线程）
-        pipeline = PropertyGuruPipeline(max_workers=10)
+        # 创建Pipeline实例
+        pipeline = PropertyGuruPipeline(max_workers=5)
 
-        # 执行失败重试流程
-        pipeline.retry_failed_records()
+        # 清理超过30天未更新的listings（网站默认保留1个月）
+        pipeline.cleanup_expired_data(days=30)
 
-        print("\n✅ 失败记录重试完成！")
+        print("\n✅ 数据清理完成！")
         return 0
 
     except KeyboardInterrupt:
@@ -33,3 +33,4 @@ def main():
 
 if __name__ == '__main__':
     sys.exit(main())
+
