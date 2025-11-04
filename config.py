@@ -17,7 +17,7 @@ class Config:
 
     # ==================== 数据存储配置 ====================
     DATA_DIR = 'data'
-    DB_NAME = 'propertyguru.db'
+    DB_NAME = ''
     HTML_DIR = 'data/html'
     JSON_DIR = 'data/json'
     EXPORT_DIR = 'data/export'

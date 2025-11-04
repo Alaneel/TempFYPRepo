@@ -1,7 +1,17 @@
 import scrapy
 import json
 import re
+import sys
+import os
+from datetime import datetime, timedelta
+
+# 添加项目根目录到 Python 路径
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
+sys.path.insert(0, PROJECT_ROOT)
+
 from ..items import ListingItem  # 导入我们刚刚定义的 Item
+from property_aggregator.database import SessionLocal
+from property_aggregator.models import Listing
 
 
 class PropertyGuruSpider(scrapy.Spider):
@@ -24,8 +34,22 @@ class PropertyGuruSpider(scrapy.Spider):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # 初始化会在 from_crawler 之后调用，所以这时还没有 self.settings
-        # 我们在 from_crawler 中处理 settings
+
+        # 增量更新模式参数
+        self.mode = kwargs.get('mode', 'INCREMENTAL')  # FULL, INCREMENTAL, EXPIRED
+        self.pages_without_new_threshold = 3  # 连续多少页无新房源时停止（增量模式）
+        self.pages_without_new_count = 0  # 当前连续无新房源的页面数
+        self.session = SessionLocal()
+
+        # 统计信息
+        self.stats = {
+            'new_listings': 0,
+            'updated_listings': 0,
+            'seen_listings': 0,
+            'pages_processed': 0,
+        }
+
+        self.logger.info(f"爬虫初始化完成 - 模式: {self.mode}")
 
     @classmethod
     def from_crawler(cls, crawler, *args, **kwargs):
@@ -67,10 +91,12 @@ class PropertyGuruSpider(scrapy.Spider):
     def parse_list_page(self, response):
         """
         解析列表页，提取房源链接和下一页链接
+        支持增量更新的早停机制
         """
         self.logger.info(f"正在解析列表页: {response.url}")
+        self.stats['pages_processed'] += 1
 
-        # 提取 __NEXT_DATA__ 中的 JSON 数据，其中包含大部分房源信息
+        # 提取 __NEXT_DATA__ 中的 JSON 数据
         data_json_str = response.xpath('//script[@id="__NEXT_DATA__"]/text()').get()
         if not data_json_str:
             self.logger.error(f"__NEXT_DATA__ JSON not found on {response.url}")
@@ -86,6 +112,9 @@ class PropertyGuruSpider(scrapy.Spider):
             'listingsData', [])
         self.logger.info(f"Found {len(listings_data)} listings on {response.url}")
 
+        # 在此页面发现的新房源数
+        new_in_page = 0
+
         for item_data in listings_data:
             listing_data = item_data.get('listingData', {})
             # 提取房源的 URL 路径
@@ -98,12 +127,33 @@ class PropertyGuruSpider(scrapy.Spider):
             # 根据当前列表页的 URL 判断房源类型 (出租或出售)
             listing_type = 'rent' if 'property-for-rent' in response.url else 'sale'
 
+            # --- 增量更新逻辑：检查此房源是否已存在 ---
+            source_url = f"https://www.propertyguru.com.sg/{url_path}"
+            existing = self._check_listing_exists(source_url)
+
+            if existing and self.mode == 'INCREMENTAL':
+                # 在增量模式下，遇到已存在的房源
+                self.stats['seen_listings'] += 1
+            else:
+                new_in_page += 1
+
             # 发送请求去解析每个房源的详情页
             yield response.follow(
                 url_path,
                 callback=self.parse_listing_detail,
                 meta={'listing_type': listing_type, 'playwright': True}
             )
+
+        # --- 增量更新的早停机制 ---
+        if self.mode == 'INCREMENTAL' and new_in_page == 0:
+            self.pages_without_new_count += 1
+            self.logger.info(f"此页面无新房源，计数: {self.pages_without_new_count}/{self.pages_without_new_threshold}")
+
+            if self.pages_without_new_count >= self.pages_without_new_threshold:
+                self.logger.info(f"连续 {self.pages_without_new_threshold} 页无新房源，停止爬取")
+                return
+        else:
+            self.pages_without_new_count = 0  # 重置计数
 
         # --- 分页处理 ---
         pagination_data = data_json.get('props', {}).get('pageProps', {}).get('pageData', {}).get('data', {}).get(
@@ -199,14 +249,37 @@ class PropertyGuruSpider(scrapy.Spider):
                     item['year_built'] = int(re.search(r'Built: (\d{4})', badge_text).group(1))
                 except:
                     pass
-            elif badge_name == "tenure" and not item.get('tenure'):
-                item['tenure'] = badge_text
-            elif badge_name == "unit_type" and not item.get('property_type'):
-                item['property_type'] = badge_text
 
-        # 确保所有字段都有值，或者设置为 None
-        for field in item.fields:
-            item.setdefault(field, None)
+        # --- 更新统计信息 ---
+        if self._check_listing_exists(item['source_url']):
+            self.stats['updated_listings'] += 1
+        else:
+            self.stats['new_listings'] += 1
 
-        self.logger.info(f"成功解析房源: {item.get('source_listing_id', 'unknown')}")
         yield item
+
+    def _check_listing_exists(self, source_url):
+        """检查房源是否已存在于数据库"""
+        try:
+            existing = self.session.query(Listing).filter_by(source_url=source_url).first()
+            return existing is not None
+        except Exception as e:
+            self.logger.error(f"检查房源是否存在时出错: {e}")
+            return False
+
+    def closed(self, reason):
+        """爬虫关闭时调用"""
+        self.session.close()
+
+        # 打印统计信息
+        self.logger.info("="*60)
+        self.logger.info("📊 爬虫运行统计")
+        self.logger.info("="*60)
+        self.logger.info(f"运行模式: {self.mode}")
+        self.logger.info(f"处理页面数: {self.stats['pages_processed']}")
+        self.logger.info(f"新增房源: {self.stats['new_listings']}")
+        self.logger.info(f"更新房源: {self.stats['updated_listings']}")
+        self.logger.info(f"已见房源: {self.stats['seen_listings']}")
+        self.logger.info(f"关闭原因: {reason}")
+        self.logger.info("="*60)
+

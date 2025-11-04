@@ -1,54 +1,67 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 """
-首次全量爬取脚本
-适合第一次使用时运行
+🚀 PropertyGuru 爬虫 - 全量爬取脚本
+
+进行完整的全量爬取，适用于：
+- 首次使用
+- 需要完整数据时
+- 定期大规模更新
+
+预计耗时: 6-12小时
 """
 
-from propertyguru_pipeline import PropertyGuruPipeline
 import sys
+import os
+import subprocess
+
+# 添加项目根目录到 Python 路径
+PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))
+sys.path.insert(0, PROJECT_ROOT)
+
+from property_aggregator.spider_config import SpiderConfig
+from loguru import logger
+
+# 配置日志
+logs_dir = os.path.join(PROJECT_ROOT, "logs")
+os.makedirs(logs_dir, exist_ok=True)
+logger.add(os.path.join(logs_dir, "run_full.log"), rotation="10 MB", level="INFO")
+
 
 def main():
-    print("=" * 60)
-    print("PropertyGuru 首次全量爬取")
-    print("警告: 这将爬取所有页面，需要较长时间（6-12小时）！")
-    print("=" * 60)
-
-    # 确认
-    response = input("\n确认开始全量爬取? (yes/no): ")
-    if response.lower() not in ['yes', 'y']:
-        print("已取消")
-        return 0
+    """主函数"""
+    print("\n" + "="*60)
+    print("🚀 PropertyGuru 爬虫 - 全量爬取")
+    print("="*60)
+    print("\n⚠️  警告: 这将进行完整的全量爬取")
+    print("预计耗时: 6-12小时")
+    print("\n如果想要快速增量更新，请改用: python run_spider.py")
+    print("="*60)
 
     try:
-        # 配置
-        config = {
-            'apikey': 'YOUR_API_KEY',  # 填入你的API密钥
-            'proxy': 'YOUR_PROXY',  # 填入你的代理
-        }
+        # 显示当前数据库状态
+        config = SpiderConfig(mode='FULL')
+        config.print_info()
 
-        # 创建Pipeline实例（使用10个线程）
-        pipeline = PropertyGuruPipeline(max_workers=10)
-        pipeline.apikey = config['apikey']
-        pipeline.proxy = config['proxy']
+        # 确认继续
+        response = input("\n确认要进行全量爬取吗？(y/n): ").strip().lower()
+        if response != 'y':
+            print("已取消")
+            sys.exit(0)
 
-        pipeline.run_pipeline(
-            step1_mode='full',  # Stage1: 全量爬取
-            step2_mode='incremental',  # Stage2: 补充代理信息
-            skip_step1=False,
-            skip_step2=False
-        )
+        # 运行爬虫
+        cmd = ["scrapy", "crawl", "propertyguru", "-a", "mode=FULL"]
+        logger.info(f"启动全量爬取: {' '.join(cmd)}")
+        print("\n📝 日志文件: logs/scrapy_propertyguru.log")
+        print("="*60 + "\n")
 
-        print("\n✅ 全量爬取完成！")
-        return 0
+        subprocess.run(cmd, cwd=PROJECT_ROOT)
 
-    except KeyboardInterrupt:
-        print("\n❌ 用户中断")
-        return 1
     except Exception as e:
-        print(f"\n❌ 错误: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        return 1
+        logger.error(f"运行出错: {e}")
+        print(f"❌ 错误: {e}")
+        sys.exit(1)
 
-if __name__ == '__main__':
-    sys.exit(main())
+
+if __name__ == "__main__":
+    main()
+
