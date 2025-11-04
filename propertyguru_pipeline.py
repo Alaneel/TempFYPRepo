@@ -35,7 +35,7 @@ class PropertyGuruPipeline:
         
         # Step 1 配置
         self.PAGES_WITHOUT_NEW_THRESHOLD = 5  # 连续无新记录页数阈值
-        self.TIME_WINDOW_DAYS = 3  # 时间窗口阈值（天数）
+        self.TIME_WINDOW_DAYS = 7  # 时间窗口阈值（天数）
         self.REVIEW_PAGES = 10  # 回溯检查页数
         
         # Step 2 配置
