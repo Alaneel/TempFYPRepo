@@ -213,7 +213,7 @@ class PropertyGuruPipeline:
 
                 cursor.execute('''
                     INSERT OR REPLACE INTO propertyguru_spider 
-                    (page_url, url_path, status, retry_count, last_error, crawled_at) 
+                    (property_id, url_path, status, retry_count, last_error, crawled_at) 
                     VALUES (?, ?, ?, ?, ?, ?)
                 ''', (property_id, url_path, status, retry_count, error_msg, datetime.now()))
 
