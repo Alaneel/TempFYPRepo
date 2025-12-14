@@ -207,7 +207,7 @@ class PropertyGuruPipeline:
                 conn = sqlite3.connect(self.db_path)
                 cursor = conn.cursor()
 
-                cursor.execute("SELECT retry_count FROM propertyguru_spider WHERE page_url = ?", (property_id,))
+                cursor.execute("SELECT retry_count FROM propertyguru_spider WHERE property_id = ?", (property_id,))
                 result = cursor.fetchone()
                 retry_count = result[0] + 1 if result else 0
 
@@ -234,7 +234,7 @@ class PropertyGuruPipeline:
                 conn = sqlite3.connect(self.db_path)
                 cursor = conn.cursor()
                 cursor.execute(
-                    "SELECT status FROM propertyguru_spider WHERE page_url = ? AND status = '已爬取'",
+                    "SELECT status FROM propertyguru_spider WHERE property_id = ? AND status = '已爬取'",
                     (property_id,)
                 )
                 result = cursor.fetchone()

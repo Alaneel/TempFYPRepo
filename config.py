@@ -13,7 +13,7 @@ class Config:
 
     # ==================== API配置（必填） ====================
     APIKEY = 'c739d557371a40bab543b2957f668b68'  # CloudBypass API密钥
-    PROXY = '90601315-res_s4f8bibc2sp:ikgcradf@gw-res.cloudbypass.com:1288'
+    PROXY = '90601315-res_sb7mnk3eb8k:ikgcradf@gw-res.cloudbypass.com:1288'
 
     # ==================== 数据存储配置 ====================
     DATA_DIR = 'data'
