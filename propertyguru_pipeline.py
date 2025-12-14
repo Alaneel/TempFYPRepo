@@ -1,3 +1,5 @@
+import random
+
 import requests
 import json
 import time
@@ -950,7 +952,7 @@ class PropertyGuruPipeline:
                     logger.error(f"[{index}/{total}] 处理异常: {url_path} - {str(exc)}")
                     failed += 1
 
-                time.sleep(0.1)  # 避免请求过快
+                time.sleep(2)  # 避免请求过快
 
         logger.success(f"多线程处理完成！总数: {total}, 成功: {success}, 失败: {failed}, 跳过: {skipped}")
 

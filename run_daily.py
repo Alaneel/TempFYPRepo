@@ -19,11 +19,11 @@ def main():
         # 配置
         config = {
             'apikey': 'c739d557371a40bab543b2957f668b68',  # 填入你的API密钥
-            'proxy': '90601315-res_skayt37d6yb:ikgcradf@gw-res.cloudbypass.com:1288'
+            'proxy': '90601315-res_sdk7ahw7y3z:ikgcradf@gw-res.cloudbypass.com:1288'
         }
 
         # 创建Pipeline实例（使用5个线程）
-        pipeline = PropertyGuruPipeline(max_workers=5)
+        pipeline = PropertyGuruPipeline(max_workers=1)
         pipeline.apikey = config['apikey']
         pipeline.proxy = config['proxy']
 
