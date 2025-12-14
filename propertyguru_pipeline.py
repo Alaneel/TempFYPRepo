@@ -406,7 +406,7 @@ class PropertyGuruPipeline:
             if conn:
                 conn.close()
 
-    @func_set_timeout(60)
+    @func_set_timeout(120)
     def get_request(self, method, url, headers):
         return requests.request(method, url, headers=headers, verify=False)
 
