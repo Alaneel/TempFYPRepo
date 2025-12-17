@@ -14,7 +14,7 @@ def main():
 
     try:
         # 创建Pipeline实例（使用10个线程）
-        pipeline = PropertyGuruPipeline(max_workers=10)
+        pipeline = PropertyGuruPipeline(max_workers=1)
 
         # 执行失败重试流程
         pipeline.retry_failed_records()

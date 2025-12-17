@@ -22,8 +22,8 @@ class PropertyGuruPipeline:
     """PropertyGuru 爬虫完整流程 - 支持多线程"""
 
     def __init__(self, max_workers=5):
-        self.apikey = ''
-        self.proxy = ''
+        self.apikey = 'c739d557371a40bab543b2957f668b68'
+        self.proxy = '90601315-res_sy7e4thy68w:ikgcradf@gw-res.cloudbypass.com:1288'
         self.data_dir = "data"
         self.html_dir = os.path.join(self.data_dir, "html")
         self.json_dir = os.path.join(self.data_dir, "json")
