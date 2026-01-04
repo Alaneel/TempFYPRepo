@@ -22,8 +22,8 @@ def main():
     try:
         # 配置
         config = {
-            'apikey': 'c739d557371a40bab543b2957f668b68',  # 填入你的API密钥
-            'proxy': '90601315-res_sx5prizpxmi:ikgcradf@gw-res.cloudbypass.com:1288'
+            'apikey': '',  # 填入你的API密钥
+            'proxy': ''
         }
 
         # 创建Pipeline实例（使用10个线程）
