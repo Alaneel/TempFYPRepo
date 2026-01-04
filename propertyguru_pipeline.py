@@ -427,6 +427,9 @@ class PropertyGuruPipeline:
                     "x-cb-proxy": f"{self.proxy}",
                 }
 
+                if attempt > 0:
+                    time.sleep(2)
+
                 response = self.get_request(method, url, headers)
 
                 if response and response.status_code == 200:
@@ -607,25 +610,16 @@ class PropertyGuruPipeline:
 
         return consecutive_exists, new_records
 
-    def get_data(self, url_path, page, html_name, force_update=False):
+    def get_data(self, url_path, page, html_name, force_update=False, max_retries=5):
         """获取页面数据"""
-        # For list pages, we use the url_path as the property_id since it's a page URL
-        page_id = url_path
-
-        if not force_update and self.check_spider_record(page_id):
-            logger.info(f"页面已爬取: {url_path}")
-            return 0, 0
-
         logger.info(f"开始请求：{url_path}")
-        response = self.fetch(url_path)
+        response = self.fetch(url_path, max_try=max_retries)
         if not response:
-            logger.error(f"请求失败：{url_path}")
-            self.add_failed_record(url_path, "请求失败")
-            return 0, 0
+            logger.error(f"❌ 列表页请求彻底失败（已重试{max_retries}次）：{url_path}")
+            return -1, -1
 
         logger.info(f"请求成功：{url_path}")
         consecutive_exists, new_records = self.analysis_list_page(response, page, html_name, force_update)
-        self.insert_spider_record(page_id, url_path, '已爬取')
 
         return consecutive_exists, new_records
 
@@ -649,7 +643,11 @@ class PropertyGuruPipeline:
 
         for page in range(start_page, end_page):
             url_path = f'{category}/{page}'
-            consecutive_exists, new_records = self.get_data(url_path, page, category)
+            consecutive_exists, new_records = self.get_data(url_path, page, category, max_retries=10)
+
+            if consecutive_exists == -1:
+                logger.error(f"⚠️ 跳过第 {page} 页（网络请求失败），不计入停止阈值")
+                continue
 
             if new_records == 0:
                 pages_without_new += 1
