@@ -18,12 +18,12 @@ def main():
     try:
         # 配置
         config = {
-            'apikey': 'YOUR_API_KEY',  # 填入你的API密钥
-            'proxy': 'YOUR_PROXY',  # 填入你的代理
+            'apikey': '',  # 填入你的API密钥
+            'proxy': ''
         }
 
         # 创建Pipeline实例（使用5个线程）
-        pipeline = PropertyGuruPipeline(max_workers=5)
+        pipeline = PropertyGuruPipeline(max_workers=1)
         pipeline.apikey = config['apikey']
         pipeline.proxy = config['proxy']
 
