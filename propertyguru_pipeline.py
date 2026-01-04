@@ -23,7 +23,7 @@ class PropertyGuruPipeline:
 
     def __init__(self, max_workers=5):
         self.apikey = 'c739d557371a40bab543b2957f668b68'
-        self.proxy = '90601315-res_sy7e4thy68w:ikgcradf@gw-res.cloudbypass.com:1288'
+        self.proxy = '90601315-res_sx5prizpxmi:ikgcradf@gw-res.cloudbypass.com:1288'
         self.data_dir = "data"
         self.html_dir = os.path.join(self.data_dir, "html")
         self.json_dir = os.path.join(self.data_dir, "json")
@@ -209,13 +209,13 @@ class PropertyGuruPipeline:
                 conn = sqlite3.connect(self.db_path)
                 cursor = conn.cursor()
 
-                cursor.execute("SELECT retry_count FROM propertyguru_spider WHERE property_id = ?", (property_id,))
+                cursor.execute("SELECT retry_count FROM propertyguru_spider WHERE url_path = ?", (property_id,))
                 result = cursor.fetchone()
                 retry_count = result[0] + 1 if result else 0
 
                 cursor.execute('''
                     INSERT OR REPLACE INTO propertyguru_spider 
-                    (property_id, url_path, status, retry_count, last_error, crawled_at) 
+                    (page_url, url_path, status, retry_count, last_error, crawled_at) 
                     VALUES (?, ?, ?, ?, ?, ?)
                 ''', (property_id, url_path, status, retry_count, error_msg, datetime.now()))
 
@@ -236,7 +236,7 @@ class PropertyGuruPipeline:
                 conn = sqlite3.connect(self.db_path)
                 cursor = conn.cursor()
                 cursor.execute(
-                    "SELECT status FROM propertyguru_spider WHERE property_id = ? AND status = '已爬取'",
+                    "SELECT status FROM propertyguru_spider WHERE url_path = ? AND status = '已爬取'",
                     (property_id,)
                 )
                 result = cursor.fetchone()
