@@ -1,5 +1,4 @@
 import random
-
 import requests
 import json
 import time
@@ -15,39 +14,47 @@ from datetime import datetime, timedelta
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from threading import Lock
 
-logger.add("logs/propertyguru_pipeline.log", level="INFO")
+try:
+    from config import Config
+except ImportError:
+    logger.error("找不到 config.py，请确保配置文件存在！")
+    exit(1)
 
+logger.add(os.path.join(Config.LOGS_DIR, "propertyguru_pipeline.log"),
+           level=Config.LOG_LEVEL,
+           rotation=Config.LOG_ROTATION,
+           retention=Config.LOG_RETENTION)
 
 class PropertyGuruPipeline:
     """PropertyGuru 爬虫完整流程 - 支持多线程"""
 
-    def __init__(self, max_workers=5):
-        self.apikey = ''
-        self.proxy = ''
-        self.data_dir = "data"
-        self.html_dir = os.path.join(self.data_dir, "html")
-        self.json_dir = os.path.join(self.data_dir, "json")
-        
+    def __init__(self, max_workers=None):
+        # 优先使用传入的参数，否则使用 Config 默认值
+        self.max_workers = max_workers if max_workers else Config.MAX_WORKERS
+
+        self.apikey = Config.APIKEY
+        self.proxy = Config.PROXY
+
+        # 路径配置
+        self.data_dir = Config.DATA_DIR
+        self.html_dir = Config.HTML_DIR
+        self.json_dir = Config.JSON_DIR
+        self.db_path = os.path.join(self.data_dir, Config.DB_NAME)
+
         os.makedirs(self.html_dir, exist_ok=True)
         os.makedirs(self.json_dir, exist_ok=True)
         os.makedirs(self.data_dir, exist_ok=True)
-        os.makedirs("logs", exist_ok=True)
-        
-        # 使用新的数据库文件名，避免与其他分支冲突
-        self.db_path = os.path.join(self.data_dir, "propertyguru_v2.db")
+        os.makedirs(Config.LOGS_DIR, exist_ok=True)
 
         # Step 1 配置
-        self.PAGES_WITHOUT_NEW_THRESHOLD = 5  # 连续无新记录页数阈值
-        self.TIME_WINDOW_DAYS = 7  # 时间窗口阈值（天数）
-        self.REVIEW_PAGES = 10  # 回溯检查页数
-        
-        # Step 2 配置
-        self.AGENT_INFO_EXPIRY_DAYS = 90  # 代理信息过期时间（天数）
+        self.PAGES_WITHOUT_NEW_THRESHOLD = Config.PAGES_WITHOUT_NEW_THRESHOLD
+        self.TIME_WINDOW_DAYS = Config.TIME_WINDOW_DAYS
+        self.REVIEW_PAGES = Config.REVIEW_PAGES
 
-        # 多线程配置
-        self.max_workers = max_workers
-        self.db_lock = Lock()  # 数据库操作锁
-        
+        # Step 2 配置
+        self.AGENT_INFO_EXPIRY_DAYS = Config.AGENT_INFO_EXPIRY_DAYS
+
+        self.db_lock = Lock()
         self.init_database()
 
     def init_database(self):
@@ -419,16 +426,16 @@ class PropertyGuruPipeline:
                 url = f"https://api.cloudbypass.com/{url_path}"
                 method = "GET"
                 headers = {
-                    "x-cb-apikey": f"{self.apikey}",
+                    "x-cb-apikey": self.apikey,
                     "x-cb-host": r"www.propertyguru.com.sg",
                     "x-cb-version": r"2",
                     "x-cb-part": r"0",
                     "x-cb-fp": r"chrome",
-                    "x-cb-proxy": f"{self.proxy}",
+                    "x-cb-proxy": self.proxy,
                 }
 
                 if attempt > 0:
-                    time.sleep(2)
+                    if attempt > 0: time.sleep(Config.REQUEST_DELAY * 2)
 
                 response = self.get_request(method, url, headers)
 
@@ -623,21 +630,49 @@ class PropertyGuruPipeline:
 
         return consecutive_exists, new_records
 
-    def crawl_category(self, category, start_page, end_page, incremental=True):
-        """爬取某个分类（支持智能增量更新）"""
-        if incremental:
-            last_page, _ = self.get_crawl_progress(category)
+    def reset_crawl_progress(self, category):
+        """强制重置爬取进度（用于开启新的全量爬取）"""
+        try:
+            with self.db_lock:
+                conn = sqlite3.connect(self.db_path)
+                cursor = conn.cursor()
+                cursor.execute(
+                    "UPDATE crawl_progress SET last_page = 1, last_update = ? WHERE category = ?",
+                    (datetime.now(), category)
+                )
+                conn.commit()
+                logger.warning(f"🔄 已重置 {category} 的进度为第 1 页")
+        except Exception as e:
+            logger.error(f"重置进度失败: {str(e)}")
+        finally:
+            if conn:
+                conn.close()
 
+    def crawl_category(self, category, start_page, end_page, incremental=True, resume=False):
+        """
+        参数:
+        - incremental: 是否开启智能停止（遇到旧数据就停）。日常用 True，全量用 False。
+        - resume: 是否从数据库读取上次中断的进度。日常用 False，全量断点续传用 True。
+        """
+
+        # 只有在明确要求"断点续传"时，才读取数据库进度
+        if resume:
+            last_page, _ = self.get_crawl_progress(category)
             if last_page > 1:
                 review_start = max(1, last_page - self.REVIEW_PAGES)
-                logger.info(f"🔄 回溯检查第 {review_start}-{last_page - 1} 页（共{last_page - review_start}页）")
 
                 for page in range(review_start, last_page):
                     url_path = f'{category}/{page}'
                     self.get_data(url_path, page, category, force_update=True)
-                    time.sleep(1)
+                    time.sleep(Config.REQUEST_DELAY)
 
                 start_page = last_page
+        else:
+            start_page = 1
+            if incremental:
+                logger.info(f"⚡ [智能增量] 从第 1 页开始，直到连续 {self.PAGES_WITHOUT_NEW_THRESHOLD} 页无新数据")
+            else:
+                logger.info(f"📊 [全量爬取] 从第 1 页开始，目标爬至 {end_page} 页")
 
         pages_without_new = 0
 
@@ -649,38 +684,43 @@ class PropertyGuruPipeline:
                 logger.error(f"⚠️ 跳过第 {page} 页（网络请求失败），不计入停止阈值")
                 continue
 
-            if new_records == 0:
-                pages_without_new += 1
-                logger.info(f"⚠️  第 {page} 页无新记录（连续第{pages_without_new}页）")
-            else:
-                pages_without_new = 0
-                logger.info(f"✅ 第 {page} 页新增 {new_records} 条记录")
+            if incremental:
+                if new_records == 0:
+                    pages_without_new += 1
+                    logger.info(f"⚠️  第 {page} 页无新记录（连续第{pages_without_new}页）")
+                else:
+                    pages_without_new = 0
+                    logger.info(f"✅ 第 {page} 页新增 {new_records} 条记录")
 
-            if pages_without_new >= self.PAGES_WITHOUT_NEW_THRESHOLD:
-                logger.warning(
-                    f"连续 {pages_without_new} 页无新记录（阈值: {self.PAGES_WITHOUT_NEW_THRESHOLD}），停止爬取"
-                )
-                break
+                if pages_without_new >= self.PAGES_WITHOUT_NEW_THRESHOLD:
+                    logger.warning(
+                        f"连续 {pages_without_new} 页无新记录（阈值: {self.PAGES_WITHOUT_NEW_THRESHOLD}），停止爬取"
+                    )
+                    break
 
             self.update_crawl_progress(category, page + 1, end_page - 1)
-            time.sleep(1)
+            time.sleep(Config.REQUEST_DELAY)
 
         logger.success(f"{category} 爬取完成")
 
-    def step1_crawl_listings(self, mode='smart_incremental'):
+    def step1_crawl_listings(self, mode='smart_incremental', resume=False):
         """Step 1: 爬取房产列表"""
         logger.info("=" * 60)
-        logger.info("Step 1: 开始爬取房产列表")
+        logger.info(f"Step 1: 开始爬取房产列表 (Mode={mode}, Resume={resume})")
         logger.info("=" * 60)
 
+        # 读取 Config 中的页码配置
+        rent_range = (Config.RENT_START_PAGE, Config.RENT_END_PAGE)
+        sale_range = (Config.SALE_START_PAGE, Config.SALE_END_PAGE)
+
         if mode == 'full':
-            logger.info("📊 执行全量爬取")
-            self.crawl_category('property-for-rent', 1, 1484, incremental=False)
-            self.crawl_category('property-for-sale', 1, 2663, incremental=False)
+            # 全量模式：incremental=False
+            self.crawl_category('property-for-rent', rent_range[0], rent_range[1], incremental=False, resume=resume)
+            self.crawl_category('property-for-sale', sale_range[0], sale_range[1], incremental=False, resume=resume)
         else:
-            logger.info("⚡ 执行增量爬取")
-            self.crawl_category('property-for-rent', 1, 1484, incremental=True)
-            self.crawl_category('property-for-sale', 1, 2663, incremental=True)
+            # 增量模式：incremental=True，强制 resume=False (因为要抓最新)
+            self.crawl_category('property-for-rent', rent_range[0], rent_range[1], incremental=True, resume=False)
+            self.crawl_category('property-for-sale', sale_range[0], sale_range[1], incremental=True, resume=False)
 
         logger.success("Step 1 完成：房产列表爬取完成")
 
@@ -717,7 +757,7 @@ class PropertyGuruPipeline:
     def get_expired_records(self, days=None):
         """获取代理信息过期的记录"""
         if days is None:
-            days = self.AGENT_INFO_EXPIRY_DAYS
+            days = Config.AGENT_INFO_EXPIRY_DAYS
 
         try:
             with self.db_lock:
@@ -966,7 +1006,7 @@ class PropertyGuruPipeline:
             self.process_records_multithread(url_paths, force_update=False)
 
         elif mode == 'expired':
-            days = expiry_days if expiry_days else self.AGENT_INFO_EXPIRY_DAYS
+            days = expiry_days if expiry_days else Config.AGENT_INFO_EXPIRY_DAYS
             logger.info(f"⏰ 过期更新：更新超过{days}天的代理信息")
             url_paths = self.get_expired_records(days)
             self.process_records_multithread(url_paths, force_update=True)
@@ -1209,16 +1249,18 @@ class PropertyGuruPipeline:
         """导出数据库数据到CSV文件"""
         conn = None
         try:
-            export_dir = os.path.join(self.data_dir, "export")
+            export_dir = Config.EXPORT_DIR
             os.makedirs(export_dir, exist_ok=True)
 
             conn = sqlite3.connect(self.db_path)
             query = "SELECT * FROM propertyguru"
             df = pd.read_sql_query(query, conn)
 
+            encoding = Config.EXPORT_ENCODING
+
             timestamp = time.strftime("%Y%m%d_%H%M%S")
             csv_path = os.path.join(export_dir, f"propertyguru_export_{timestamp}.csv")
-            df.to_csv(csv_path, index=False, encoding='utf-8-sig')
+            df.to_csv(csv_path, index=False, encoding=encoding)
 
             rent_df = df[df['buy_rent'] == 'property-for-rent']
             sale_df = df[df['buy_rent'] == 'property-for-sale']
@@ -1265,8 +1307,8 @@ class PropertyGuruPipeline:
 
     # ==================== 主流程 ====================
 
-    def run_pipeline(self, step1_mode='smart_incremental', step2_mode='incremental', 
-                    step2_expiry_days=None, skip_step1=False, skip_step2=False):
+    def run_pipeline(self, step1_mode='smart_incremental', step2_mode='incremental',
+                     step2_expiry_days=None, skip_step1=False, skip_step2=False, resume=False):
         """
         运行完整的Pipeline
         
@@ -1286,13 +1328,14 @@ class PropertyGuruPipeline:
         try:
             # Step 1: 爬取列表页
             if not skip_step1:
-                self.step1_crawl_listings(mode=step1_mode)
+                self.step1_crawl_listings(mode=step1_mode, resume=resume)
             else:
                 logger.info("跳过 Step 1")
 
             # Step 2: 爬取详细页（多线程）
             if not skip_step2:
-                self.step2_crawl_agent_info(mode=step2_mode, expiry_days=step2_expiry_days)
+                days = step2_expiry_days if step2_expiry_days else Config.AGENT_INFO_EXPIRY_DAYS
+                self.step2_crawl_agent_info(mode=step2_mode, expiry_days=days)
             else:
                 logger.info("跳过 Step 2")
 

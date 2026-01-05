@@ -13,7 +13,7 @@ def main():
     print("=" * 60)
 
     try:
-        # 创建Pipeline实例（使用10个线程）
+        # 创建Pipeline实例（使用1个线程）
         pipeline = PropertyGuruPipeline(max_workers=1)
 
         # 执行失败重试流程
