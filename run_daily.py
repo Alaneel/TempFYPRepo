@@ -27,7 +27,7 @@ def main():
 
     try:
         # 初始化
-        pipeline = PropertyGuruPipeline()
+        pipeline = PropertyGuruPipeline(max_workers=1)
 
         print(f"🚀 开始执行智能增量更新 (阈值: {Config.PAGES_WITHOUT_NEW_THRESHOLD} 页无更新即停)")
 

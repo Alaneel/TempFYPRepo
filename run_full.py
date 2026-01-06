@@ -51,7 +51,7 @@ def main():
 
     try:
         # 初始化 Pipeline (参数自动从 Config 读取)
-        pipeline = PropertyGuruPipeline()
+        pipeline = PropertyGuruPipeline(max_workers=1)
 
         # 如果是全新模式，先重置进度
         if not resume_mode:
