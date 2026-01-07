@@ -12,8 +12,8 @@ class Config:
     """配置类 - 统一管理所有配置参数"""
 
     # ==================== API配置（必填） ====================
-    APIKEY = ''  # CloudBypass API密钥
-    PROXY = ''
+    APIKEY = 'c739d557371a40bab543b2957f668b68'  # CloudBypass API密钥
+    PROXY = '90601315-res_s3i2zjp5aca:ikgcradf@gw-res.cloudbypass.com:1288'
 
     # ==================== 数据存储配置 ====================
     DATA_DIR = 'data'
@@ -26,11 +26,11 @@ class Config:
     # ==================== 多线程配置 ====================
     MAX_WORKERS = 5  # Stage2详情页爬取的线程数（建议3-10）
     REQUEST_TIMEOUT = 60  # 请求超时时间（秒）
-    REQUEST_DELAY = 0.5  # 请求间隔（秒），避免请求过快
+    REQUEST_DELAY = 1  # 请求间隔（秒），避免请求过快
 
     # ==================== Stage1配置（列表页爬取） ====================
     PAGES_WITHOUT_NEW_THRESHOLD = 5  # 连续N页无新记录后停止
-    TIME_WINDOW_DAYS = 3  # 时间窗口（天），超过此时间自动全量爬取
+    TIME_WINDOW_DAYS = 7  # 时间窗口（天），超过此时间自动全量爬取
     REVIEW_PAGES = 10  # 断点续爬时回溯检查的页数
 
     # 页数范围
@@ -40,7 +40,7 @@ class Config:
     SALE_END_PAGE = 2663
 
     # ==================== Stage2配置（详情页爬取） ====================
-    AGENT_INFO_EXPIRY_DAYS = 90  # 代理信息过期天数（超过此时间需要更新）
+    AGENT_INFO_EXPIRY_DAYS = 30  # 代理信息过期天数（超过此时间需要更新）
     MAX_RETRIES = 3  # 失败记录最大重试次数
 
     # ==================== 日志配置 ====================
