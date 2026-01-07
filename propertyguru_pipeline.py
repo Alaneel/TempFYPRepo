@@ -152,7 +152,7 @@ class PropertyGuruPipeline:
                 conn.close()
 
     # ==================== Step 1: 列表页爬取 ====================
-    
+
     def get_crawl_progress(self, category):
         """获取爬取进度，考虑时间窗口"""
         try:
@@ -445,6 +445,9 @@ class PropertyGuruPipeline:
 
                 if response and response.status_code == 200:
                     return response
+                elif response and response.status_code == 404:
+                    logger.warning(f"⚠️ 页面返回 404 (不存在): {url_path}")
+                    return response  # 把 404 的 response 返回回去，让上层处理
                 else:
                     logger.error(f"请求失败第 {attempt + 1} 次: {url_path}")
                     if response:
@@ -467,7 +470,7 @@ class PropertyGuruPipeline:
         with open(os.path.join(self.html_dir, f'{html_name}_page_{page}.html'), 'w', encoding='utf-8') as f:
             f.write(response.text)
 
-        data_json = re.findall('<script id="__NEXT_DATA__" type="application/json".*?>(.*?)</script>', 
+        data_json = re.findall('<script id="__NEXT_DATA__" type="application/json".*?>(.*?)</script>',
                               response.text, re.S)
         if not data_json:
             logger.error(f"data_json 获取失败：{page}")
@@ -867,6 +870,10 @@ class PropertyGuruPipeline:
         """获取详细页代理信息"""
         try:
             response = self.fetch(url_path, max_try=2)
+
+            if response and response.status_code == 404:
+                return "GONE"  # 返回一个特殊标记
+
             if not response:
                 logger.error(f"请求失败：{url_path}")
                 return None
@@ -923,6 +930,11 @@ class PropertyGuruPipeline:
 
         # 获取代理信息
         agent_detail = self.get_property_detail(url_path)
+
+        if agent_detail == "GONE":
+            self.deactivate_record(url_path)
+            self.insert_spider_record(url_path, url_path, '404_下架')
+            return {'status': 'skipped', 'url_path': url_path}
 
         if not agent_detail:
             self.add_failed_record(url_path, "获取代理信息失败")
@@ -983,7 +995,7 @@ class PropertyGuruPipeline:
         with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
             # 提交所有任务
             future_to_url = {
-                executor.submit(self.process_single_record, url_path, force_update): url_path 
+                executor.submit(self.process_single_record, url_path, force_update): url_path
                 for url_path in url_paths
             }
 
@@ -992,7 +1004,7 @@ class PropertyGuruPipeline:
                 url_path = future_to_url[future]
                 try:
                     result = future.result()
-                    
+
                     if result['status'] == 'success':
                         success += 1
                         logger.success(f"[{index}/{total}] ✅ 成功: {url_path}")
@@ -1002,11 +1014,11 @@ class PropertyGuruPipeline:
                     elif result['status'] == 'skipped':
                         skipped += 1
                         logger.info(f"[{index}/{total}] ⏭️  跳过: {url_path}")
-                        
+
                     # 显示进度
                     if index % 10 == 0:
                         logger.info(f"进度: {index}/{total} | 成功: {success} | 失败: {failed} | 跳过: {skipped}")
-                        
+
                 except Exception as exc:
                     logger.error(f"[{index}/{total}] 处理异常: {url_path} - {str(exc)}")
                     failed += 1
@@ -1153,7 +1165,7 @@ class PropertyGuruPipeline:
                         # 异常时也要更新失败记录
                         self.update_failed_record(url_path, f"处理异常: {str(exc)}")
                         failed += 1
-            
+
             logger.success(f"详细页重试完成！总数: {total}, 成功: {success}, 失败: {failed}")
         else:
             logger.info("没有失败的详细页需要重试")
@@ -1268,6 +1280,34 @@ class PropertyGuruPipeline:
 
         logger.success("过期数据清理完成")
 
+    def deactivate_record(self, url_path):
+        """
+        [新功能] 将记录标记为下架（is_active=0）
+        并不物理删除，而是逻辑删除，保留历史数据供分析
+        """
+        try:
+            with self.db_lock:
+                conn = sqlite3.connect(self.db_path)
+                cursor = conn.cursor()
+
+                # 1. 标记主表为不活跃
+                cursor.execute('''
+                               UPDATE propertyguru
+                               SET is_active  = 0,
+                                   updated_at = ?
+                               WHERE url_path = ?
+                               ''', (datetime.now(), url_path))
+
+                # 2. (可选) 如果你不想在 spider 表里留痕迹，也可以删掉
+                # 但建议保留，只要 status 不写 '已爬取' 就行
+
+                conn.commit()
+                logger.warning(f"📉 监测到房源下架，已标记为不活跃: {url_path}")
+        except Exception as e:
+            logger.error(f"标记下架失败: {str(e)}")
+        finally:
+            if conn: conn.close()
+
     # ==================== 导出功能 ====================
 
     def export_csv(self):
@@ -1336,7 +1376,7 @@ class PropertyGuruPipeline:
                      step2_expiry_days=None, skip_step1=False, skip_step2=False, resume=False):
         """
         运行完整的Pipeline
-        
+
         参数:
         - step1_mode: Step 1模式 ('full' 或 'smart_incremental')
         - step2_mode: Step 2模式 ('incremental' 或 'expired')
@@ -1345,7 +1385,7 @@ class PropertyGuruPipeline:
         - skip_step2: 是否跳过Step 2
         """
         start_time = time.time()
-        
+
         logger.info("🚀" * 30)
         logger.info("PropertyGuru Pipeline 启动")
         logger.info("🚀" * 30)
@@ -1389,9 +1429,9 @@ class PropertyGuruPipeline:
 if __name__ == '__main__':
     # 创建Pipeline实例（设置线程数）
     pipeline = PropertyGuruPipeline(max_workers=10)
-    
+
     # ========== 使用场景示例 ==========
-    
+
     # 场景1: 完整流程（增量模式）- 推荐日常使用
     pipeline.run_pipeline(
         step1_mode='smart_incremental',  # 智能增量爬取列表
@@ -1399,26 +1439,26 @@ if __name__ == '__main__':
         skip_step1=False,
         skip_step2=False
     )
-    
+
     # 场景2: 只运行Step 1（爬取列表）
     # pipeline.run_pipeline(
     #     step1_mode='smart_incremental',
     #     skip_step2=True
     # )
-    
+
     # 场景3: 只运行Step 2（更新代理信息）
     # pipeline.run_pipeline(
     #     step2_mode='incremental',
     #     skip_step1=True
     # )
-    
+
     # 场景4: 更新过期的代理信息（90天）
     # pipeline.run_pipeline(
     #     step2_mode='expired',
     #     step2_expiry_days=90,
     #     skip_step1=True
     # )
-    
+
     # 场景5: 全量爬取
     # pipeline.run_pipeline(
     #     step1_mode='full',
