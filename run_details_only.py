@@ -55,7 +55,7 @@ def main():
 
         # 运行 Pipeline
         pipeline.run_pipeline(
-            step1_mode='smart_incremental',  # Step 1 被跳过，此参数不生效但需占位
+            step1_mode='',  # Step 1 被跳过，此参数不生效但需占位
             step2_mode=mode,  # 核心参数：incremental 或 expired
             skip_step1=True,  # ✅ 关键：跳过列表页
             skip_step2=False,  # ✅ 关键：执行详情页
