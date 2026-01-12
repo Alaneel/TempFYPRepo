@@ -4,7 +4,7 @@
 自动重试之前失败的请求
 """
 
-from propertyguru_pipeline import PropertyGuruPipeline
+from pipeline import PropertyGuruPipeline
 import sys
 
 def main():

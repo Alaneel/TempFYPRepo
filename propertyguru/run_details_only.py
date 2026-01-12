@@ -6,7 +6,7 @@
 3. 集成 Config 配置与崩溃抢救机制
 """
 
-from propertyguru_pipeline import PropertyGuruPipeline
+from pipeline import PropertyGuruPipeline
 from config import Config
 import sys
 

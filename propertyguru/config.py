@@ -16,12 +16,18 @@ class Config:
     PROXY = '90601315-res_si5dwhkxnx5:ikgcradf@gw-res.cloudbypass.com:1288'
 
     # ==================== 数据存储配置 ====================
-    DATA_DIR = 'data'
+    import os
+    # Base dir is the project root (one level up from this file's directory)
+    BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    
+    # ==================== 数据存储配置 ====================
+    # Store data in project_root/data/propertyguru
+    DATA_DIR = os.path.join(BASE_DIR, 'data', 'propertyguru')
     DB_NAME = 'propertyguru.db'
-    HTML_DIR = 'data/html'
-    JSON_DIR = 'data/json'
-    EXPORT_DIR = 'data/export'
-    LOGS_DIR = 'logs'
+    HTML_DIR = os.path.join(DATA_DIR, 'html')
+    JSON_DIR = os.path.join(DATA_DIR, 'json')
+    EXPORT_DIR = os.path.join(DATA_DIR, 'export')
+    LOGS_DIR = os.path.join(BASE_DIR, 'logs')
 
     # ==================== 多线程配置 ====================
     MAX_WORKERS = 5  # Stage2详情页爬取的线程数（建议3-10）
