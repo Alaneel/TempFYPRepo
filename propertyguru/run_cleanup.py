@@ -4,7 +4,7 @@
 建议每周运行一次，清理超过30天未更新的listings
 """
 
-from propertyguru_pipeline import PropertyGuruPipeline
+from pipeline import PropertyGuruPipeline
 import sys
 
 def main():

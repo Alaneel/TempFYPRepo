@@ -6,7 +6,7 @@
 3. 包含崩溃自动导出功能
 """
 
-from propertyguru_pipeline import PropertyGuruPipeline
+from pipeline import PropertyGuruPipeline
 from config import Config
 import sys
 

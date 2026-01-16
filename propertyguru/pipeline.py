@@ -1400,6 +1400,7 @@ class PropertyGuruPipeline:
             # Step 2: 爬取详细页（多线程）
             if not skip_step2:
                 days = step2_expiry_days if step2_expiry_days else Config.AGENT_INFO_EXPIRY_DAYS
+                recent_days_limit = None
 
                 if step1_mode == 'smart_incremental' and step2_mode == 'incremental':
                     recent_days_limit = 1
