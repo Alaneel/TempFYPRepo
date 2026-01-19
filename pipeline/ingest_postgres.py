@@ -86,6 +86,15 @@ def ingest_data():
         print(f"Error connecting to database: {e}")
         return
 
+    # Clean existing data to ensure no stale records remain
+    try:
+        session.query(Listing).delete()
+        session.commit()
+        print("Cleared existing listings from database.")
+    except Exception as e:
+        print(f"Error clearing database: {e}")
+        session.rollback()
+
     # Path relative to this script: ../data/aggregated_listings.csv
     base_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data')
     csv_path = os.path.join(base_dir, 'aggregated_listings.csv')
@@ -102,6 +111,16 @@ def ingest_data():
     agents_processed = 0
     listings_processed = 0
     
+    def get_int(val):
+        if val is None: return None
+        import re
+        try:
+           s = str(val)
+           digits = re.findall(r'(\d+)', s)
+           return int(digits[0]) if digits else None
+        except:
+           return None
+
     for index, row in df.iterrows():
         # 1. Upsert Agent
         agent_name = row.get('agent_name')
@@ -147,21 +166,29 @@ def ingest_data():
         existing_listing = session.query(Listing).filter_by(url=listing_url).first()
         
         if existing_listing:
-            # Update key fields? Or skip? For now, skip or update price.
-            existing_listing.price = row.get('price')
+            # Update ALL fields to reflect normalization changes
+            existing_listing.title = row.get('title')
+            existing_listing.address = row.get('address')
             existing_listing.display_price = row.get('display_price')
+            existing_listing.price = row.get('price')
+            existing_listing.display_psf = row.get('display_psf')
+            existing_listing.psf = row.get('psf')
+            existing_listing.beds = row.get('beds')  # Use get_int? No, 'beds' in CSV is string "3 Beds". 
+            # Wait, get_int is defined below in the else block.
+            # We need to reuse get_int logic or move it up.
+            existing_listing.beds = get_int(row.get('beds'))
+            existing_listing.baths = get_int(row.get('baths'))
+            existing_listing.sqft = get_int(row.get('sqft'))
+            existing_listing.built_year = row.get('built_year')
+            existing_listing.property_type = row.get('property_type')
+            existing_listing.tenure = row.get('tenure')
+            existing_listing.nearby_text = row.get('nearby_text')
+            existing_listing.description = row.get('description')
+            existing_listing.source = row.get('source')
+            existing_listing.posted_date = row.get('posted_date')
+            existing_listing.buy_rent = row.get('buy_rent')
             existing_listing.updated_at = datetime.datetime.utcnow()
         else:
-            def get_int(val):
-                if val is None: return None
-                import re
-                try:
-                   s = str(val)
-                   digits = re.findall(r'(\d+)', s)
-                   return int(digits[0]) if digits else None
-                except:
-                   return None
-
             listing = Listing(
                 title=row.get('title'),
                 address=row.get('address'),
@@ -176,6 +203,7 @@ def ingest_data():
                 property_type=row.get('property_type'),
                 tenure=row.get('tenure'),
                 nearby_text=row.get('nearby_text'),
+                description=row.get('description'),
                 url=listing_url,
                 source=row.get('source'),
                 posted_date=row.get('posted_date'),

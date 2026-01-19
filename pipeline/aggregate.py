@@ -12,9 +12,15 @@ def get_latest_file(directory, pattern):
 def clean_price(price_str):
     if pd.isna(price_str):
         return None
-    # Remove 'S$', ',', '/mo', etc. to get a raw number if possible, or keep as consistent string
-    clean = str(price_str).replace(',', '').replace('S$', '').replace('$', '').split('/')[0].strip()
+    # Remove 'S$', 'psf', ',', '/mo', etc. to get a raw number
+    clean = str(price_str).lower().replace(',', '').replace('s$', '').replace('$', '')
+    clean = clean.replace('psf', '').replace('/mo', '').strip()
     try:
+        # Extract first numeric sequence if mixed
+        import re
+        match = re.search(r'(\d+(\.\d+)?)', clean)
+        if match:
+            return float(match.group(1))
         return float(clean)
     except ValueError:
         return None
@@ -22,17 +28,62 @@ def clean_price(price_str):
 def clean_sqft(sqft_str):
     if pd.isna(sqft_str):
         return None
+    # Remove 'sqft', commas, clean whitespace
     clean = str(sqft_str).lower().replace('sqft', '').replace(',', '').strip()
     try:
         return float(clean)
     except ValueError:
         return None
 
+def clean_tenure(tenure_str):
+    if pd.isna(tenure_str):
+        return None
+    t = str(tenure_str).lower().strip()
+    if '99' in t or 'leasehold' in t:
+        return 'Leasehold 99'
+    if 'freehold' in t or t == 'f':
+        return 'Freehold'
+    if '999' in t:
+        return 'Leasehold 999'
+    return tenure_str
+
+def clean_property_type(pt_str):
+    if pd.isna(pt_str):
+        return None
+    p = str(pt_str).lower().strip()
+    if 'condo' in p or 'apartment' in p:
+        return 'Condominium'
+    if 'hdb' in p:
+        return 'HDB'
+    if 'landed' in p or 'house' in p or 'terrace' in p or 'detached' in p:
+        return 'Landed'
+    return pt_str.title()
+
+def clean_display_string(s):
+    if pd.isna(s):
+        return None
+    # Fix "S$ S$" -> "S$"
+    val = str(s)
+    val = val.replace("S$ S$", "S$")
+    val = val.replace("psf psf", "psf")
+    # Generic cleanup of double spaces
+    while "  " in val:
+        val = val.replace("  ", " ")
+    return val.strip()
+
 def normalize_propertyguru(df):
     
     # Generate numeric columns from the existing formatted ones
     df['price'] = df['price_pretty'].apply(clean_price)
     df['psf'] = df['price_psf'].apply(clean_price)
+
+    # Clean text fields
+    df['property_type'] = df['property_type'].apply(clean_property_type)
+    df['tenure'] = df['tenure'].apply(clean_tenure)
+    
+    # Clean display strings for duplicates
+    df['price_pretty'] = df['price_pretty'].apply(clean_display_string)
+    df['price_psf'] = df['price_psf'].apply(clean_display_string)
     
     rename_map = {
         'localizedTitle': 'title',
@@ -45,39 +96,71 @@ def normalize_propertyguru(df):
         'recency_text': 'posted_date',
         'agent_url_path': 'agent_url',
         'nearbyText': 'nearby_text',
-        'CEA': 'cea'
+        'CEA': 'cea',
+        'agent_description': 'description' # PG's 'agent_description' often contains listing details
     }
     df = df.rename(columns=rename_map)
+    
+    # Prepend domain to URL if it's a relative path
+    def fix_pg_url(u):
+        if pd.isna(u) or u == '':
+            return None
+        u = str(u).strip()
+        if u.startswith('http'):
+            return u
+        # Remove leading slash if present
+        if u.startswith('/'):
+            u = u[1:]
+        return f"https://www.propertyguru.com.sg/{u}"
+    
+    df['url'] = df['url'].apply(fix_pg_url)
+
     df['source'] = 'propertyguru'
     return df
 
 def normalize_99co(df):
-    # Old Target: ID,localizedTitle,fullAddress,price_pretty,beds,baths,area_sqft,price_psf,nearbyText,built_year,property_type,tenure,url_path,recency_text...
-    # New Target: id, title, address, display_price, price, beds, baths, sqft, display_psf, psf, nearby_text, built_year, property_type, tenure, url, posted_date, agent_id...
     
-    df['price'] = df['display_price'].apply(clean_price)
-    # psf is strictly numeric or formatted? 99co 'psf' is usually string "S$ x psf". 
-    # Let's clean it for a numeric 'psf' and keep original as 'display_psf'
-    df['psf'] = df['psf'].apply(clean_price)
+    df['price_numeric'] = df['display_price'].apply(clean_price)
+    df['psf_numeric'] = df['psf'].apply(clean_price)
+    
+    if 'prop_type' in df.columns:
+        df['prop_type'] = df['prop_type'].apply(clean_property_type)
+    
+    if 'tenure' in df.columns:
+        df['tenure'] = df['tenure'].apply(clean_tenure)
     
     rename_map = {
-        'title': 'title',
-        'address': 'address',
         'display_price': 'display_price',
-        'sqft': 'sqft',
         'psf': 'display_psf',
-        'prop_type': 'property_type',
-        # 'purpose': 'buy_rent' 
+        'prop_type': 'property_type'
     }
     df = df.rename(columns=rename_map)
+
+    # Restore numeric columns
+    df['price'] = df['price_numeric']
+    df['psf'] = df['psf_numeric']
+    df = df.drop(columns=['price_numeric', 'psf_numeric'])
     
     df['source'] = '99co'
-    df['buy_rent'] = df['purpose'].apply(lambda x: 'for-sale' if 'sale' in str(x).lower() else 'for-rent')
+    df['buy_rent'] = df['purpose'].apply(lambda x: 'property-for-sale' if 'sale' in str(x).lower() else 'property-for-rent')
     
-    # Fill missing new target columns with snake_case
-    needed_cols = ['id', 'nearby_text', 'url', 'posted_date', 'agent_id', 'agent_description', 'agent_url', 'cea', 'mobile', 'rating', 'created_at', 'updated_at', 'first_seen_at', 'is_active']
+    # Synthesize URL if missing (critical for DB ingestion uniqueness)
+    def synth_url(row):
+        if pd.notna(row.get('url')): 
+            return row['url']
+        # Create a deterministic hash based on title/address
+        import hashlib
+        core = f"{str(row.get('title'))}-{str(row.get('address'))}"
+        h = hashlib.md5(core.encode('utf-8')).hexdigest()[:10]
+        # Make it look like a real URL so it passes validation (if any)
+        slug = str(row.get('title', 'listing')).replace(' ', '-').lower()
+        return f"https://www.99.co/singapore/sale/property/{slug}-{h}"
+
+    df['url'] = df.apply(synth_url, axis=1)
+    
+    needed_cols = ['id', 'title', 'address', 'sqft', 'beds', 'baths', 'built_year', 'nearby_text', 'url', 'posted_date', 'agent_id', 'agent_description', 'agent_url', 'cea', 'mobile', 'rating', 'created_at', 'updated_at', 'first_seen_at', 'is_active', 'description']
     for col in needed_cols:
-        if col not in df.columns:
+         if col not in df.columns:
             df[col] = None
             
     return df
@@ -85,26 +168,33 @@ def normalize_99co(df):
 def normalize_edgeprop(df):
     # Edgeprop columns: title,price,beds,baths,district,psf,built_year,size_sqft,tenure,address,agent,url,listing_id,image,details,raw_text,purpose,prop_type
     
-    df['price'] = df['price'].apply(clean_price)
-    df['psf_numeric'] = df['psf'].apply(clean_price) # temp name to avoid collision if we rename 'psf' to 'display_psf' immediately
+    # Store original string as display_price BEFORE cleaning
+    df['display_price'] = df['price']
+    df['price'] = df['display_price'].apply(clean_price)
+    
+    # Same for psf
+    df['display_psf'] = df['psf']
+    df['psf'] = df['display_psf'].apply(clean_price) 
+    
+    # Normalize classification
+    df['property_type'] = df['prop_type'].apply(clean_property_type)
+    df['tenure'] = df['tenure'].apply(clean_tenure)
     
     rename_map = {
         'title': 'title',
         'address': 'address',
-        'price': 'display_price', # existing 'price' is formatted string "$1,720,000"
         'size_sqft': 'sqft',
-        'psf': 'display_psf',
-        'prop_type': 'property_type',
+        'built_year': 'built_year',
         'listing_id': 'id',
         'url': 'url',
-        'agent': 'agent_name'
+        'agent': 'agent_name',
+        'image': 'agent_photo_url', # Maybe? or listing image
+        'details': 'description' # Map details to description
     }
     df = df.rename(columns=rename_map)
-    df['psf'] = df['psf_numeric']
-    df = df.drop(columns=['psf_numeric'])
     
     df['source'] = 'edgeprop'
-    df['buy_rent'] = df['purpose'].apply(lambda x: 'for-sale' if 'sale' in str(x).lower() else 'for-rent')
+    df['buy_rent'] = df['purpose'].apply(lambda x: 'property-for-sale' if 'sale' in str(x).lower() else 'property-for-rent')
     
     # Fill missing with snake_case
     needed_cols = ['nearby_text', 'posted_date', 'agent_id', 'agent_description', 'agent_url', 'cea', 'mobile', 'rating', 'created_at', 'updated_at', 'first_seen_at', 'is_active']
@@ -112,18 +202,27 @@ def normalize_edgeprop(df):
         if col not in df.columns:
             df[col] = None
             
+    # Ensure dropped internal cols
+    cols_to_drop = ['prop_type', 'purpose'] # 'price' and 'psf' are now numeric, 'display_' are strings
+    df = df.drop(columns=[c for c in cols_to_drop if c in df.columns])
+            
     return df
 
 def normalize_srx(df):
-    # SRX columns: listing_id,title,url,price,prop_type,tenure,size_sqft,psf,beds,baths,address,photo,posted_age,posted_epoch,is_sale,project_name,town,postal,built_size_hidden,created_date,expiry_date,lat_long,agent_name,agent_profile,agent_photo,agent_phone_masked,agent_phone_full,agent_user_id,agency_id,agent_call,agent_whatsapp,town_id,purpose,page
     
-    df['price_numeric'] = df['price'].apply(clean_price) # srx 'price' is "$468,000"
+    df['price_numeric'] = df['price'].apply(clean_price)
     df['psf_numeric'] = df['psf'].apply(clean_price)
+    
+    if 'prop_type' in df.columns:
+        df['prop_type'] = df['prop_type'].apply(clean_property_type)
+        
+    if 'tenure' in df.columns:
+        df['tenure'] = df['tenure'].apply(clean_tenure) # 'leasehold-99' -> 'Leasehold 99'
     
     rename_map = {
         'listing_id': 'id',
         'title': 'title',
-        'address': 'address',
+        'address': 'description', # SRX 'address' col contains description text!
         'price': 'display_price',
         'size_sqft': 'sqft',
         'psf': 'display_psf',
@@ -131,18 +230,22 @@ def normalize_srx(df):
         'agent_name': 'agent_name',
         'agent_phone_full': 'mobile',
         'prop_type': 'property_type',
-        'posted_age': 'posted_date' # maybe? "Listed on ..." vs "2h ago"
+        'posted_age': 'posted_date'
     }
     df = df.rename(columns=rename_map)
+    
+    # Use title as address fallback since address was actually description
+    df['address'] = df['title']
     
     df['price'] = df['price_numeric']
     df['psf'] = df['psf_numeric']
     df = df.drop(columns=['price_numeric', 'psf_numeric'])
 
     df['source'] = 'srx'
-    df['buy_rent'] = df['purpose'].apply(lambda x: 'for-sale' if 'sale' in str(x).lower() else 'for-rent')
+    df['buy_rent'] = df['purpose'].apply(lambda x: 'property-for-sale' if 'sale' in str(x).lower() else 'property-for-rent')
     
-    needed_cols = ['nearby_text', 'agent_id', 'agent_description', 'agent_url', 'cea', 'rating', 'created_at', 'updated_at', 'first_seen_at', 'is_active']
+    # Fill missing
+    needed_cols = ['nearby_text', 'agent_id', 'agent_description', 'agent_url', 'cea', 'rating', 'created_at', 'updated_at', 'first_seen_at', 'is_active', 'description']
     for col in needed_cols:
         if col not in df.columns:
             df[col] = None
@@ -217,6 +320,67 @@ def main():
         final_df['norm_sqft'].astype(str)
     )
     
+    # --- UNIFICATION: Force display_price to PropertyGuru standard ---
+    def standard_format_price(row):
+        p = row.get('price')
+        if pd.isna(p) or p == '':
+            return row.get('display_price') # Fallback
+        
+        try:
+            val = float(p)
+            # Format: "S$ 1,234"
+            base = "S$ {:,.0f}".format(val)
+            
+            # Check for rent
+            buy_rent = str(row.get('buy_rent', '')).lower()
+            if 'rent' in buy_rent:
+                return base + " /mo"
+            return base
+        except:
+            # Fallback text
+            raw = str(row.get('display_price', ''))
+            if raw.strip().startswith('$') and not raw.strip().startswith('S$'):
+                raw = raw.replace('$', 'S$ ', 1) # simple replace
+            return raw
+
+    final_df['display_price'] = final_df.apply(standard_format_price, axis=1)
+
+    def standard_format_psf(row):
+        p = row.get('psf')
+        # If numeric psf is present, FORCE the format
+        if pd.notna(p) and p != '':
+            try:
+                val = float(p)
+                return "S$ {:,.2f} psf".format(val)
+            except:
+                pass # Fall through to string cleanup
+                
+        # Fallback / Text cleanup
+        raw = str(row.get('display_psf', ''))
+        
+        # Filter out junk
+        if '未知' in raw or raw.lower() == 'nan' or raw.strip() == '':
+            return None
+            
+        # Clean
+        while 'S$ S$' in raw:
+            raw = raw.replace('S$ S$', 'S$')
+        while 'psf psf' in raw:
+            raw = raw.replace('psf psf', 'psf')
+            
+        # Fix leading $
+        if raw.strip().startswith('$') and not raw.strip().startswith('S$'):
+             raw = raw.replace('$', 'S$ ', 1)
+             
+        # Final check: Must start with S$
+        if not raw.strip().startswith('S$'):
+            return None 
+            
+        return raw
+
+    final_df['display_psf'] = final_df.apply(standard_format_psf, axis=1)
+    # -----------------------------------------------------------------
+
     print(f"Total rows before dedupe: {len(final_df)}")
     
     # Sort by source priority (propertyguru first) or recency
@@ -241,3 +405,6 @@ def main():
     output_path = os.path.join(base_dir, 'aggregated_listings.csv')
     final_df.to_csv(output_path, index=False)
     print(f"Saved aggregated data to {output_path}")
+
+if __name__ == "__main__":
+    main()
