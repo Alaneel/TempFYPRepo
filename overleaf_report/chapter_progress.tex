@@ -1,0 +1,47 @@
+\chapter{Implementation Progress}
+
+\section{Data Mining and Scraper Development}
+
+Significant progress has been made in the Data Acquisition phase. We have successfully developed and deployed Python-based web scrapers for the target platforms.
+
+\subsection{Multi-Platform Scraping}
+Scripts have been implemented for PropertyGuru, 99.co, EdgeProp, and SRX. These scripts utilize libraries such as Selenium and BeautifulSoup to navigate search results, handle dynamic content loading, and extract structured data.
+\begin{itemize}
+    \item \textbf{Coverage:} The scrapers are capturing listing descriptions, asking prices, floor areas, lease details, and geographical coordinates.
+    \item \textbf{Robustness:} Error handling mechanisms have been integrated to manage connection timeouts and anti-scraping measures (e.g., CAPTCHA challenges, though manual intervention is sometimes required).
+\end{itemize}
+
+\section{Database Implementation}
+
+The initial database infrastructure has been set up using SQLite for the development phase, with plans to migrate to PostgreSQL for production.
+
+\subsection{Unified Listing Repository}
+We have implemented point 1 of the requirements: merging and storing information in a unified structure. The raw data from different scrapers is harmonized into a single schema, facilitating cross-platform comparative analysis.
+\begin{itemize}
+    \item \subsection{De-duplication and Record Linkage}
+\subsubsection{Algorithmic Approach}
+A critical challenge in aggregating data from multiple portals is the presence of duplicate listings—agents often cross-post the same unit on PropertyGuru, 99.co, and SRX simultaneously. To address this, we developed a multi-stage de-duplication algorithm:
+
+\begin{enumerate}
+    \item \textbf{Address Normalization:} 
+    Raw address strings are first passed through a cleaning pipeline. This involves:
+    \begin{itemize}
+        \item Case standardization (lowercasing).
+        \item Abbreviation expansion (e.g., "Ave" $\rightarrow$ "Avenue", "Blk" $\rightarrow$ "Block").
+        \item Removal of non-alphanumeric noise characters.
+    \end{itemize}
+    
+    \item \textbf{Blocking Strategy:} 
+    To avoid an exponential $O(N^2)$ comparison, records are "blocked" by their postal code prefixes. Comparisons are only performed within each block, significantly reducing computational overhead.
+
+    \item \textbf{Fuzzy Matching Logic:} 
+    Within each block, a pairwise similarity score is calculated using the \textbf{Levenshtein Distance} metric on the listing titles and normalized addresses. We also employ a "Sliding Window" temporal filter: two listings are only considered potential duplicates if they were posted within a 7-day window.
+    
+    \item \textbf{Consensus Resolution:} 
+    When duplicates are identified (Similarity Score $> 0.85$), they are merged into a single "Golden Record". The system prioritizes data from PropertyGuru for pricing fields (due to higher update frequency) and 99.co for tenure information (due to better structured metadata).
+\end{enumerate}
+    \item \textbf{Schema:} The \texttt{aggregated\_listings} table is live and populated with sample datasets from all four sources.
+\end{itemize}
+
+\section{Current Limitations}
+While the data collection is functional, the exact mapping of listings to specific HDB/Condo units (Points 2 \& 3) is currently limited by the lack of visible unit numbers in public listings. The infrastructure for the master tables (\texttt{hdb\_unit}, \texttt{condo\_unit}) exists, but population is ongoing.

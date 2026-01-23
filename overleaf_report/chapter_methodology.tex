@@ -1,0 +1,126 @@
+\chapter{Methodology and System Design}
+
+\section{System Architecture}
+
+The proposed system adopts a modular architecture consisting of five main stages: Data Acquisition, Data Processing, Data Storage, Analysis Engine, and Application Layer. The implementation focuses on building a robust data pipeline that aggregates property information from multiple sources into a unified repository.
+
+\begin{figure}[!ht]
+    \centering
+    \centering
+    \resizebox{0.9\textwidth}{!}{
+    \begin{tikzpicture}[node distance=3cm]
+        \tikzstyle{process} = [rectangle, minimum width=2.5cm, minimum height=1cm, text centered, draw=black, fill=orange!30]
+        \tikzstyle{storage} = [cylinder, shape border rotate=90, draw, minimum height=2cm, minimum width=1.5cm, shape aspect=.25, fill=blue!20, text centered]
+        \tikzstyle{arrow} = [thick,->,>=stealth]
+
+        \node (scrape) [process] {Web Scrapers};
+        \node (process) [process, right of=scrape, xshift=1cm] {Data Processing};
+        \node (db) [storage, right of=process, xshift=1cm] {Unified DB};
+        \node (frontend) [process, below of=db, yshift=-0.5cm] {Mobile App};
+        \node (admin) [process, below of=process, yshift=-0.5cm] {Admin Panel};
+
+        \draw [arrow] (scrape) -- node[anchor=south] {Raw} (process);
+        \draw [arrow] (process) -- node[anchor=south] {Clean} (db);
+        \draw [arrow] (db) -- (frontend);
+        \draw [arrow] (db) -- (admin);
+    \end{tikzpicture}
+    }
+    \caption{High-Level System Architecture Diagram}
+    \label{fig:system_arch}
+\end{figure}
+
+\subsection{Data Acquisition}
+The system targets four major real estate portals in Singapore: PropertyGuru, 99.co, EdgeProp, and SRX. Specialized web scrapers are developed for each platform to extract granular data, including listing titles, prices, property attributes (size, bedrooms, tenure), and location details.
+
+\begin{table}[!ht]
+    \centering
+    \caption{Target Data Sources and Extraction Parameters}
+    \label{tab:data_sources}
+    \renewcommand{\arraystretch}{1.2}
+    \begin{tabular}{@{}lll@{}}
+    \toprule
+    \textbf{Platform} & \textbf{Key Data Attributes} & \textbf{Scraper Status} \\ \midrule
+    PropertyGuru & Pricing, Amenities, MRT Proximity & Operational \\
+    99.co & Tenure, Unit Size, Lease Date & Operational \\
+    EdgeProp & Historical Transactions, Trends & Operational \\
+    SRX & X-Value, Drone Views, Site Plans & In Development \\
+    \bottomrule
+    \end{tabular}
+\end{table}
+
+The scrapers are designed to handle pagination and varying HTML structures across different sites.
+
+\subsection{Data Processing and Aggregation}
+Raw data fetched from different sources frequently contains inconsistencies and duplicates. The processing module performs the following tasks:
+\begin{itemize}
+    \item \textbf{Normalization:} Standardizing field names and formats (e.g., converting "2 beds" and "2 Bedroom" to a standard integer format).
+    \item \textbf{Deduplication:} Identifying and removing duplicate listings based on composite keys (e.g., address, unit size, and price) to ensure data integrity.
+    \item \textbf{Linking:} Associating temporary rental/sale listings with persistent property master records (HDB or Condo units).
+\end{itemize}
+
+\subsection{Data Storage}
+The data storage layer is built upon a PostgreSQL relational database, designed to maintain data integrity while supporting complex analytical queries.
+
+\subsubsection{Entity-Relationship Design}
+The database schema is centered around the separation of transient listing data from persistent property master data. Figure \ref{fig:er_diagram} illustrates the core entities and their relationships.
+
+\begin{figure}[!ht]
+    \centering
+    \centering
+    \resizebox{1.0\textwidth}{!}{
+    \begin{tikzpicture}[node distance=2.5cm, entity/.style={rectangle,draw,fill=blue!20}, attribute/.style={ellipse,draw,fill=yellow!20}, relationship/.style={diamond,draw,fill=orange!20}, line/.style={-,thick}]
+        % Entities
+        \node[entity] (listing) {Listing};
+        \node[entity] (unit) [right of=listing, xshift=2.5cm] {Unit};
+        \node[entity] (master) [right of=unit, xshift=2.5cm] {Master};
+
+        % Relationships
+        \node[relationship] (MappedTo) [right of=listing, xshift=0.5cm] {Link};
+        \node[relationship] (BelongsTo) [right of=unit, xshift=0.5cm] {In};
+
+        % Attributes for Listing
+        \node[attribute] (price) [above of=listing, yshift=-1cm] {Price};
+        \node[attribute] (url) [below of=listing, yshift=1cm] {URL};
+
+        % Attributes for Master
+        \node[attribute] (address) [above of=master, yshift=-1cm] {Addr};
+        \node[attribute] (geo) [below of=master, yshift=1cm] {Geo};
+
+        % Lines
+        \draw[line] (listing) -- (MappedTo);
+        \draw[line] (MappedTo) -- (unit);
+        \draw[line] (unit) -- (BelongsTo);
+        \draw[line] (BelongsTo) -- (master);
+        
+        \draw[line] (listing) -- (price);
+        \draw[line] (listing) -- (url);
+        \draw[line] (master) -- (address);
+        \draw[line] (master) -- (geo);
+    \end{tikzpicture}
+    }
+    \caption{Entity-Relationship Diagram illustrating the linkage between scraped Listings and persistent Master records.}
+    \label{fig:er_diagram}
+\end{figure}
+
+The \texttt{aggregated\_listings} table serves as the primary repository for raw data, receiving inputs from all scrapers.
+
+\section{Database Design}
+
+A relational database schema is designed to store both static property information and dynamic listing data. The core tables are structured as follows:
+
+\subsection{Property Master Tables}
+To maintain a definitive registry of properties, we define master tables for Housing Development Board (HDB) flats and private condominiums:
+\begin{enumerate}
+    \item \textbf{hdb\_basic:} Stores block-level information for HDB estates (e.g., address, completion year, lease start date).
+    \item \textbf{hdb\_unit:} Stores unit-level details, linking specific units to their respective blocks.
+    \item \textbf{condo\_basic:} Stores project-level information for condominiums (e.g., project name, developer, facilities).
+    \item \textbf{condo\_unit:} Stores specific unit details within each condominium project.
+\end{enumerate}
+
+\subsection{Listing Tables and Association}
+The \texttt{unified\_listings} table aggregates active rental and sale listings from the web scrapers. A key design consideration is the association between these transient listings and the master tables.
+
+\begin{itemize}
+    \item \textbf{Association Logic:} Since online listings provided by agents often lack specific unit numbers for privacy reasons, a direct foreign key constraint is not always possible during the scraping phase.
+    \item \textbf{Agent-Assisted Mapping:} The system supports a "soft link" where the association between a listing and a specific physical unit (e.g., in \texttt{hdb\_unit}) is finalized when an agent arranges a viewing or verifies the property documentation. This design allows for flexible data ingestion while enabling precise tracking as the transaction progresses.
+\end{itemize}

@@ -1,0 +1,25 @@
+\chapter{Literature Review}
+
+\section{Introduction}
+Real estate valuation and market analysis have long been subjects of academic and practical interest. This chapter surveys the evolution of methodologies in this domain, ranging from traditional econometric approaches to modern artificial intelligence applications. It also examines the specific literature regarding the Singapore housing market to contextualize the unique challenges addressed by this project.
+
+\section{Traditional Real Estate Valuation Models}
+The foundational framework for property valuation is the \textbf{Hedonic Pricing Model}, popularized by Rosen \cite{rosen1974hedonic}. This theory posits that a heterogeneous good, such as a house, can be valued as the sum of its constituent attributes (e.g., location, size, number of bedrooms).
+\begin{itemize}
+    \item \textbf{Strengths:} These models provide interpretability, allowing analysts to quantify the marginal value of specific features (e.g., the premium for an extra bathroom).
+    \item \textbf{Limitations:} They often rely on strict assumptions of linearity and independence among variables. Furthermore, they struggle to incorporate high-dimensional or unstructured data, such as textual property descriptions or complex spatial relationships.
+\end{itemize}
+
+\section{Machine Learning in Real Estate}
+In recent years, the limitations of traditional models have led researchers to explore Machine Learning (ML) techniques.
+\begin{itemize}
+    \item \textbf{Automated Valuation Models (AVMs):} Advanced regression techniques (e.g., Random Forests, Gradient Boosting) have been shown to outperform linear regression in price prediction accuracy by capturing non-linear relationships \cite{park2015using}.
+    \item \textbf{Natural Language Processing (NLP):} Recent studies, such as Baur et al. \cite{baur2022automated}, utilize NLP to extract sentiment and semantic features from listing descriptions, demonstrating that "soft" factors significantly influence pricing.
+    \item \textbf{Neural Networks:} Deep learning architectures allow for the integration of multi-modal data (text and images), providing a more holistic view of property value \cite{bian2020comparing}.
+\end{itemize}
+
+\section{The Singapore Context: A Dual-Tier Market}
+Research on the Singapore market highlights its unique dual structure. Tu \cite{tu2004dynamics} analyzed the dynamics of the Singapore private housing market, finding significant relationships between private housing prices and the resale public housing sector. Sing et al. \cite{sing2006price} further demonstrated price dynamics between public and private housing, where rising private prices can pull up HDB resale prices due to the substitution effect and inter-market mobility.
+
+\section{Research Gap}
+While existing literature covers individual components—valuation algorithms or market segregation—there is a paucity of research that integrates \textbf{unified data mining} across the dual-market spectrum with \textbf{modern NLP techniques}. Most local studies rely on structured transaction data alone, ignoring the rich, unstructured listing data available on digital platforms. This project aims to bridge this gap by building a unified system that leverages both structured and unstructured data across the entire Singapore housing ecosystem.

@@ -1,0 +1,47 @@
+\chapter{Introduction}
+
+\section{Background and Motivation}
+
+Singapore's housing sector is characterized by a unique \textbf{dual-tier structure}, comprising a highly regulated public housing market managed by the Housing and Development Board (HDB) and a free-market private residential sector. The HDB sector houses approximately 80\% of the resident population, serving as a critical pillar of national social stability, while the private sector caters to higher-income households and investors \cite{tu2004dynamics}. Despite their regulatory separation, these two markets exhibit complex, non-linear interdependencies. The "asset progression" aspiration—whereby households upgrade from public to private housing—creates a dynamic flow of capital and demand that links the two tiers \cite{sing2006price}.
+
+In the current digital era, the proliferation of online property portals such as PropertyGuru, 99.co, and SRX has led to an explosion of real estate data. This includes not only transactional records but also unstructured text descriptions, listing metadata, and visual assets. However, this data remains fragmented across disparate platforms, creating significant \textbf{information asymmetry} for stakeholders. Homebuyers, investors, and policymakers alike face challenges in obtaining a holistic view of the market, often relying on disjointed manual searches or simplistic linear analyses that fail to capture the nuances of the dual-market system.
+
+\section{Problem Statement}
+
+The core problem addressed by this research is the \textbf{lack of a unified, comprehensive, and intelligent analytics framework} for the Singapore real estate market. Specifically, three key challenges exist:
+
+\begin{enumerate}
+    \item \textbf{Data Fragmentation:} Critical market intelligence is siloed across competing platforms, making cross-sectional analysis difficult.
+    \item \textbf{Methodological Limitations:} Traditional econometric methods (e.g., Hedonic Pricing Models) typically rely on structured variables and linear assumptions, often neglecting the rich insights embedded in unstructured data (listings descriptions, agent sentiment) and non-linear market dynamics.
+    \item \textbf{Regulatory Complexity:} Existing tools often fail to account for the granular impact of Singapore's frequent cooling measures and policy shifts on different market segments.
+\end{enumerate}
+
+\section{Project Objectives}
+
+This project aims to develop an end-to-end AI-driven system that bridges the gap between raw, fragmented data and actionable market intelligence. The specific objectives are:
+
+\begin{enumerate}
+    \item \textbf{To Develop a Unified Data Infrastructure:} Design and implement automated web scraping pipelines to aggregate and harmonize data from Singapore's major property portals into a centralized repository.
+    \item \textbf{To Construct a Relational Graph of the Property Market:} Establish a robust database schema that links transient listings to persistent property master records (HDB and Condo), facilitating longitudinal tracking.
+    \item \textbf{To Implement Advanced Analytics:} Leverage machine learning techniques to extract semantic features from unstructured text and identify cross-market patterns.
+    \item \textbf{To Create Actionable User Interfaces:} Develop user-centric applications (Mobile App and Admin Dashboard) to democratize access to this unified intelligence.
+\end{enumerate}
+
+\section{Contributions}
+
+This study contributes to the field of Real Estate Informatics in the following ways:
+\begin{itemize}
+    \item \textbf{Integration:} It proposes one of the first unified data architectures specifically designed for Singapore's dual-tier market.
+    \item \textbf{Methodology:} It demonstrates the feasibility of combining traditional structured data fields with unstructured text features for market analysis.
+    \item \textbf{Application:} It provides a working prototype of a system that serves the needs of both data consumers (homebuyers) and data administrators.
+\end{itemize}
+
+\section{Report Organization}
+
+The remainder of this report is organized as follows:
+\begin{itemize}
+    \item \textbf{Chapter 2 (Literature Review)} surveys existing research on real estate valuation models, machine learning applications in property markets, and the specific characteristics of the Singapore housing context.
+    \item \textbf{Chapter 3 (Methodology and System Design)} details the system architecture, data acquisition pipelines, and database design.
+    \item \textbf{Chapter 4 (Implementation Progress)} documents the current status of the development, including the successful deployment of scrapers and the initial database population.
+    \item \textbf{Chapter 5 (Future Work)} outlines the roadmap for the next phase of development, focusing on the frontend application and advanced AI modeling.
+\end{itemize}

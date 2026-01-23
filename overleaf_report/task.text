@@ -1,0 +1,6 @@
+1.⁠ ⁠合并property guru/99.co 等网站租房、售房信息，去重，并存放到统一数据库表
+2.⁠ ⁠HDB_basicH，DB_Unit和condo_basic，condo_unit表建立，并存储从网站获取的HDB和公寓基本信息
+3.⁠ ⁠在设计1和2的表结构时，需要注意可以建立租售信息和HDB/CONDO unit信息的关联关系（此关联，在在业务上由agent在约看房源是来完成关联操作）
+4.⁠ ⁠开发mobile前端，可以通过输入特定查询条件，返回符合条件的房源总数，以及房源列表
+5.⁠ ⁠开发后台维护界面，可以维护HDB_basicH，DB_Unit和condo_basic，condo_unit，以及网页爬虫获取的租房售房信息（增删改查）
+如有什么疑问，我们可以在群里沟通
