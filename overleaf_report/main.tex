@@ -1,0 +1,62 @@
+\documentclass[pdftex, 12pt, a4paper]{report}
+\usepackage{newtxtext, newtxmath}
+\usepackage[top=3cm, bottom=3cm, left=3.5cm, right=3cm]{geometry}
+\usepackage[hidelinks]{hyperref}
+\usepackage[pdftex]{graphicx}
+\usepackage{booktabs}
+\usepackage{setspace}
+\usepackage{titlesec}
+\usepackage{tocloft}
+\usepackage{parskip}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows}
+\usepackage[style=ieee, sorting=none, backend=bibtex]{biblatex}
+
+\addbibresource{bib.bib}
+\setstretch{1.5}
+\setlength{\cftfigindent}{0pt}
+\setlength{\cfttabindent}{0pt}
+\renewcommand{\cftdotsep}{1}
+
+% change the following
+\title{\uppercase{End-to-End AI System for Singapore Real Estate: From Automated Data Mining to Agentic Recommendation}}
+\newcommand\fypcode{CCDS25-0111}
+\author{Wang Yangming}
+\date{2026}
+\newcommand\degree{Bachelor of Computing in Computer Science}
+
+\begin{document}
+\input{title.tex}
+
+\setcounter{page}{1}
+\pagenumbering{roman}
+
+\input{abstract.tex}
+\input{acknowledgements.tex}
+
+\pagebreak
+\addcontentsline{toc}{chapter}{Contents}
+\tableofcontents
+
+\pagebreak
+\addcontentsline{toc}{chapter}{List of Tables}
+\listoftables
+
+\pagebreak
+\addcontentsline{toc}{chapter}{List of Figures}
+\listoffigures
+
+\cleardoublepage
+\pagenumbering{arabic}
+
+\input{intro.tex}
+\input{chapter_lit_review.tex}
+\input{chapter_methodology.tex}
+\input{chapter_progress.tex}
+\input{chapter_future.tex}
+
+\printbibliography
+
+\end{document}

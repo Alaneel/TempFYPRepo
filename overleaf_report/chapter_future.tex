@@ -1,0 +1,29 @@
+\chapter{Future Work plan}
+
+The next phase of the project will focus on Application Development and Advanced Analysis, addressing Points 4 and 5 of the project scope.
+
+\section{Frontend Development}
+
+\subsection{Mobile Application}
+A mobile-responsive frontend will be developed to allow users to interact with the aggregated database.
+\begin{itemize}
+    \item \textbf{Search Functionality:} Users will be able to input specific query criteria (e.g., district, price range, floor area) and retrieve a filtered list of listings.
+    \item \textbf{Aggregated View:} The app will display the total number of matching listings across all platforms, providing a comprehensive market overview that single-platform apps cannot offer.
+\end{itemize}
+
+\section{Backend and Administration}
+
+\subsection{Admin Dashboard}
+A backend maintenance interface will be built to support the Create, Read, Update, and Delete (CRUD) operations required for system management.
+\begin{itemize}
+    \item \textbf{Master Data Management:} Administrators will be able to maintain the \texttt{hdb\_basic} and \texttt{condo\_basic} master tables, ensuring new projects and blocks are added.
+    \item \textbf{Data Cleaning:} The interface will allow manual correction of scraper errors and the merging of duplicate records that the automated algorithm misses.
+\end{itemize}
+
+\section{Advanced AI Features}
+
+Building upon the solid data foundation, we plan to implement the AI-driven features outlined in the introduction.
+\begin{itemize}
+    \item \textbf{Semantic Search:} Leveraging LLMs to allow users to search using natural language (e.g., "spacious high-floor unit near MRT") rather than rigid filters.
+    \item \textbf{Price Recommendation:} Training a model on historical transaction data and current listing data to provide estimated fair values for specific units.
+\end{itemize}
