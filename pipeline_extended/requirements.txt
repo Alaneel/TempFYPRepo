@@ -1,0 +1,13 @@
+# Extended Pipeline Dependencies
+# These are additional requirements for the pipeline_extended module
+
+# Core dependencies (inherited from parent)
+pandas>=2.0.0
+sqlalchemy>=2.0.0
+psycopg2-binary
+
+# Fuzzy matching for property name matching
+rapidfuzz>=3.0.0
+
+# Data processing
+numpy>=1.24.0
