@@ -43,6 +43,117 @@ def build_url(purpose: str, prop_type: str, page: int) -> str:
     )
 
 # ---------------------------------------------------------------------------
+# JSON parsing from __NEXT_DATA__ (merged from skwips - more reliable method)
+def extract_mobile_from_url(url: str) -> str:
+    """Extract mobile number from agent URL (e.g., .../Alan-Tang-90672388)"""
+    if not url:
+        return ""
+    match = re.search(r'(\d{8,})', url)
+    return match.group(1) if match else ""
+
+def parse_json_listings(json_data: dict) -> pd.DataFrame:
+    """Parse listings from EdgeProp's __NEXT_DATA__ JSON structure.
+    
+    This is more reliable than HTML parsing and provides access to more fields
+    including agent CEA, mobile, and agency information.
+    """
+    try:
+        listings = json_data.get('props', {}).get('pageProps', {}).get('listings', [])
+    except (KeyError, TypeError):
+        return pd.DataFrame()
+    
+    if not listings:
+        return pd.DataFrame()
+    
+    data = []
+    for listing in listings:
+        # Build URL
+        listing_url = listing.get('url', '')
+        if listing_url and not listing_url.startswith('http'):
+            listing_url = f"https://www.edgeprop.sg/{listing_url}"
+        
+        # Property info
+        title = listing.get('project_name') or listing.get('title', '')
+        
+        # Price
+        asking_price = listing.get('asking_price')
+        price = ""
+        if asking_price:
+            try:
+                price = f"S$ {int(float(asking_price)):,}"
+            except:
+                price = str(asking_price)
+        
+        # PSF
+        psf = listing.get('asking_unit_price_psf', '')
+        if psf:
+            try:
+                psf = f"S$ {float(psf):,.2f} psf"
+            except:
+                pass
+        
+        # Property type
+        prop_type = listing.get('property_type') or listing.get('property_sub_type') or ''
+        
+        # Address
+        street = listing.get('street_name', '')
+        postal = listing.get('postal_code', '')
+        address = f"{street} {postal}".strip()
+        
+        # District info
+        district = listing.get('district_name') or listing.get('asset_district', '')
+        region = listing.get('planning_region', '')
+        nearby_parts = []
+        if district:
+            nearby_parts.append(f"District {district}")
+        if region:
+            nearby_parts.append(region)
+        nearby_text = ', '.join(nearby_parts)
+        
+        # Agent details (enhanced from skwips)
+        agent_name = listing.get('agent_name', '')
+        agent_url = listing.get('agent_url', '')
+        agent_photo = listing.get('agent_photo', '')
+        agent_cea = listing.get('agent_id', '')  # CEA registration number
+        agent_mobile = extract_mobile_from_url(agent_url)
+        agency = listing.get('agency_name', '')
+        
+        # Other details
+        bedrooms = listing.get('bedrooms', '')
+        bathrooms = listing.get('bathrooms', '')
+        floor_area = listing.get('floor_area_sqft', '')
+        year_completed = listing.get('year_completed', '')
+        tenure = listing.get('tenure', '')
+        
+        # Recency
+        updated_at = listing.get('updatedAt', '')
+        recency_text = f"Updated: {updated_at[:10]}" if updated_at else ''
+        
+        data.append({
+            "title": title,
+            "price": price,
+            "psf": psf,
+            "beds": str(bedrooms) if bedrooms else '',
+            "baths": str(bathrooms) if bathrooms else '',
+            "size_sqft": str(floor_area) if floor_area else '',
+            "built_year": str(year_completed) if year_completed else '',
+            "tenure": tenure,
+            "address": address,
+            "district": nearby_text,
+            "agent": agent_name,
+            "agent_url": agent_url,
+            "agent_photo": agent_photo,
+            "agent_cea": agent_cea,  # NEW
+            "agent_mobile": agent_mobile,  # NEW
+            "agency": agency,  # NEW
+            "url": listing_url,
+            "listing_id": listing_url.split("?")[0].split("/")[-1] if listing_url else "",
+            "recency_text": recency_text,  # NEW
+        })
+    
+    return pd.DataFrame(data)
+
+
 def parse_cards_to_df(html: str, debug: bool = False) -> pd.DataFrame:
     """Parse one page of listings HTML into a dataframe."""
     soup = BeautifulSoup(html, "html.parser")
@@ -234,7 +345,24 @@ async def scrape_edgeprop(purpose: str, prop_type: str, max_pages: int, headless
                 debug_path.write_text(html, encoding="utf-8")
                 await page.screenshot(path=str(DEBUG_DIR / f"DEBUG_{purpose}_{prop_type}_p{i}.png"), full_page=True)
 
-                df = parse_cards_to_df(html, debug=(i == 1))
+                # Try JSON parsing first (from skwips - more reliable)
+                df = pd.DataFrame()
+                try:
+                    next_data = await page.evaluate(
+                        "() => document.getElementById('__NEXT_DATA__')?.textContent"
+                    )
+                    if next_data:
+                        json_data = json.loads(next_data)
+                        df = parse_json_listings(json_data)
+                        if not df.empty:
+                            print(f"[ok] Parsed {len(df)} listings from JSON")
+                except Exception as e:
+                    print(f"[warn] JSON parsing failed: {e}, falling back to HTML")
+
+                # Fallback to HTML parsing
+                if df.empty:
+                    df = parse_cards_to_df(html, debug=(i == 1))
+                
                 if df.empty:
                     print(f"[stop] no listings found on page {i} → stopping crawl")
                     stop_flag = True

@@ -174,6 +174,20 @@ def parse_cards_to_df(html: str) -> pd.DataFrame:
         created_date  = _norm_str(hidden_inputs.get("created-date"))
         expiry_date   = _norm_str(hidden_inputs.get("expiry-date"))
         latlong       = _norm_str(hidden_inputs.get("lat-long"))
+        
+        # Enhanced from skwips: extract built_year and full_address
+        built_year_raw = _norm_str(hidden_inputs.get("built-year"))
+        built_year = ""
+        if built_year_raw:
+            # Remove "Built-" prefix if present
+            built_year_clean = re.sub(r'Built-?', '', built_year_raw, flags=re.I).strip()
+            if built_year_clean.isdigit():
+                built_year = built_year_clean
+        
+        full_address = _norm_str(hidden_inputs.get("project-full-address"))
+        if not full_address and project_name:
+            # Fallback: combine project name with postal
+            full_address = f"{project_name} {postal}".strip() if postal else project_name
 
         rows.append({
             "listing_id": listing_id, "title": title, "url": href, "price": price,
@@ -186,6 +200,8 @@ def parse_cards_to_df(html: str) -> pd.DataFrame:
             "agent_photo": agent_photo, "agent_phone_masked": agent_phone_masked,
             "agent_phone_full": agent_phone_full, "agent_user_id": agent_user_id, "agency_id": agency_id,
             "agent_call": agent_call, "agent_whatsapp": agent_whatsapp,
+            "built_year": built_year,  # NEW from skwips
+            "full_address": full_address,  # NEW from skwips
         })
     return pd.DataFrame(rows)
 
