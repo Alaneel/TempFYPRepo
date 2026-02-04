@@ -50,6 +50,11 @@ export interface Agent {
   photo_url?: string;
   url?: string;
   rating?: number;
+  // Fields from agent_list table
+  company_name?: string;
+  agency_license?: string;
+  license_expiry?: string;
+  registration_date?: string;
 }
 
 export interface Condo {

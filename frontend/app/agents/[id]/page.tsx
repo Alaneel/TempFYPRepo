@@ -10,8 +10,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
-import { User, Phone, MapPin, ExternalLink, MessageCircle, Star } from "lucide-react";
+import { User, Phone, MapPin, ExternalLink, MessageCircle, Star, Building2, ShieldCheck, Calendar, BadgeCheck } from "lucide-react";
 import { ListingCard } from "@/components/features/listings/listing-card";
+
+// Backend base URL for photo URLs
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') || 'http://localhost:8000';
 
 export default function AgentDetailPage() {
   const { id } = useParams();
@@ -33,7 +36,7 @@ export default function AgentDetailPage() {
        const response = await api.get("/listings/", { 
          params: { 
            agent_id: id,
-           limit: 50 // Fetch enough listings
+           limit: 50
          } 
        });
        return response.data;
@@ -42,6 +45,27 @@ export default function AgentDetailPage() {
   });
 
   const isLoading = isAgentLoading || isListingsLoading;
+
+  // Helper to get full photo URL
+  const getPhotoUrl = (photoUrl?: string) => {
+    if (!photoUrl) return null;
+    if (photoUrl.startsWith('http')) return photoUrl;
+    return `${BACKEND_URL}${photoUrl}`;
+  };
+
+  // Format date helper
+  const formatDate = (dateStr?: string) => {
+    if (!dateStr) return null;
+    try {
+      return new Date(dateStr).toLocaleDateString('en-SG', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric'
+      });
+    } catch {
+      return dateStr;
+    }
+  };
 
   if (isLoading) {
     return (
@@ -67,6 +91,8 @@ export default function AgentDetailPage() {
       );
   }
 
+  const photoUrl = getPhotoUrl(agent.photo_url);
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -77,8 +103,8 @@ export default function AgentDetailPage() {
             <div className="flex flex-col md:flex-row gap-8 items-start">
                {/* Photo */}
                <div className="w-32 h-32 md:w-48 md:h-48 rounded-full overflow-hidden border-4 border-white shadow-lg bg-gray-100 shrink-0 mx-auto md:mx-0">
-                  {agent.photo_url ? (
-                    <img src={agent.photo_url} alt={agent.name} className="w-full h-full object-cover" />
+                  {photoUrl ? (
+                    <img src={photoUrl} alt={agent.name} className="w-full h-full object-cover" />
                   ) : (
                     <User className="w-full h-full p-8 text-gray-300" />
                   )}
@@ -88,17 +114,52 @@ export default function AgentDetailPage() {
                <div className="flex-grow text-center md:text-left space-y-4">
                   <div>
                     <h1 className="text-3xl font-bold">{agent.name}</h1>
-                    <div className="text-muted-foreground mt-1 flex items-center justify-center md:justify-start gap-2">
+                    <div className="text-muted-foreground mt-1 flex flex-wrap items-center justify-center md:justify-start gap-2">
                        {agent.cea && <Badge variant="outline">CEA: {agent.cea}</Badge>}
-                       <span className="text-sm">Real Estate Agent</span>
                        {agent.rating !== undefined && agent.rating !== null && (
-                         <div className="flex items-center gap-1 ml-2 text-yellow-500">
+                         <div className="flex items-center gap-1 text-yellow-500">
                            <Star className="w-4 h-4 fill-current" />
                            <span className="font-medium">{agent.rating.toFixed(1)}</span>
                          </div>
                        )}
                     </div>
                   </div>
+                  
+                  {/* Company Info Card */}
+                  {agent.company_name && (
+                    <Card className="inline-block">
+                      <CardContent className="p-4 flex items-center gap-3">
+                        <Building2 className="h-8 w-8 text-primary" />
+                        <div>
+                          <div className="font-semibold">{agent.company_name}</div>
+                          {agent.agency_license && (
+                            <div className="text-xs text-muted-foreground flex items-center gap-1">
+                              <ShieldCheck className="h-3 w-3" />
+                              License: {agent.agency_license}
+                            </div>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+                  
+                  {/* License Info */}
+                  {(agent.license_expiry || agent.registration_date) && (
+                    <div className="flex flex-wrap gap-4 text-sm text-muted-foreground justify-center md:justify-start">
+                      {agent.registration_date && (
+                        <div className="flex items-center gap-1">
+                          <BadgeCheck className="h-4 w-4 text-green-600" />
+                          Registered: {formatDate(agent.registration_date)}
+                        </div>
+                      )}
+                      {agent.license_expiry && (
+                        <div className="flex items-center gap-1">
+                          <Calendar className="h-4 w-4" />
+                          License Expires: {formatDate(agent.license_expiry)}
+                        </div>
+                      )}
+                    </div>
+                  )}
                   
                   <p className="max-w-2xl text-muted-foreground whitespace-pre-line">
                      {agent.description || "Top performing agent specializing in residential properties."}

@@ -266,17 +266,27 @@ export default function ListingDetailPage() {
                           <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden cursor-pointer hover:opacity-80 transition-opacity">
                              <Link href={`/agents/${listing.agent?.id}`}>
                                 {listing.agent?.photo_url ? (
-                                  <img src={listing.agent.photo_url} alt={listing.agent.name} className="w-full h-full object-cover" />
+                                  <img 
+                                    src={listing.agent.photo_url.startsWith('http') ? listing.agent.photo_url : `${process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') || 'http://localhost:8000'}${listing.agent.photo_url}`} 
+                                    alt={listing.agent.name} 
+                                    className="w-full h-full object-cover" 
+                                  />
                                 ) : (
                                   <User className="h-6 w-6 text-primary" />
                                 )}
                              </Link>
                           </div>
-                          <div>
+                          <div className="flex-grow">
                              <Link href={`/agents/${listing.agent?.id}`} className="hover:underline">
                                 <div className="font-semibold">{listing.agent?.name || "Unknown Agent"}</div>
                              </Link>
                              <div className="text-xs text-muted-foreground">{listing.agent?.cea ? `CEA: ${listing.agent.cea}` : "Registered Agent"}</div>
+                             {listing.agent?.company_name && (
+                               <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                                 <Building className="h-3 w-3" />
+                                 {listing.agent.company_name}
+                               </div>
+                             )}
                           </div>
                       </div>
                       
