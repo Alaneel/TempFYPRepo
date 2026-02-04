@@ -129,10 +129,13 @@ def normalize_99co(df):
     if 'tenure' in df.columns:
         df['tenure'] = df['tenure'].apply(clean_tenure)
     
+    # Map new fields from merged scraper (from skwips)
     rename_map = {
         'display_price': 'display_price',
         'psf': 'display_psf',
-        'prop_type': 'property_type'
+        'prop_type': 'property_type',
+        'recency_text': 'posted_date',  # NEW from skwips
+        'agent_photo': 'agent_photo_url',  # NEW from skwips
     }
     df = df.rename(columns=rename_map)
 
@@ -144,21 +147,20 @@ def normalize_99co(df):
     df['source'] = '99co'
     df['buy_rent'] = df['purpose'].apply(lambda x: 'property-for-sale' if 'sale' in str(x).lower() else 'property-for-rent')
     
-    # Synthesize URL if missing (critical for DB ingestion uniqueness)
+    # Use URL from scraper if available (NEW: now extracted directly)
     def synth_url(row):
-        if pd.notna(row.get('url')): 
+        if pd.notna(row.get('url')) and str(row.get('url')).startswith('http'): 
             return row['url']
         # Create a deterministic hash based on title/address
         import hashlib
         core = f"{str(row.get('title'))}-{str(row.get('address'))}"
         h = hashlib.md5(core.encode('utf-8')).hexdigest()[:10]
-        # Make it look like a real URL so it passes validation (if any)
         slug = str(row.get('title', 'listing')).replace(' ', '-').lower()
         return f"https://www.99.co/singapore/sale/property/{slug}-{h}"
 
     df['url'] = df.apply(synth_url, axis=1)
     
-    needed_cols = ['id', 'title', 'address', 'sqft', 'beds', 'baths', 'built_year', 'nearby_text', 'url', 'posted_date', 'agent_id', 'agent_description', 'agent_url', 'cea', 'mobile', 'rating', 'created_at', 'updated_at', 'first_seen_at', 'is_active', 'description']
+    needed_cols = ['id', 'title', 'address', 'sqft', 'beds', 'baths', 'built_year', 'nearby_text', 'url', 'posted_date', 'agent_id', 'agent_description', 'agent_url', 'cea', 'mobile', 'rating', 'created_at', 'updated_at', 'first_seen_at', 'is_active', 'description', 'agent_photo_url']
     for col in needed_cols:
          if col not in df.columns:
             df[col] = None
@@ -180,6 +182,7 @@ def normalize_edgeprop(df):
     df['property_type'] = df['prop_type'].apply(clean_property_type)
     df['tenure'] = df['tenure'].apply(clean_tenure)
     
+    # Map fields including new ones from JSON parsing (from skwips)
     rename_map = {
         'title': 'title',
         'address': 'address',
@@ -188,22 +191,27 @@ def normalize_edgeprop(df):
         'listing_id': 'id',
         'url': 'url',
         'agent': 'agent_name',
-        'image': 'agent_photo_url', # Maybe? or listing image
-        'details': 'description' # Map details to description
+        'agent_photo': 'agent_photo_url',  # NEW from skwips
+        'agent_cea': 'cea',  # NEW from skwips
+        'agent_mobile': 'mobile',  # NEW from skwips
+        'agency': 'agent_description',  # NEW from skwips
+        'district': 'nearby_text',  # NEW from skwips
+        'recency_text': 'posted_date',  # NEW from skwips
+        'details': 'description'
     }
     df = df.rename(columns=rename_map)
     
     df['source'] = 'edgeprop'
     df['buy_rent'] = df['purpose'].apply(lambda x: 'property-for-sale' if 'sale' in str(x).lower() else 'property-for-rent')
     
-    # Fill missing with snake_case
-    needed_cols = ['nearby_text', 'posted_date', 'agent_id', 'agent_description', 'agent_url', 'cea', 'mobile', 'rating', 'created_at', 'updated_at', 'first_seen_at', 'is_active']
+    # Fill missing columns
+    needed_cols = ['nearby_text', 'posted_date', 'agent_id', 'agent_description', 'agent_url', 'cea', 'mobile', 'rating', 'created_at', 'updated_at', 'first_seen_at', 'is_active', 'agent_photo_url']
     for col in needed_cols:
         if col not in df.columns:
             df[col] = None
             
     # Ensure dropped internal cols
-    cols_to_drop = ['prop_type', 'purpose'] # 'price' and 'psf' are now numeric, 'display_' are strings
+    cols_to_drop = ['prop_type', 'purpose']
     df = df.drop(columns=[c for c in cols_to_drop if c in df.columns])
             
     return df
@@ -219,23 +227,29 @@ def normalize_srx(df):
     if 'tenure' in df.columns:
         df['tenure'] = df['tenure'].apply(clean_tenure) # 'leasehold-99' -> 'Leasehold 99'
     
+    # Map fields including new ones from merged scraper (from skwips)
     rename_map = {
         'listing_id': 'id',
         'title': 'title',
-        'address': 'description', # SRX 'address' col contains description text!
         'price': 'display_price',
         'size_sqft': 'sqft',
         'psf': 'display_psf',
         'url': 'url',
         'agent_name': 'agent_name',
         'agent_phone_full': 'mobile',
+        'agent_user_id': 'agent_id',  # NEW from skwips
+        'agent_photo': 'agent_photo_url',  # NEW from skwips
+        'agent_profile': 'agent_url',  # Was already there
         'prop_type': 'property_type',
-        'posted_age': 'posted_date'
+        'posted_age': 'posted_date',
+        'full_address': 'address',  # NEW from skwips - now have better address
+        'town': 'nearby_text',  # Map town to nearby_text
     }
     df = df.rename(columns=rename_map)
     
-    # Use title as address fallback since address was actually description
-    df['address'] = df['title']
+    # Use full_address if available, otherwise fallback to title
+    if 'address' not in df.columns or df['address'].isna().all():
+        df['address'] = df['title']
     
     df['price'] = df['price_numeric']
     df['psf'] = df['psf_numeric']
@@ -244,8 +258,8 @@ def normalize_srx(df):
     df['source'] = 'srx'
     df['buy_rent'] = df['purpose'].apply(lambda x: 'property-for-sale' if 'sale' in str(x).lower() else 'property-for-rent')
     
-    # Fill missing
-    needed_cols = ['nearby_text', 'agent_id', 'agent_description', 'agent_url', 'cea', 'rating', 'created_at', 'updated_at', 'first_seen_at', 'is_active', 'description']
+    # Fill missing columns
+    needed_cols = ['nearby_text', 'agent_id', 'agent_description', 'agent_url', 'cea', 'rating', 'created_at', 'updated_at', 'first_seen_at', 'is_active', 'description', 'agent_photo_url', 'built_year']
     for col in needed_cols:
         if col not in df.columns:
             df[col] = None

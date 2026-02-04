@@ -41,9 +41,9 @@ class Config:
 
     # 页数范围
     RENT_START_PAGE = 1
-    RENT_END_PAGE = 1484
+    RENT_END_PAGE = 1430
     SALE_START_PAGE = 1
-    SALE_END_PAGE = 2663
+    SALE_END_PAGE = 2744
 
     # ==================== Stage2配置（详情页爬取） ====================
     AGENT_INFO_EXPIRY_DAYS = 30  # 代理信息过期天数（超过此时间需要更新）

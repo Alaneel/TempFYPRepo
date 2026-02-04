@@ -25,7 +25,11 @@ out_root.mkdir(parents=True, exist_ok=True)
 # === CORE FUNCTIONS ======================================================
 
 def parse_cards_to_df(html: str) -> pd.DataFrame:
-    """Extract listings from one page of HTML."""
+    """Extract listings from one page of HTML.
+    
+    Merged improvements from skwips: URL extraction, agent photo, recency text,
+    nearby MRT info, and better property type detection.
+    """
     soup = BeautifulSoup(html, "html.parser")
     cards = soup.select("div[data-testid='listing-card']")
     # Fallback to older selector if new one fails
@@ -39,15 +43,41 @@ def parse_cards_to_df(html: str) -> pd.DataFrame:
         # --- Basic fields ---
         # Title can be in h2 or h3 depending on the card version, usually h3 with data-cy='listingName'
         title_el = c.select_one("h3[data-cy='listingName'], h2")
-        title = title_el.get_text(strip=True) if title_el else ""
+        full_title = title_el.get_text(strip=True) if title_el else ""
+        
+        # Extract clean property name (after "for Sale in" or "for Rent in") - from skwips
+        import re
+        match = re.search(r'for (?:Rent|Sale) in\s*(.+)', full_title)
+        title = match.group(1).strip() if match else full_title
+
+        # --- Listing URL (from skwips) ---
+        url_el = c.select_one('h3[itemProp="url"]')
+        listing_url = url_el.get('href') if url_el else ""
+        if listing_url and not listing_url.startswith('http'):
+            listing_url = f"https://www.99.co{listing_url}"
+
+        # --- Property Type (improved from skwips) ---
+        prop_type = ""
+        if 'HDB' in full_title:
+            prop_type = 'HDB'
+        elif 'Condo' in full_title:
+            prop_type = 'Condo'
+        elif 'Apartment' in full_title:
+            prop_type = 'Apartment'
+        elif 'Landed' in full_title or 'Terrace' in full_title or 'Detached' in full_title:
+            prop_type = 'Landed'
 
         # Price / PSF
-        # Price often in li:nth-of-type(2) or a span with specific text. 
-        # But looking at structure: usually first li is price, second is psf in the price-ul list
         price_el = c.select_one("[data-cy='listingPsfPrice'] li:nth-child(2)")
+        # Also try content attribute (from skwips)
+        if not price_el:
+            price_el = c.select_one('li[content^="S$"]')
         psf_el = c.select_one("[data-cy='listingPsfPrice'] li:nth-child(3)")
+        if not psf_el:
+            psf_el = c.select_one('ul[data-cy="listingPsfPrice"] li.text-sm')
         
         # Fallback if specific data-cy structure differs
+        price_tmp = psf_tmp = ""
         if not price_el:
              # Try finding element with $
              price_candidates = c.find_all(string=lambda s: s and "$" in s)
@@ -56,12 +86,12 @@ def parse_cards_to_df(html: str) -> pd.DataFrame:
                  if len(t) > 20: continue
                  # simple heuristic: if it has 'psf' it's psf, else price
                  if "psf" in t.lower():
-                     if not psf_el: psf_tmp = t
+                     if not psf_tmp: psf_tmp = t
                  else:
-                     if not price_el: price_tmp = t
+                     if not price_tmp: price_tmp = t
 
-        price = price_el.get_text(strip=True) if price_el else ""
-        psf = psf_el.get_text(strip=True) if psf_el else ""
+        price = price_el.get('content') if price_el and price_el.get('content') else (price_el.get_text(strip=True) if price_el else price_tmp)
+        psf = psf_el.get_text(strip=True) if psf_el else psf_tmp
 
         # --- Decompose Info ---
         beds = baths = sqft = tenure = built_year = ""
@@ -88,23 +118,36 @@ def parse_cards_to_df(html: str) -> pd.DataFrame:
                 built_year = txt
 
         # --- Address ---
-        # Found selector: p.text-microcopy-12-regular.text-dark-neutral-100
-        # Also typically ends with valid postal code (6 digits)
         addr_el = c.select_one("p.text-microcopy-12-regular.text-dark-neutral-100")
         if not addr_el:
              # Fallback: look for p tag with 6 digit number at end
-             import re
              for p in c.select("p"):
                  if re.search(r"\d{6}$", p.get_text(strip=True)):
                      addr_el = p
                      break
         address = addr_el.get_text(strip=True) if addr_el else ""
 
-        # --- Agent / Image / URL ---
+        # --- Agent info (enhanced from skwips) ---
         agent_el = c.select_one('[class*="text-foreground"]')
         agent = agent_el.get_text(strip=True) if agent_el else ""
+        
+        # Agent photo (from skwips)
+        agent_photo_el = c.select_one('img[alt*="Agent for"]')
+        agent_photo = agent_photo_el.get('src') if agent_photo_el else ""
 
+        # --- Recency text (from skwips) ---
+        recency_el = c.select_one('p[class*="text-dark-neutral-100"]')
+        recency_text = ""
+        if recency_el:
+            text = recency_el.get_text(strip=True)
+            if 'ago' in text.lower() or 'posted' in text.lower() or 'updated' in text.lower():
+                recency_text = text
 
+        # --- Nearby MRT info (from skwips) ---
+        mrt_el = c.select_one('span.flex.items-center.gap-1.text-microcopy-12-regular')
+        nearby_text = mrt_el.get_text(strip=True) if mrt_el else ""
+
+        # --- Image ---
         img_el = c.select_one("img[alt*='Project Photos']")
         image = img_el["src"] if img_el and img_el.has_attr("src") else ""
 
@@ -119,10 +162,17 @@ def parse_cards_to_df(html: str) -> pd.DataFrame:
             "tenure": tenure,
             "address": address,
             "agent_name": agent,
+            "agent_photo": agent_photo,  # NEW
+            "recency_text": recency_text,  # NEW
+            "nearby_text": nearby_text,  # NEW
+            "url": listing_url,  # NEW
+            "prop_type": prop_type,  # NEW
             "image_url": image,
         })
 
     return pd.DataFrame(data)
+
+
 
 
 async def goto_with_retry(page, url: str, *, nav_timeout_ms: int, wait_selector: str | None,
