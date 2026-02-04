@@ -224,17 +224,23 @@ def get_int(val):
         return None
 
 
-def load_csv_data():
-    """Load aggregated listings from CSV."""
-    base_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data')
-    csv_path = os.path.join(base_dir, 'aggregated_listings.csv')
+def load_sqlite_data():
+    """Load aggregated listings from SQLite database."""
+    import sqlite3
     
-    if not os.path.exists(csv_path):
-        print(f"Error: CSV not found at {csv_path}")
+    base_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data')
+    db_path = os.path.join(base_dir, 'aggregated.db')
+    
+    if not os.path.exists(db_path):
+        print(f"Error: SQLite database not found at {db_path}")
+        print("Run 'python pipeline/aggregate.py' first to generate the database.")
         return None
     
-    print(f"Loading data from: {csv_path}")
-    df = pd.read_csv(csv_path)
+    print(f"Loading data from: {db_path}")
+    conn = sqlite3.connect(db_path)
+    df = pd.read_sql_query("SELECT * FROM listings", conn)
+    conn.close()
+    
     df = df.replace({np.nan: None})
     print(f"Loaded {len(df)} listings")
     return df
@@ -495,7 +501,7 @@ def main():
         return 1
     
     # Load data
-    df = load_csv_data()
+    df = load_sqlite_data()
     if df is None or len(df) == 0:
         print("No data to process.")
         return 1

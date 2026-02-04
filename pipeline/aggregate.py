@@ -2,6 +2,8 @@ import pandas as pd
 import glob
 import os
 import re
+import argparse
+import sqlite3
 
 def get_latest_file(directory, pattern):
     files = glob.glob(os.path.join(directory, pattern))
@@ -266,7 +268,27 @@ def normalize_srx(df):
             
     return df
 
+def save_to_sqlite(df, db_path):
+    """Save DataFrame to SQLite database."""
+    conn = sqlite3.connect(db_path)
+    # Drop existing table and recreate
+    df.to_sql('listings', conn, if_exists='replace', index=False)
+    
+    # Get row count for verification
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*) FROM listings")
+    count = cursor.fetchone()[0]
+    conn.close()
+    
+    return count
+
+
 def main():
+    # Argument parsing
+    parser = argparse.ArgumentParser(description='Aggregate listings from multiple sources')
+    parser.add_argument('--csv', action='store_true', help='Also output CSV file (for debugging)')
+    args = parser.parse_args()
+    
     # Base paths
     # Go up one level from 'pipeline' to project root, then to 'data'
     base_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data')
@@ -416,9 +438,18 @@ def main():
     # Update logic: ensure we are renaming based on ACTUAL columns
     print("Final columns:", final_df.columns.tolist())
     
-    output_path = os.path.join(base_dir, 'aggregated_listings.csv')
-    final_df.to_csv(output_path, index=False)
-    print(f"Saved aggregated data to {output_path}")
+    # === OUTPUT ===
+    # Primary: SQLite
+    sqlite_path = os.path.join(base_dir, 'aggregated.db')
+    count = save_to_sqlite(final_df, sqlite_path)
+    print(f"Saved {count} listings to SQLite: {sqlite_path}")
+    
+    # Optional: CSV (for debugging)
+    if args.csv:
+        csv_path = os.path.join(base_dir, 'aggregated_listings.csv')
+        final_df.to_csv(csv_path, index=False)
+        print(f"Saved CSV (debug): {csv_path}")
 
 if __name__ == "__main__":
     main()
+
