@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, date
 
 class AgentBase(BaseModel):
     name: Optional[str] = None
@@ -21,6 +21,13 @@ class AgentResponse(AgentBase):
     id: int
     created_at: datetime
     updated_at: datetime
+    
+    # Fields from agent_list table (joined via cea)
+    company_name: Optional[str] = None
+    agency_license: Optional[str] = None
+    license_expiry: Optional[date] = None
+    registration_date: Optional[date] = None
+    photo_url: Optional[str] = None
     
     class Config:
         from_attributes = True
