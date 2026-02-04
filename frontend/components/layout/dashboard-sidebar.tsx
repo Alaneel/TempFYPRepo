@@ -2,7 +2,7 @@
 
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard, List, PlusCircle, LogOut, Settings } from "lucide-react";
+import { LayoutDashboard, List, PlusCircle, LogOut, Settings, User, Upload } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -21,10 +21,6 @@ export function DashboardSidebar() {
         { href: "/agent/listings", label: "My Listings", icon: List },
         { href: "/agent/listings/new", label: "Create Listing", icon: PlusCircle },
       ];
-
-  // Common Import for User icon
-  const User = Settings; 
-  const Upload = Settings; 
 
   return (
     <div className="hidden border-r bg-muted/40 md:block md:w-64 min-h-screen">
