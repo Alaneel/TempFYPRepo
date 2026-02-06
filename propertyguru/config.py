@@ -12,8 +12,8 @@ class Config:
     """配置类 - 统一管理所有配置参数"""
 
     # ==================== API配置（必填） ====================
-    APIKEY = 'c739d557371a40bab543b2957f668b68'  # CloudBypass API密钥
-    PROXY = '90601315-res_si5dwhkxnx5:ikgcradf@gw-res.cloudbypass.com:1288'
+    APIKEY = ''  # CloudBypass API密钥
+    PROXY = ''
 
     # ==================== 数据存储配置 ====================
     import os
