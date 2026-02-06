@@ -2,6 +2,9 @@
 data/
 logs/
 
+# Report
+overleaf_report/
+
 # macOS
 .DS_Store
 *.DS_Store
