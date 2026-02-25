@@ -1,5 +1,10 @@
 from pydantic_settings import BaseSettings
 from typing import Optional
+import os
+
+# Resolve .env from project root (two levels up from this file: backend/app/config.py)
+_PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+_ENV_FILE = os.path.join(_PROJECT_ROOT, ".env")
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "Real Estate API"
@@ -13,9 +18,12 @@ class Settings(BaseSettings):
     DB_NAME: str = "real_estate_app"
     
     # JWT
-    SECRET_KEY: str = "YOUR_SECRET_KEY_HERE_CHANGE_IN_PRODUCTION" # TODO: Generate secure key
+    SECRET_KEY: str = "YOUR_SECRET_KEY_HERE_CHANGE_IN_PRODUCTION"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    
+    # AI
+    ANTHROPIC_API_KEY: Optional[str] = None
     
     # Redis
     REDIS_HOST: str = "localhost"
@@ -26,7 +34,7 @@ class Settings(BaseSettings):
         return f"postgresql+asyncpg://{self.DB_USER}:{self.DB_PASS}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
 
     class Config:
-        env_file = ".env"
+        env_file = _ENV_FILE
         case_sensitive = True
 
 settings = Settings()

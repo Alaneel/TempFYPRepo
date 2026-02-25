@@ -1,13 +1,16 @@
 """
 Unified Database Setup for Real Estate Application
 ===================================================
-This script sets up the final application database (real_estate_app) with 
+This script sets up the final application database (real_estate_app) with
 properly structured tables:
 - agents: Agent information
 - listings: Property listings with foreign key to agents
-- condo_basic: Condo/HDB basic information (from new data source)
+- condo_basic: Condo/HDB basic information (sourced directly from data/basic/property_basic.csv)
 
-The listings table can be enriched with condo_basic data via matching.
+The listings table is enriched with condo_basic data by matching:
+  listing.title  ==  condo_basic.condo_name  (case-insensitive exact match, with substring fallback)
+
+Note: condo_basic is ingested directly from CSV before listings, similar to agent_list.
 """
 
 import os
@@ -246,14 +249,143 @@ def load_sqlite_data():
     return df
 
 
-def normalize_name(name):
-    """Normalize property name for matching."""
-    if not name or pd.isna(name):
+def strip_title(name):
+    """Lowercase + strip for case-insensitive exact matching."""
+    if not name or (isinstance(name, float) and pd.isna(name)):
         return ""
-    name = str(name).lower().strip()
-    for pattern in ['condominium', 'condo', 'residence', 'residences', 'apartment', 'apartments', '@', 'the', 'at']:
-        name = name.replace(pattern, ' ')
-    return ' '.join(name.split())
+    return str(name).lower().strip()
+
+
+def ingest_condo_basic(engine):
+    """
+    Read data/basic/property_basic.csv and upsert into the condo_basic table.
+    This mirrors the approach in ingest_agent_list.py — the CSV is the
+    authoritative source; aggregated.db is NOT used for this table.
+    """
+    base_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data')
+    csv_path = os.path.join(base_dir, 'basic', 'property_basic.csv')
+
+    if not os.path.exists(csv_path):
+        print(f"Warning: property_basic.csv not found at {csv_path}. Skipping condo_basic ingestion.")
+        return 0
+
+    print(f"\nLoading condo_basic from: {csv_path}")
+    df = pd.read_csv(csv_path)
+    print(f"Found {len(df)} rows in property_basic.csv")
+
+    def _bool(val):
+        if val is None or (isinstance(val, float) and pd.isna(val)):
+            return False
+        if isinstance(val, bool):
+            return val
+        return str(val).strip().lower() in ('true', '1', 'yes')
+
+    def _int_or_none(val):
+        if val is None or (isinstance(val, float) and pd.isna(val)):
+            return None
+        try:
+            return int(val)
+        except (ValueError, TypeError):
+            return None
+
+    def _float_or_none(val):
+        if val is None or (isinstance(val, float) and pd.isna(val)):
+            return None
+        try:
+            return float(val)
+        except (ValueError, TypeError):
+            return None
+
+    def _str_or_none(val):
+        if val is None or (isinstance(val, float) and pd.isna(val)):
+            return None
+        s = str(val).strip()
+        return s if s else None
+
+    upsert_sql = """
+    INSERT INTO condo_basic (
+        id, condo_name, developer_name, street_name, postal_code,
+        latitude, longitude, tenure, total_units, district, mrt_nearby,
+        has_swimming_pool, has_gym, has_tennis_court, has_security, has_parking,
+        property_type, top_date, neighbourhood, num_floors, num_blocks,
+        amenities_json, facilities_json, description,
+        created_at, updated_at
+    ) VALUES (
+        :id, :condo_name, :developer_name, :street_name, :postal_code,
+        :latitude, :longitude, :tenure, :total_units, :district, :mrt_nearby,
+        :has_swimming_pool, :has_gym, :has_tennis_court, :has_security, :has_parking,
+        :property_type, :top_date, :neighbourhood, :num_floors, :num_blocks,
+        :amenities_json, :facilities_json, :description,
+        CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+    )
+    ON CONFLICT (id) DO UPDATE SET
+        condo_name        = EXCLUDED.condo_name,
+        developer_name    = EXCLUDED.developer_name,
+        street_name       = EXCLUDED.street_name,
+        postal_code       = EXCLUDED.postal_code,
+        latitude          = EXCLUDED.latitude,
+        longitude         = EXCLUDED.longitude,
+        tenure            = EXCLUDED.tenure,
+        total_units       = EXCLUDED.total_units,
+        district          = EXCLUDED.district,
+        mrt_nearby        = EXCLUDED.mrt_nearby,
+        has_swimming_pool = EXCLUDED.has_swimming_pool,
+        has_gym           = EXCLUDED.has_gym,
+        has_tennis_court  = EXCLUDED.has_tennis_court,
+        has_security      = EXCLUDED.has_security,
+        has_parking       = EXCLUDED.has_parking,
+        property_type     = EXCLUDED.property_type,
+        top_date          = EXCLUDED.top_date,
+        neighbourhood     = EXCLUDED.neighbourhood,
+        num_floors        = EXCLUDED.num_floors,
+        num_blocks        = EXCLUDED.num_blocks,
+        amenities_json    = EXCLUDED.amenities_json,
+        facilities_json   = EXCLUDED.facilities_json,
+        description       = EXCLUDED.description,
+        updated_at        = CURRENT_TIMESTAMP;
+    """
+
+    inserted = 0
+    errors = 0
+    from sqlalchemy import text as sa_text
+    with engine.connect() as conn:
+        for idx, row in df.iterrows():
+            try:
+                params = {
+                    'id':               int(row['id']),
+                    'condo_name':       _str_or_none(row.get('condo_name')),
+                    'developer_name':   _str_or_none(row.get('developer_name')),
+                    'street_name':      _str_or_none(row.get('street_name')),
+                    'postal_code':      _str_or_none(row.get('postal_code')),
+                    'latitude':         _float_or_none(row.get('latitude')),
+                    'longitude':        _float_or_none(row.get('longitude')),
+                    'tenure':           _str_or_none(row.get('tenure')),
+                    'total_units':      _int_or_none(row.get('total_units')),
+                    'district':         _int_or_none(row.get('district')),
+                    'mrt_nearby':       _str_or_none(row.get('mrt_nearby')),
+                    'has_swimming_pool': _bool(row.get('has_swimming_pool')),
+                    'has_gym':          _bool(row.get('has_gym')),
+                    'has_tennis_court': _bool(row.get('has_tennis_court')),
+                    'has_security':     _bool(row.get('has_security')),
+                    'has_parking':      _bool(row.get('has_parking')),
+                    'property_type':    _str_or_none(row.get('property_type')),
+                    'top_date':         _str_or_none(row.get('top_date')),
+                    'neighbourhood':    _str_or_none(row.get('neighbourhood')),
+                    'num_floors':       _int_or_none(row.get('num_floors')),
+                    'num_blocks':       _int_or_none(row.get('num_blocks')),
+                    'amenities_json':   _str_or_none(row.get('amenities_json')),
+                    'facilities_json':  _str_or_none(row.get('facilities_json')),
+                    'description':      _str_or_none(row.get('description')),
+                }
+                conn.execute(sa_text(upsert_sql), params)
+                inserted += 1
+            except Exception as e:
+                print(f"  Error on condo row {idx}: {e}")
+                errors += 1
+        conn.commit()
+
+    print(f"condo_basic ingestion: {inserted} upserted, {errors} errors.")
+    return inserted
 
 
 # =====================================================
@@ -284,32 +416,29 @@ def ingest_all_data(df, engine):
     Session = sessionmaker(bind=engine)
     session = Session()
     
-    # Create tables (DROP ALL first to ensure schema update)
-    # WARNING: This deletes all data!
-    Base.metadata.drop_all(engine)
-    print("Dropped all existing tables.")
-    Base.metadata.create_all(engine)
-    print("Created database tables.")
+    # Drop and recreate only agents/listings/users tables (NOT condo_basic —
+    # that was already populated from property_basic.csv before this call).
+    # Use CASCADE to handle FK constraints automatically.
+    from sqlalchemy import text as sa_text
+    with engine.connect() as conn:
+        conn.execute(sa_text(
+            "DROP TABLE IF EXISTS listings, agents, users CASCADE"
+        ))
+        conn.commit()
+    for tbl in [User.__table__, Agent.__table__, Listing.__table__]:
+        tbl.create(engine)
+    # Ensure condo_basic table exists (created if missing, left alone if present)
+    CondoBasic.__table__.create(engine, checkfirst=True)
+    print("Recreated agents/listings tables; condo_basic preserved.")
     
-    # Clear existing data (be careful in production!)
-    try:
-        session.query(Listing).delete()
-        session.query(Agent).delete()
-        # Keep condo_basic data if it exists
-        session.commit()
-        print("Cleared existing listings and agents.")
-    except Exception as e:
-        print(f"Warning: {e}")
-        session.rollback()
-    
-    # Load condo_basic for matching
+    # Load condo_basic for matching (keyed by lowercase condo_name)
     condo_data = {}
     try:
         condos = session.query(CondoBasic).all()
         for c in condos:
-            normalized = normalize_name(c.condo_name)
-            if normalized:
-                condo_data[normalized] = c
+            key = strip_title(c.condo_name)
+            if key:
+                condo_data[key] = c
         print(f"Loaded {len(condo_data)} condo records for matching.")
     except Exception as e:
         print(f"No condo_basic data available: {e}")
@@ -390,23 +519,32 @@ def ingest_all_data(df, engine):
             agents_cache[agent_name] = agent
         
             # 2. Match with condo_basic
+            # Strategy: exact case-insensitive match of listing title == condo_name,
+            # with substring fallback (title contains condo_name or vice versa).
             title = safe_str(row.get('title'))
-            normalized_title = normalize_name(title)
-            
+            title_key = strip_title(title)
+
             condo = None
             match_score = None
             match_method = None
-            
-            if normalized_title and condo_data:
-                # Exact match
-                if normalized_title in condo_data:
-                    condo = condo_data[normalized_title]
+
+            if title_key and condo_data:
+                # Exact match (case-insensitive)
+                if title_key in condo_data:
+                    condo = condo_data[title_key]
                     match_score = 100
                     match_method = 'exact'
                 else:
-                    # Simple fuzzy match (check if title contains condo name or vice versa)
-                    for condo_name, c in condo_data.items():
-                        if condo_name in normalized_title or normalized_title in condo_name:
+                    # Word-boundary fallback: condo_name must appear as whole
+                    # words inside the title (or vice versa).
+                    # Use \b so "1 canberra" does NOT match "101 canberra".
+                    for condo_key, c in condo_data.items():
+                        if not condo_key:
+                            continue
+                        pattern = r'\b' + re.escape(condo_key) + r'\b'
+                        if re.search(pattern, title_key) or re.search(
+                            r'\b' + re.escape(title_key) + r'\b', condo_key
+                        ):
                             condo = c
                             match_score = 80
                             match_method = 'partial'
@@ -491,7 +629,7 @@ def main():
     print("=" * 60)
     print(f"Database: {DATABASE_URL}")
     print()
-    
+
     # Connect
     try:
         engine = create_engine(DATABASE_URL)
@@ -499,16 +637,20 @@ def main():
     except Exception as e:
         print(f"Failed to connect: {e}")
         return 1
-    
-    # Load data
+
+    # Step 1 — Ingest condo_basic directly from property_basic.csv
+    # (must happen BEFORE ingest_all_data so listings can be matched)
+    ingest_condo_basic(engine)
+
+    # Step 2 — Load aggregated listings from SQLite
     df = load_sqlite_data()
     if df is None or len(df) == 0:
         print("No data to process.")
         return 1
-    
-    # Ingest
+
+    # Step 3 — Ingest agents + listings (enriched via condo_basic matching)
     ingest_all_data(df, engine)
-    
+
     print("\nDatabase setup complete!")
     print(f"Tables: agents, listings, condo_basic")
     return 0
