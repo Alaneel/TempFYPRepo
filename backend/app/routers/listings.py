@@ -12,6 +12,7 @@ from app.services.listing import ListingService
 from app.services.auth import get_current_user, get_current_agent, get_current_admin
 from app.services.cache import cache
 from app.models.user import User
+from app.services.semantic_search import parse_nl_query
 
 router = APIRouter()
 
@@ -95,6 +96,71 @@ async def get_listings(
     await cache.set(cache_key, response_data, ttl=120) # 2 mins TTL
     
     return response_data
+
+@router.get("/semantic-search", response_model=PaginatedResponse[ListingResponse])
+async def semantic_search_listings(
+    q: str = Query(..., description="Natural language search query"),
+    page: int = Query(1, ge=1),
+    limit: int = Query(20, ge=1, le=100),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Search property listings using natural language.
+
+    Examples:
+    - "3 bedroom condo near Tampines MRT, budget 1.2 million, freehold"
+    - "cheap HDB for rent in Bishan under 2500 per month"
+    - "4BR landed property Bukit Timah freehold"
+
+    The query is parsed by Claude AI into structured filters,
+    then applied to the listings database.
+    """
+    # 1. Parse natural language → structured filters
+    try:
+        filters = parse_nl_query(q)
+    except Exception as e:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Failed to parse query: {str(e)}"
+        )
+
+    # 2. Query database using existing ListingService
+    service = ListingService(db)
+    skip = (page - 1) * limit
+
+    listings = await service.get_listings(
+        skip=skip,
+        limit=limit,
+        min_price=filters.get("min_price"),
+        max_price=filters.get("max_price"),
+        beds=filters.get("beds"),
+        property_type=filters.get("property_type"),
+        buy_rent=filters.get("buy_rent"),
+        district=filters.get("district"),
+        tenure=filters.get("tenure"),
+        query=filters.get("query"),
+    )
+
+    total = await service.get_total_count(
+        min_price=filters.get("min_price"),
+        max_price=filters.get("max_price"),
+        beds=filters.get("beds"),
+        property_type=filters.get("property_type"),
+        buy_rent=filters.get("buy_rent"),
+        district=filters.get("district"),
+        tenure=filters.get("tenure"),
+        query=filters.get("query"),
+    )
+
+    return {
+        "total": total,
+        "page": page,
+        "limit": limit,
+        "data": jsonable_encoder(listings),
+        # Include parsed filters in response for frontend to display
+        "_parsed_filters": filters,
+        "_original_query": q,
+    }
 
 @router.get("/{listing_id}", response_model=ListingResponse)
 async def get_listing(

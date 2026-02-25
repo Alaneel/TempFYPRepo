@@ -22,6 +22,7 @@ class ListingService:
         district: Optional[int] = None,
         agent_id: Optional[int] = None,
         query: Optional[str] = None,
+        tenure: Optional[str] = None,
         min_lat: Optional[float] = None,
         max_lat: Optional[float] = None,
         min_lng: Optional[float] = None,
@@ -44,6 +45,8 @@ class ListingService:
             stmt = stmt.where(Listing.district == district)
         if agent_id is not None:
             stmt = stmt.where(Listing.agent_id == agent_id)
+        if tenure:
+            stmt = stmt.where(Listing.tenure.ilike(f"%{tenure}%"))
             
         # Geospatial Filters
         if min_lat is not None:
@@ -82,6 +85,7 @@ class ListingService:
         district: Optional[int] = None,
         agent_id: Optional[int] = None,
         query: Optional[str] = None,
+        tenure: Optional[str] = None,
         min_lat: Optional[float] = None,
         max_lat: Optional[float] = None,
         min_lng: Optional[float] = None,
@@ -104,6 +108,8 @@ class ListingService:
             stmt = stmt.where(Listing.district == district)
         if agent_id is not None:
             stmt = stmt.where(Listing.agent_id == agent_id)
+        if tenure:
+            stmt = stmt.where(Listing.tenure.ilike(f"%{tenure}%"))
             
         # Geospatial Filters
         if min_lat is not None:

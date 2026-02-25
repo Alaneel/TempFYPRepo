@@ -57,8 +57,15 @@ def clean_property_type(pt_str):
         return 'Condominium'
     if 'hdb' in p:
         return 'HDB'
-    if 'landed' in p or 'house' in p or 'terrace' in p or 'detached' in p:
+    # SRX room-type strings: "2 Room", "3 Room", "4 Room", "5 Room", "Executive", "Studio Apartment"
+    if re.match(r'^\d+\s*room', p) or p in ('executive', 'studio apartment', 'jumbo'):
+        return 'HDB'
+    if 'landed' in p or 'house' in p or 'terrace' in p or 'detached' in p or 'semi-d' in p or 'bungalow' in p:
+        if 'good class' in p or 'gcb' in p:
+            return 'Good Class Bungalow'
         return 'Landed'
+    if 'residential' in p and 'land' not in p:
+        return 'HDB'
     return pt_str.title()
 
 def clean_display_string(s):
