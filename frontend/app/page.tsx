@@ -7,7 +7,7 @@ import { ListingCard } from "@/components/features/listings/listing-card";
 import { Navbar } from "@/components/layout/navbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, MapPin } from "lucide-react";
+import { Search, MapPin, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -54,16 +54,25 @@ export default function Home() {
           <form onSubmit={handleSearch} className="max-w-3xl mx-auto bg-white p-2 rounded-lg shadow-2xl flex flex-col md:flex-row gap-2">
             <div className="relative flex-grow">
                <MapPin className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-               <Input 
-                 placeholder="Search by location, MRT, or project name..." 
+               <Input
+                 placeholder="Search by location, MRT, project, or describe what you want..."
                  className="pl-10 h-12 text-black border-none focus-visible:ring-0 text-base"
                  value={q}
                  onChange={(e) => setQ(e.target.value)}
                />
             </div>
-            <Button size="lg" className="h-12 px-8 text-base" type="submit">
+            <Button size="lg" className="h-12 px-6 text-base" type="submit">
               <Search className="mr-2 h-5 w-5" />
               Search
+            </Button>
+            <Button
+              size="lg"
+              type="button"
+              className="h-12 px-6 text-base bg-violet-600 hover:bg-violet-700 text-white"
+              onClick={() => router.push(`/listings?mode=ai&q=${encodeURIComponent(q)}`)}
+            >
+              <Sparkles className="mr-2 h-5 w-5" />
+              AI Search
             </Button>
           </form>
           
