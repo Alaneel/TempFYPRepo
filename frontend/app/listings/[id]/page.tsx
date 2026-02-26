@@ -12,6 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
 import { MapPin, BedDouble, Bath, Ruler, Building, Calendar, User, Phone, FileText, Hash, Home, DollarSign, ExternalLink } from "lucide-react";
+import { ValuationPanel } from "@/components/features/listings/valuation-panel";
 import MapView from "@/components/features/map/map-view";
 
 export default function ListingDetailPage() {
@@ -319,6 +320,18 @@ export default function ListingDetailPage() {
                    </div>
                 </CardContent>
              </Card>
+
+              {/* AI Valuation Panel */}
+              {listing.sqft && listing.sqft > 50 && listing.beds != null && (
+                <ValuationPanel
+                  propertyType={listing.property_type || ""}
+                  buyRent={listing.buy_rent || "property-for-sale"}
+                  beds={listing.beds || 0}
+                  sqft={listing.sqft}
+                  tenure={listing.tenure || undefined}
+                  actualPrice={listing.price || undefined}
+                />
+              )}
           </div>
 
         </div>

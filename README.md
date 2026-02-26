@@ -1,6 +1,6 @@
 # 🏠 Singapore Real Estate Data Platform
 
-A complete data collection, processing, and visualization platform for Singapore real estate, featuring multi-platform scrapers, data pipelines, backend API, and frontend interface.
+A complete data collection, processing, and AI analysis platform for Singapore real estate — featuring multi-platform scrapers, data pipeline, FastAPI backend, Next.js frontend, **semantic search**, and **AI-powered property valuation**.
 
 **[中文版 README](README_CN.md)**
 
@@ -14,12 +14,15 @@ A complete data collection, processing, and visualization platform for Singapore
 - [Quick Start](#quick-start)
 - [Detailed Setup Guide](#detailed-setup-guide)
   - [1. Clone and Install Dependencies](#1-clone-and-install-dependencies)
-  - [2. Run Scrapers](#2-run-scrapers)
-  - [3. Aggregate Data](#3-aggregate-data)
-  - [4. Prepare External Data](#4-prepare-external-data)
-  - [5. Start Backend Services](#5-start-backend-services)
-  - [6. Ingest Data to PostgreSQL](#6-ingest-data-to-postgresql)
-  - [7. Start Frontend](#7-start-frontend)
+  - [2. Configure Environment Variables](#2-configure-environment-variables)
+  - [3. Run Scrapers](#3-run-scrapers)
+  - [4. Aggregate Data](#4-aggregate-data)
+  - [5. Prepare External Data](#5-prepare-external-data)
+  - [6. Start Backend Services](#6-start-backend-services)
+  - [7. Ingest Data to PostgreSQL](#7-ingest-data-to-postgresql)
+  - [8. Train Valuation Models](#8-train-valuation-models)
+  - [9. Start Frontend](#9-start-frontend)
+- [AI Features](#ai-features)
 - [Project Structure](#project-structure)
 - [FAQ](#faq)
 
@@ -27,12 +30,14 @@ A complete data collection, processing, and visualization platform for Singapore
 
 ## Overview
 
-This project provides a complete Singapore real estate data solution:
+This project provides a complete Singapore real estate data and AI platform:
 
 - **Four Platform Scrapers**: PropertyGuru, 99.co, EdgeProp, SRX
-- **Data Pipeline**: Aggregate multi-platform data, clean and standardize
+- **Data Pipeline**: Aggregate, clean and standardize multi-platform data
 - **Backend API**: FastAPI + PostgreSQL + Redis
-- **Frontend Interface**: Next.js + TypeScript + TailwindCSS
+- **Frontend UI**: Next.js + TypeScript + TailwindCSS
+- **Semantic Search**: Natural language property search powered by Claude AI
+- **AI Valuation**: Per-property-type price estimation with SHAP interpretability
 
 ---
 
@@ -50,18 +55,25 @@ This project provides a complete Singapore real estate data solution:
 ┌─────────────────────────────────────────────────────────────────┐
 │                   Data Pipeline (pipeline/)                      │
 │  aggregate.py → aggregated.db → ingest.py → PostgreSQL          │
+│  valuation_model.py → 8 per-type ML models (models/valuation/)  │
 └─────────────────────────────────────────────────────────────────┘
                                    │
                                    ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                     Backend API (backend/)                       │
-│                 FastAPI + PostgreSQL + Redis                     │
+│   FastAPI + PostgreSQL + Redis                                   │
+│   /api/v1/listings   — browse & filter                          │
+│   /api/v1/listings/semantic-search  — Claude AI NL search       │
+│   /api/v1/valuation/estimate        — AI price estimation        │
 └─────────────────────────────────────────────────────────────────┘
                                    │
                                    ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                    Frontend UI (frontend/)                       │
-│                  Next.js + TypeScript + Leaflet                  │
+│                    Frontend UI (frontend/)                        │
+│   Next.js + TypeScript + Leaflet + TailwindCSS                   │
+│   /listings   — browse with AI Search toggle                     │
+│   /listings/[id]  — detail with AI Valuation panel              │
+│   /valuate    — standalone property valuation tool               │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -73,6 +85,7 @@ This project provides a complete Singapore real estate data solution:
 - **Node.js**: 18+
 - **Docker & Docker Compose** (recommended for backend)
 - **Browser Automation**: Playwright Chromium
+- **Anthropic API key** (for semantic search — optional)
 
 ---
 
@@ -89,10 +102,13 @@ source .venv/bin/activate
 pip install -r requirements.txt
 playwright install chromium
 
-# 3. Start backend (Docker)
+# 3. Configure environment
+cp .env.example .env   # edit with your DB credentials and API keys
+
+# 4. Start backend (Docker)
 cd backend && docker-compose up -d && cd ..
 
-# 4. Start frontend
+# 5. Start frontend
 cd frontend && npm install && npm run dev
 ```
 
@@ -103,44 +119,63 @@ cd frontend && npm install && npm run dev
 ### 1. Clone and Install Dependencies
 
 ```bash
-# Clone repository
 git clone <repository-url>
 cd PythonProject
 
-# Create virtual environment
 python -m venv .venv
-source .venv/bin/activate  # Linux/macOS
+source .venv/bin/activate  # macOS/Linux
 # .venv\Scripts\activate   # Windows
 
-# Install Python dependencies
 pip install -r requirements.txt
-
-# Install Playwright browser
 playwright install chromium
 ```
 
 ---
 
-### 2. Run Scrapers
+### 2. Configure Environment Variables
 
-Scrapers save data to the `data/` directory (ignored in `.gitignore`).
+Create a `.env` file in the project root (it is gitignored):
 
-#### PropertyGuru (Recommended First)
+```bash
+cp .env.example .env
+```
+
+Edit `.env`:
+
+```env
+# Database (must match backend/docker-compose.yml)
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=your_db_user
+DB_PASS=your_db_password
+DB_NAME=real_estate_app
+
+# Semantic Search (optional — only needed for AI Search feature)
+ANTHROPIC_API_KEY=sk-ant-...
+
+# Backend settings
+SECRET_KEY=your-random-secret-key
+```
+
+Frontend environment (`frontend/.env.local`):
+
+```env
+NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
+```
+
+---
+
+### 3. Run Scrapers
+
+Scrapers save data to the `data/` directory (gitignored).
+
+#### PropertyGuru
 
 ```bash
 cd propertyguru
-
-# Full scrape (initial setup)
-python run_full.py
-
-# Daily incremental update
-python run_daily.py
-
-# Cleanup expired listings
-python run_cleanup.py
+python run_full.py     # Full scrape
+python run_daily.py    # Daily incremental
 ```
-
-See [propertyguru/README.md](propertyguru/README.md) for details.
 
 #### 99.co
 
@@ -149,18 +184,13 @@ cd 99co
 python data_scraper_99co.py --purpose both --max-pages 50 --headless
 ```
 
-See [99co/README.md](99co/README.md) for details.
-
 #### EdgeProp
 
 ```bash
 cd edgeprop
 python edgeprop_scraper_v1.py --purpose sale --type condo --max-pages 50 --headless
-python edgeprop_scraper_v1.py --purpose sale --type hdb --max-pages 50 --headless
 python edgeprop_scraper_v1.py --purpose rental --type condo --max-pages 50 --headless
 ```
-
-See [edgeprop/README.md](edgeprop/README.md) for details.
 
 #### SRX
 
@@ -169,146 +199,139 @@ cd srx
 python srx_data_scraper_6.py --purpose both --towns "1-28" --concurrency 6 --headless
 ```
 
-See [srx/README.md](srx/README.md) for details.
-
 ---
 
-### 3. Aggregate Data
-
-After running scrapers, aggregate all platform data into a unified format.
+### 4. Aggregate Data
 
 ```bash
-cd pipeline
-python aggregate.py
+python pipeline/aggregate.py
 ```
 
-**Output Files:**
-
-- `data/aggregated.db` - SQLite database
-- `data/aggregated_listings.csv` - CSV format (for backup/debugging)
-
-See [pipeline/README.md](pipeline/README.md) for details.
+Output: `data/aggregated.db` (SQLite, gitignored)
 
 ---
 
-### 4. Prepare External Data
+### 5. Prepare External Data
 
 > [!IMPORTANT]
-> The following data is **NOT** collected by scrapers and must be manually downloaded and placed in the correct location.
+> The following files are **NOT** collected by scrapers and must be manually placed.
 
-#### Agent Details (`agent_list.csv`)
+#### Agent List (`agent_list.csv`)
 
-This file contains agent details from CEA (Council for Estate Agencies), including:
-
-- CEA registration number
-- Company name
-- License information
-- Agent photo URL
-
-**Download Link:** [Contact project maintainer for link]
-
-**Location:**
+CEA agent data including registration number, company, photo URL.
 
 ```
-data/
-└── own/
-    └── agent_list.csv
+data/own/agent_list.csv
 ```
 
-**File Format:**
+#### Condo Reference Data (`property_basic.csv`)
 
-```csv
-id,cea_number,agent_name,phone,company_name,agency_license,license_expiry,registration_date,photo_url,created_at,updated_at
+Contains condo geographic coordinates and project metadata.
+
+```
+data/own/property_basic.csv
 ```
 
 ---
 
-### 5. Start Backend Services
-
-The backend uses Docker Compose to manage PostgreSQL and Redis.
+### 6. Start Backend Services
 
 ```bash
 cd backend
-
-# Start all services (PostgreSQL, Redis, Backend)
 docker-compose up -d
-
-# Check service status
-docker-compose ps
-
-# View logs
-docker-compose logs -f
 ```
 
-**Service Ports:**
-| Service | Port |
-|---------|------|
-| Backend API | http://localhost:8000 |
-| PostgreSQL | localhost:5432 |
-| Redis | localhost:6379 |
+| Service     | Port | Description         |
+| ----------- | ---- | ------------------- |
+| Backend API | 8000 | FastAPI application |
+| PostgreSQL  | 5432 | Primary database    |
+| Redis       | 6379 | Cache layer         |
 
-**API Documentation:** http://localhost:8000/docs
-
-#### Run Backend Locally (without Docker container)
+**Local development (without Docker container for backend):**
 
 ```bash
-# Start only PostgreSQL and Redis
-docker-compose up -d db redis
-
-# Run backend locally
-pip install -r requirements.txt
-uvicorn app.main:app --reload
+cd backend
+docker-compose up -d db redis   # just DB + Redis
+uvicorn app.main:app --reload   # run backend locally
 ```
 
 ---
 
-### 6. Ingest Data to PostgreSQL
-
-Aggregated data needs to be imported into PostgreSQL for the backend API.
+### 7. Ingest Data to PostgreSQL
 
 ```bash
 cd pipeline
-
-# Ensure backend database is running
-# docker-compose up -d db  (in backend directory)
-
-# Import aggregated data and agent data to PostgreSQL
 python ingest.py
 ```
 
-**This script will:**
-
-1. Read listing data from `data/aggregated.db`
-2. Read agent information from `data/own/agent_list.csv`
-3. Create/update PostgreSQL tables:
-   - `listings` - Property listings
-   - `agents` - Agent information
-   - `condo_basic` - Property basic info
-   - `users` - User accounts
+Imports listings, agents, and condo reference data into PostgreSQL.
 
 ---
 
-### 7. Start Frontend
+### 8. Train Valuation Models
+
+> [!NOTE]
+> Models are gitignored (large binary files). Each team member must train locally.
+
+```bash
+# Full training — 8 models (Condo/HDB/Landed/GCB × sale/rent) ~3 min
+python pipeline/valuation_model.py
+
+# Quick mode (skip LightGBM + local SHAP) ~20 sec
+python pipeline/valuation_model.py --quick
+
+# Use cached data (skip DB query)
+python pipeline/valuation_model.py --no-db --quick
+```
+
+After training, models are saved to `models/valuation/` and the valuation API (`/api/v1/valuation/estimate`) becomes available automatically (lazy-loaded on first request).
+
+---
+
+### 9. Start Frontend
 
 ```bash
 cd frontend
-
-# Install dependencies
 npm install
-
-# Development mode
 npm run dev
 ```
 
-Visit http://localhost:3000 to view the frontend.
+Visit **http://localhost:3000**
 
-#### Environment Variables
+---
 
-Create `.env.local` file in `frontend/` directory:
+## AI Features
 
-```env
-NEXT_PUBLIC_API_URL=http://localhost:8000
-```
+### 🔍 Semantic Search
+
+Natural language property queries powered by Claude AI.
+
+- On the listings page, toggle **AI Search** to enable
+- Or use the **AI Search** button on the homepage hero
+- Claude parses intent → structured filters → listings query
+- Parsed filters shown as tags below the search bar
+
+**API:** `POST /api/v1/listings/semantic-search`
+
+### 🏷 AI Valuation
+
+Per-property-type price estimation using XGBoost/RF models trained on 50K+ listings.
+
+| Model       | Accuracy (MAPE) | R²   |
+| ----------- | --------------- | ---- |
+| Condo Sale  | 22.7%           | 0.81 |
+| Condo Rent  | 19.0%           | 0.90 |
+| HDB Sale    | 14.7%           | 0.56 |
+| HDB Rent    | 18.1%           | 0.86 |
+| Landed Sale | 26.2%           | 0.61 |
+| Landed Rent | 24.6%           | 0.90 |
+
+**Two usage points:**
+
+1. **Listing detail page** — AI Valuation panel in right sidebar shows estimate vs listed price (over/under-priced badge) + SHAP attribution
+2. **`/valuate` page** — Standalone estimator with form inputs
+
+**API:** `POST /api/v1/valuation/estimate`
 
 ---
 
@@ -318,63 +341,73 @@ NEXT_PUBLIC_API_URL=http://localhost:8000
 PythonProject/
 ├── 99co/                   # 99.co scraper
 ├── edgeprop/               # EdgeProp scraper
-├── propertyguru/           # PropertyGuru scraper (most complete)
+├── propertyguru/           # PropertyGuru scraper
 ├── srx/                    # SRX scraper
 ├── pipeline/               # Data pipeline
-│   ├── aggregate.py        # Aggregate multi-platform data
+│   ├── aggregate.py        # Merge multi-platform scraper data
 │   ├── ingest.py           # Import to PostgreSQL
+│   ├── valuation_model.py  # ML training pipeline (8 models)
 │   └── README.md
-├── backend/                # Backend API (FastAPI)
+├── backend/                # FastAPI backend
 │   ├── app/
-│   ├── docker-compose.yml
+│   │   ├── routers/
+│   │   │   ├── listings.py     # Listings + semantic search
+│   │   │   ├── valuation.py    # AI valuation API  ← NEW
+│   │   │   ├── agents.py
+│   │   │   └── auth.py
+│   │   └── services/
+│   │       ├── valuation.py    # Model loader + SHAP  ← NEW
+│   │       └── ...
 │   └── README.md
-├── frontend/               # Frontend UI (Next.js)
+├── frontend/               # Next.js frontend
 │   ├── app/
-│   ├── components/
-│   └── README.md
-├── data/                   # Data directory (gitignored)
-│   ├── own/                # External data (manual placement)
-│   │   └── agent_list.csv
-│   └── aggregated.db
-├── requirements.txt
-├── README.md               # This file (English)
-└── README_CN.md            # Chinese version
+│   │   ├── listings/
+│   │   │   ├── page.tsx         # Listings with AI Search toggle
+│   │   │   └── [id]/page.tsx    # Detail with AI Valuation panel
+│   │   ├── valuate/
+│   │   │   └── page.tsx         # Standalone valuator  ← NEW
+│   │   └── page.tsx             # Homepage with AI Search button
+│   └── components/
+│       └── features/listings/
+│           └── valuation-panel.tsx  ← NEW
+├── models/                 # Trained models (gitignored, local only)
+│   └── .gitkeep
+├── data/                   # Scraped data (gitignored)
+│   └── own/                # External data (manual placement)
+├── .env.example            # Environment variable template
+├── requirements.txt        # Python dependencies
+└── README.md
 ```
 
 ---
 
 ## FAQ
 
-### Q: Do scrapers need API keys?
+**Q: Do scrapers need API keys?**
 
-**PropertyGuru** requires proxy and API configuration (edit `propertyguru/config.py`). Other scrapers use Playwright to simulate browsers and don't need API keys.
+PropertyGuru may require proxy configuration (see `propertyguru/config.py`). Other scrapers use Playwright. Semantic search requires an `ANTHROPIC_API_KEY`.
 
-### Q: How long does data collection take?
+**Q: How long does training take?**
 
-- **PropertyGuru full**: 2-4 hours
-- **99.co**: 30-60 minutes
-- **EdgeProp**: 30-60 minutes
-- **SRX**: 1-2 hours
+`--quick` mode: ~20 seconds. Full training with LightGBM: ~3 minutes.
 
-Use `--headless` flag to run in background.
+**Q: Valuation API returns 503?**
 
-### Q: How to update data from only some platforms?
+Models haven't been trained yet. Run `python pipeline/valuation_model.py --quick`.
 
-Run the corresponding scraper, then re-run `pipeline/aggregate.py` to merge the latest data.
-
-### Q: Backend fails to start?
+**Q: Backend fails to start?**
 
 ```bash
-docker-compose ps          # Check status
-docker-compose logs backend # View logs
-docker-compose down && docker-compose up -d --build  # Rebuild
+docker-compose ps
+docker-compose logs backend
+docker-compose down && docker-compose up -d --build
 ```
 
-### Q: Frontend can't connect to backend?
+**Q: Frontend can't connect to backend?**
 
-1. Confirm backend is running at http://localhost:8000
+1. Confirm backend is at http://localhost:8000
 2. Check `NEXT_PUBLIC_API_URL` in `frontend/.env.local`
-3. Verify CORS configuration in `backend/app/main.py`
+3. Verify CORS settings in `backend/app/main.py`
 
 ---
 

@@ -75,3 +75,41 @@ wheels/
 htmlcov/
 .tox/
 .nox/
+
+# ── ML Models & Valuation Pipeline ──────────────────────────────────────────
+# Trained model binaries and generated artifacts (large files, not source code)
+models/
+# Keep the directory structure but not the content
+!models/.gitkeep
+
+# ── Scraper cache databases ──────────────────────────────────────────────────
+*.db
+*.sqlite
+*.sqlite3
+# Exception: if you have schema migration SQLite files you want to keep, add them here
+
+# ── Frontend (Next.js) ───────────────────────────────────────────────────────
+node_modules/
+.next/
+out/
+frontend/.next/
+frontend/node_modules/
+frontend/out/
+
+# Next.js build output
+.vercel/
+
+# ── Playwright ───────────────────────────────────────────────────────────────
+# Browser binaries downloaded by playwright (very large, auto-downloaded)
+**/ms-playwright/
+playwright-report/
+test-results/
+
+# ── Misc generated files ─────────────────────────────────────────────────────
+*.log
+pipeline_log.txt
+listings_cache.csv
+
+# ── Backend __pycache__ (catch nested ones) ──────────────────────────────────
+backend/**/__pycache__/
+pipeline/**/__pycache__/

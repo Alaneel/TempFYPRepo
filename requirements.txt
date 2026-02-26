@@ -10,3 +10,11 @@ lxml
 psycopg2-binary
 python-dotenv
 anthropic
+scikit-learn
+xgboost
+lightgbm
+shap
+matplotlib
+seaborn
+joblib
+jinja2
