@@ -30,25 +30,28 @@ The proposed system adopts a modular architecture consisting of five main stages
 \end{figure}
 
 \subsection{Data Acquisition}
-The system targets four major real estate portals in Singapore: PropertyGuru, 99.co, EdgeProp, and SRX. Specialized web scrapers are developed for each platform to extract granular data, including listing titles, prices, property attributes (size, bedrooms, tenure), and location details.
+
+This project is developed as part of a team effort. The system integrates data from four major real estate portals: PropertyGuru, 99.co, EdgeProp, and SRX. The author is solely responsible for the PropertyGuru scraper, the aggregation and deduplication pipeline, and all downstream AI and application components described in this report. The scrapers for 99.co, EdgeProp, and SRX were developed by other team members.
 
 \begin{table}[!ht]
     \centering
-    \caption{Target Data Sources and Extraction Parameters}
+    \small
+    \caption{Data Sources: Attributes Extracted and Responsibility}
     \label{tab:data_sources}
     \renewcommand{\arraystretch}{1.2}
     \begin{tabular}{@{}lll@{}}
     \toprule
-    \textbf{Platform} & \textbf{Key Data Attributes} & \textbf{Scraper Status} \\ \midrule
-    PropertyGuru & Pricing, Amenities, MRT Proximity & Operational \\
-    99.co & Tenure, Unit Size, Lease Date & Operational \\
-    EdgeProp & Historical Transactions, Trends & Operational \\
-    SRX & X-Value, Drone Views, Site Plans & In Development \\
+    \textbf{Platform} & \textbf{Key Data Attributes} & \textbf{Responsibility} \\ \midrule
+    PropertyGuru & Price, beds/baths, sqft, tenure, built year, MRT info & Author \\
+    99.co        & Price, unit size, tenure, lease date                  & Teammate \\
+    EdgeProp     & Price, historical transactions, district               & Teammate \\
+    SRX          & Price, property type, full address, agent info         & Teammate \\
     \bottomrule
     \end{tabular}
 \end{table}
 
-The scrapers are designed to handle pagination and varying HTML structures across different sites.
+The PropertyGuru scraper is implemented in Python using Selenium for dynamic content rendering and BeautifulSoup for HTML parsing. It handles pagination, login-wall detection, and incremental re-crawling via a SQLite state database. Data is stored per-session and synchronised to PostgreSQL via a separate ingest script.
+
 
 \subsection{Data Processing and Aggregation}
 Raw data fetched from different sources frequently contains inconsistencies and duplicates. The processing module performs the following tasks:

@@ -1,47 +1,152 @@
-\chapter{Implementation Progress}
+\chapter{Implementation}
 
-\section{Data Mining and Scraper Development}
+\textit{Note: This chapter documents the author's individual contributions to the team project. Unless otherwise stated, all design and implementation described here was carried out by the author. The 99.co, EdgeProp, and SRX scrapers, and the \texttt{condo\_basic} reference dataset, were contributed by other team members.}
 
-Significant progress has been made in the Data Acquisition phase. We have successfully developed and deployed Python-based web scrapers for the target platforms.
+\section{Data Pipeline}
 
-\subsection{Multi-Platform Scraping}
-Scripts have been implemented for PropertyGuru, 99.co, EdgeProp, and SRX. These scripts utilize libraries such as Selenium and BeautifulSoup to navigate search results, handle dynamic content loading, and extract structured data.
+\subsection{PropertyGuru Scraper}
+
+The PropertyGuru scraper is the author's primary data acquisition contribution. It is implemented in Python using Selenium for JavaScript-rendered content and BeautifulSoup for HTML parsing. Key design decisions include:
+
 \begin{itemize}
-    \item \textbf{Coverage:} The scrapers are capturing listing descriptions, asking prices, floor areas, lease details, and geographical coordinates.
-    \item \textbf{Robustness:} Error handling mechanisms have been integrated to manage connection timeouts and anti-scraping measures (e.g., CAPTCHA challenges, though manual intervention is sometimes required).
+    \item \textbf{Incremental crawling mode:} A SQLite state database tracks which listing URLs have already been fetched, enabling daily re-runs to capture new or updated listings without re-downloading the entire portal.
+    \item \textbf{Resilient session management:} The scraper detects CAPTCHA challenges and connection drops, backing off and retrying with randomised delays.
+    \item \textbf{Rich attribute extraction:} Per listing, the scraper extracts: title, price, PSF, beds, baths, floor area (sqft), tenure, built year, MRT proximity text, agent name/CEA/URL, listing URL, and posted date.
 \end{itemize}
 
-\section{Database Implementation}
+\subsection{Multi-Platform Aggregation Pipeline (Designed by Author)}
 
-The initial database infrastructure has been set up using SQLite for the development phase, with plans to migrate to PostgreSQL for production.
+While each platform's scraper is maintained separately, the author designed and implemented the unified aggregation pipeline (\texttt{pipeline/aggregate.py}) that ingests data from all four scrapers into a single canonical schema. This pipeline is the integration point for the team's combined data.
 
-\subsection{Unified Listing Repository}
-We have implemented point 1 of the requirements: merging and storing information in a unified structure. The raw data from different scrapers is harmonized into a single schema, facilitating cross-platform comparative analysis.
+Each platform uses different field names and value formats for the same underlying concepts.
+For example, floor area appears as \texttt{area\_sqft} on PropertyGuru, \texttt{size\_sqft}
+on EdgeProp, and \texttt{sqft} on SRX. A normalisation layer (\texttt{pipeline/aggregate.py})
+maps each platform's schema to a unified canonical schema, including:
+
 \begin{itemize}
-    \item \subsection{De-duplication and Record Linkage}
-\subsubsection{Algorithmic Approach}
-A critical challenge in aggregating data from multiple portals is the presence of duplicate listings—agents often cross-post the same unit on PropertyGuru, 99.co, and SRX simultaneously. To address this, we developed a multi-stage de-duplication algorithm:
-
-\begin{enumerate}
-    \item \textbf{Address Normalization:} 
-    Raw address strings are first passed through a cleaning pipeline. This involves:
-    \begin{itemize}
-        \item Case standardization (lowercasing).
-        \item Abbreviation expansion (e.g., "Ave" $\rightarrow$ "Avenue", "Blk" $\rightarrow$ "Block").
-        \item Removal of non-alphanumeric noise characters.
-    \end{itemize}
-    
-    \item \textbf{Blocking Strategy:} 
-    To avoid an exponential $O(N^2)$ comparison, records are "blocked" by their postal code prefixes. Comparisons are only performed within each block, significantly reducing computational overhead.
-
-    \item \textbf{Fuzzy Matching Logic:} 
-    Within each block, a pairwise similarity score is calculated using the \textbf{Levenshtein Distance} metric on the listing titles and normalized addresses. We also employ a "Sliding Window" temporal filter: two listings are only considered potential duplicates if they were posted within a 7-day window.
-    
-    \item \textbf{Consensus Resolution:} 
-    When duplicates are identified (Similarity Score $> 0.85$), they are merged into a single "Golden Record". The system prioritizes data from PropertyGuru for pricing fields (due to higher update frequency) and 99.co for tenure information (due to better structured metadata).
-\end{enumerate}
-    \item \textbf{Schema:} The \texttt{aggregated\_listings} table is live and populated with sample datasets from all four sources.
+    \item \textbf{Price:} Parsed from formatted strings (``S\$\,1,234,000'') to floating-point numerics.
+    \item \textbf{Property type:} Mapped to four canonical categories: \textit{Condominium}, \textit{HDB}, \textit{Landed}, \textit{Good Class Bungalow}.
+    \item \textbf{Tenure:} Normalised to \textit{Freehold}, \textit{Leasehold 99}, or \textit{Leasehold 999}.
+    \item \textbf{Beds/Baths:} Extracted as integers from heterogeneous string representations.
 \end{itemize}
 
-\section{Current Limitations}
-While the data collection is functional, the exact mapping of listings to specific HDB/Condo units (Points 2 \& 3) is currently limited by the lack of visible unit numbers in public listings. The infrastructure for the master tables (\texttt{hdb\_unit}, \texttt{condo\_unit}) exists, but population is ongoing.
+\subsection{Deduplication Algorithm}
+\label{sec:dedup}
+
+A critical challenge in multi-platform aggregation is that agents frequently cross-post the
+same property unit to PropertyGuru, 99.co, EdgeProp, and SRX simultaneously.
+Treating each posting as a distinct listing would inflate the dataset and bias
+downstream frequency analyses. We therefore developed a composite-key deduplication
+algorithm, described formally in Algorithm~\ref{alg:dedup}.
+
+\begin{algorithm}
+\caption{Multi-Source Listing Deduplication}
+\label{alg:dedup}
+\begin{algorithmic}[1]
+\Require Dataset $\mathcal{D}$ of $N$ listings from $K$ platforms
+\Ensure Deduplicated dataset $\mathcal{D}^*$
+
+\For{each listing $\ell \in \mathcal{D}$}
+    \State $a \gets \text{normalise}(\ell.\textit{address})$ \Comment{lowercase, strip non-alphanumeric}
+    \If{$a = \varepsilon$}  \Comment{address field absent}
+        \State $a \gets \text{normalise}(\ell.\textit{title})$ \Comment{fall back to project name}
+    \EndIf
+    \State $b \gets \text{extractInt}(\ell.\textit{beds})$
+    \State $h \gets \text{extractInt}(\ell.\textit{baths})$
+    \State $s \gets \text{round}(\ell.\textit{sqft})$
+    \State $\ell.\textit{key} \gets a \,\|\, b \,\|\, h \,\|\, s$
+\EndFor
+
+\State Sort $\mathcal{D}$ by source priority: PropertyGuru $\prec$ 99.co $\prec$ EdgeProp $\prec$ SRX
+\State $\mathcal{D}^* \gets \text{drop\_duplicates}(\mathcal{D},\; \text{subset}=\textit{key},\; \text{keep}=\text{first})$
+\State \Return $\mathcal{D}^*$
+\end{algorithmic}
+\end{algorithm}
+
+\noindent\textbf{Design rationale.}
+\begin{itemize}
+    \item \textbf{Address normalisation with title fallback:} The \texttt{address} field carries 95.5\% coverage across all platforms. For the remaining 4.5\% where address is missing, the listing \texttt{title} (which is the project or building name, with 100\% coverage) is used as a surrogate. This virtually eliminates degenerate keys of the form \texttt{\_beds\_baths\_sqft}, which would falsely collapse unrelated listings.
+    \item \textbf{Source priority ordering:} PropertyGuru listings are retained preferentially due to their higher update frequency and richer metadata (MRT proximity, amenity tags). This is implemented by sorting on source category before deduplication, then discarding all but the first occurrence of each key.
+    \item \textbf{Integer rounding:} Floor area values occasionally differ by 1--2\,sq\,ft between platforms due to rounding conventions. Storing sqft as a rounded integer rather than a float avoids spurious non-matches.
+\end{itemize}
+
+\section{Backend and API}
+
+The backend is implemented as a FastAPI application exposing a RESTful API. Core
+routes include:
+
+\begin{itemize}
+    \item \texttt{GET /listings} — paginated listing retrieval with filter parameters.
+    \item \texttt{POST /listings/semantic-search} — natural language query to structured filters via LLM.
+    \item \texttt{POST /valuation/estimate} — AI valuation for a given property specification.
+    \item \texttt{GET /agents/:id}, \texttt{GET /listings/:id} — detail endpoints.
+\end{itemize}
+
+Authentication is implemented with JSON Web Tokens (JWT); Redis is used for API-layer
+caching of frequently accessed listing pages.
+
+\section{AI Valuation Model}
+
+\subsection{Feature Engineering}
+
+The following features are constructed for each training sample:
+
+\begin{table}[!ht]
+    \centering
+    \caption{Input Features Used in the Valuation Models}
+    \label{tab:features}
+    \renewcommand{\arraystretch}{1.2}
+    \begin{tabular}{@{}lll@{}}
+    \toprule
+    \textbf{Feature} & \textbf{Description} & \textbf{Coverage} \\ \midrule
+    \texttt{beds}           & Bedroom count (integer)                  & 79.4\% (median-imputed) \\
+    \texttt{sqft}           & Floor area in sq\,ft                     & 99.9\% \\
+    \texttt{log\_sqft}      & $\log_{10}(\textit{sqft})$               & Derived \\
+    \texttt{beds\_sqft}     & $\textit{beds} \times \textit{sqft}$     & Derived \\
+    \texttt{beds\_sq}       & $\textit{beds}^2$                        & Derived \\
+    \texttt{log\_beds\_sqft}& $\textit{beds} \times \log_{10}(\textit{sqft})$ & Derived \\
+    \texttt{sqft\_bin}      & Quintile bin of floor area               & Derived \\
+    \texttt{is\_freehold}   & 1 if freehold tenure, 0 otherwise        & 97.0\% \\
+    \texttt{property\_age}  & $\text{CURRENT\_YEAR} - \textit{built\_year}$ & 99.8\% \\
+    \bottomrule
+    \end{tabular}
+\end{table}
+
+The target variable is $\log_{10}(\textit{price})$, which compresses the right-skewed price
+distribution and allows MAPE to be interpreted directly on the log scale.
+
+Room-for-rent listings (beds\,=\,0) are excluded from model training, as their price
+dynamics (individual room within a shared flat) are fundamentally different from
+whole-unit transactions.
+
+\subsection{Per-Segment Model Architecture}
+
+Rather than training a single model across all property types, we train \textbf{eight
+independent models} stratified by the Cartesian product of \{Condominium, HDB, Landed,
+Good Class Bungalow\} and \{sale, rent\}. This avoids confounding effects between
+property-type-specific price scales and is consistent with how professional valuers
+operate.
+
+For each segment, four model families are trained and the best is selected by lowest
+test-set MAPE: Baseline (median predictor), Ridge Regression, Random Forest, and
+XGBoost. Hyperparameters are fixed across all segments (XGBoost: 400 estimators,
+$\eta=0.05$, max\_depth\,=\,5).
+
+\section{Natural Language Search}
+
+The natural language search system accepts a free-text query from the user and returns
+a structured JSON filter object. It is implemented by prompting the Claude
+API with a task-specific system prompt that defines the output JSON schema and
+provides in-context examples. The structured output is then used directly as a
+database query filter. This approach requires no model fine-tuning and degrades
+gracefully for out-of-distribution queries.
+
+\section{Frontend Application}
+
+The user-facing web application is built with Next.js~14 and deployed locally.
+Key features include:
+\begin{itemize}
+    \item A listing search page with both structured filters and a natural-language search bar.
+    \item A listing detail page showing full property information, agent contact details, and an AI Valuation panel (displayed only for whole-unit listings with beds\,$\geq$\,1).
+    \item The AI Valuation panel displays the point estimate, a confidence interval, a verdict badge (overpriced / fair value / below estimate), and a SHAP factor breakdown.
+\end{itemize}
