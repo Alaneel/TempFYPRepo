@@ -86,14 +86,16 @@ PSF_MAX         = 20_000
 CV_FOLDS     = 5
 RANDOM_STATE = 42
 TEST_SIZE    = 0.20
+CURRENT_YEAR = 2026
 
 # Minimum samples needed to train — skip segment if below this
 MIN_SAMPLES = 100
 
-# Features (NO property_type — each model is pure)
+# Features (NO property_type — each model is already pure)
 NUMERIC_FEATURES = [
     "beds", "sqft", "log_sqft", "beds_sqft", "beds_sq",
     "log_beds_sqft", "sqft_bin", "is_freehold",
+    "property_age",   # CURRENT_YEAR - built_year (99.8% coverage)
 ]
 CATEGORICAL_FEATURES = []   # no cat features after splitting by type
 TARGET = "log_price"
@@ -136,7 +138,8 @@ def load_data(no_db: bool = False) -> pd.DataFrame:
         engine = create_engine(url)
         query = """
             SELECT id, price, psf, beds, baths, sqft,
-                   property_type, tenure, buy_rent, source
+                   property_type, tenure, buy_rent, source,
+                   built_year
             FROM listings
             WHERE price IS NOT NULL AND price > 0
         """
@@ -242,6 +245,12 @@ def engineer_features(df: pd.DataFrame, property_type: str, mode: str) -> pd.Dat
     else:
         df["beds"] = df["beds"].fillna(df["beds"].median()).clip(0, 20)
 
+    # Exclude beds=0 listings:
+    #   Rent  → room-for-rent (avg $993-1,544/mo vs full-unit $3,500-7,500/mo)
+    #   Sale  → bare land / commercial conversions without bedroom count
+    # These are fundamentally different products and heavily bias the model.
+    df = df[df["beds"] >= 1]
+
     df["sqft"] = pd.to_numeric(df["sqft"], errors="coerce")
     df = df[df["sqft"].between(50, 50_000)]
 
@@ -254,6 +263,21 @@ def engineer_features(df: pd.DataFrame, property_type: str, mode: str) -> pd.Dat
     df["log_beds_sqft"]  = df["beds"] * df["log_sqft"]
 
     df["sqft_bin"] = pd.qcut(df["sqft"], q=5, labels=False, duplicates="drop")
+
+    # property_age: extract numeric year from built_year string, e.g. "2014" → 12
+    def _parse_year(val):
+        if pd.isna(val):
+            return np.nan
+        digits = "".join(c for c in str(val) if c.isdigit())
+        if len(digits) >= 4:
+            yr = int(digits[:4])
+            if 1960 <= yr <= CURRENT_YEAR + 5:
+                return CURRENT_YEAR - yr
+        return np.nan
+
+    df["property_age"] = df["built_year"].apply(_parse_year)
+    median_age = df["property_age"].median()
+    df["property_age"] = df["property_age"].fillna(median_age if not np.isnan(median_age) else 10)
 
     return df
 

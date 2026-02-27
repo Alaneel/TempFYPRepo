@@ -1,29 +1,22 @@
-\chapter{Future Work plan}
+\chapter{Future Work}
 
-The next phase of the project will focus on Application Development and Advanced Analysis, addressing Points 4 and 5 of the project scope.
+While the current system successfully achieves the core objectives of multi-platform
+aggregation, AI valuation, and semantic search, several avenues remain for future
+enhancement. The following roadmap outlines planned improvements for the next phase,
+focusing on both the author's individual components and the broader team platform.
 
-\section{Frontend Development}
+\section{Data Pipeline and Feature Enrichment}
 
-\subsection{Mobile Application}
-A mobile-responsive frontend will be developed to allow users to interact with the aggregated database.
-\begin{itemize}
-    \item \textbf{Search Functionality:} Users will be able to input specific query criteria (e.g., district, price range, floor area) and retrieve a filtered list of listings.
-    \item \textbf{Aggregated View:} The app will display the total number of matching listings across all platforms, providing a comprehensive market overview that single-platform apps cannot offer.
-\end{itemize}
+\subsection{Geospatial and Proximity Features}
+The current valuation models rely primarily on structural attributes (floor area, bedrooms, tenure, and age). Future iterations will integrate the Singapore Land Authority's \textbf{OneMap API} to compute exact walking distances to key amenities, such as MRT stations, top-tier primary schools, and the Central Business District (CBD). This is expected to significantly reduce the generalisation error of the models, particularly for the Condominium and Landed segments where location commands a high premium.
 
-\section{Backend and Administration}
+\subsection{Expanded Team Coverage}
+While the PropertyGuru scraper developed by the author is fully operational and covers the majority of the market, the team plans to expand the \texttt{condo\_basic} master records (managed by other team members) to include historical transaction data explicitly linked to current listings.
 
-\subsection{Admin Dashboard}
-A backend maintenance interface will be built to support the Create, Read, Update, and Delete (CRUD) operations required for system management.
-\begin{itemize}
-    \item \textbf{Master Data Management:} Administrators will be able to maintain the \texttt{hdb\_basic} and \texttt{condo\_basic} master tables, ensuring new projects and blocks are added.
-    \item \textbf{Data Cleaning:} The interface will allow manual correction of scraper errors and the merging of duplicate records that the automated algorithm misses.
-\end{itemize}
+\section{Advanced AI Modeling}
 
-\section{Advanced AI Features}
+\subsection{Computer Vision for Condition Assessment}
+Listings often contain rich visual information about interior renovation quality and natural lighting, which currently cannot be quantified by tabular models. We propose utilising a pre-trained Vision Transformer (ViT) or Convolutional Neural Network (CNN) to extract aesthetic embeddings from listing images, allowing the valuation model to distinguish between "bare" units and "designer renovated" units of identical size and age.
 
-Building upon the solid data foundation, we plan to implement the AI-driven features outlined in the introduction.
-\begin{itemize}
-    \item \textbf{Semantic Search:} Leveraging LLMs to allow users to search using natural language (e.g., "spacious high-floor unit near MRT") rather than rigid filters.
-    \item \textbf{Price Recommendation:} Training a model on historical transaction data and current listing data to provide estimated fair values for specific units.
-\end{itemize}
+\subsection{Spatio-Temporal Market Forecasting}
+The current gradient-boosted models predict point-in-time valuations based on active listings. By accumulating a longitudinal dataset of historical transactions and expired listings over the coming months, we aim to develop a temporal forecasting model (e.g., using Recurrent Neural Networks or spatio-temporal Graph Neural Networks). This would allow the system to predict forward-looking capital appreciation and rental yield trends.

@@ -32,6 +32,7 @@ interface ValuationPanelProps {
   sqft:         number;
   tenure?:      string;
   actualPrice?: number;
+  builtYear?:   number;
 }
 
 const fmt = (n: number) =>
@@ -67,26 +68,27 @@ const VerdictBadge = ({ verdict, premium }: { verdict: string | null; premium: n
 };
 
 export function ValuationPanel({
-  propertyType, buyRent, beds, sqft, tenure, actualPrice,
+  propertyType, buyRent, beds, sqft, tenure, actualPrice, builtYear,
 }: ValuationPanelProps) {
 
-  const enabled = !!(propertyType && buyRent && beds >= 0 && sqft > 50);
+  const enabled = !!(propertyType && buyRent && beds >= 1 && sqft > 50);
 
   const { data, isLoading, isError } = useQuery<ValuationResult>({
-    queryKey: ["valuation", propertyType, buyRent, beds, sqft, tenure, actualPrice],
+    queryKey: ["valuation", propertyType, buyRent, beds, sqft, tenure, actualPrice, builtYear],
     queryFn: async () => {
       const { data } = await api.post("/valuation/estimate", {
         property_type: propertyType,
         buy_rent:      buyRent,
         beds,
         sqft,
-        tenure:        tenure ?? null,
-        actual_price:  actualPrice ?? null,
+        tenure:       tenure ?? null,
+        actual_price: actualPrice ?? null,
+        built_year:   builtYear ?? null,
       });
       return data;
     },
     enabled,
-    staleTime: 1000 * 60 * 10,   // cache 10 min
+    staleTime: 1000 * 60 * 10,
     retry: false,
   });
 

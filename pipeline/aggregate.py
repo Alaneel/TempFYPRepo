@@ -349,20 +349,28 @@ def main():
     final_df = pd.concat(normalized_dfs, ignore_index=True)
     
     # Deduplication Logic
-    # 1. Normalize Address (very basic for now)
+    # Normalize address — fall back to title (project name) when address is null.
+    # Title is 100% filled in PG; address is 95.5% filled.
+    # This prevents null-address rows collapsing into the same "_beds_baths_sqft" bucket.
     final_df['norm_beds'] = final_df['beds'].fillna('0').astype(str).str.extract(r'(\d+)').fillna(0).astype(int)
     final_df['norm_baths'] = final_df['baths'].fillna('0').astype(str).str.extract(r'(\d+)').fillna(0).astype(int)
     final_df['norm_sqft'] = final_df['sqft'].apply(clean_sqft).fillna(0).astype(int)
-    final_df['norm_addr'] = final_df['address'].astype(str).str.lower().str.replace(r'[^a-z0-9]', '', regex=True)
-    
+
+    # Use address; fall back to title when address is missing
+    addr_or_title = final_df['address'].fillna('').astype(str).str.strip()
+    title_fallback = final_df['title'].fillna('').astype(str).str.strip()
+    final_df['norm_addr'] = addr_or_title.where(addr_or_title != '', title_fallback) \
+                                          .str.lower() \
+                                          .str.replace(r'[^a-z0-9]', '', regex=True)
+
     # Create composite key
     final_df['dedup_key'] = (
-        final_df['norm_addr'] + '_' + 
-        final_df['norm_beds'].astype(str) + '_' + 
-        final_df['norm_baths'].astype(str) + '_' + 
+        final_df['norm_addr'] + '_' +
+        final_df['norm_beds'].astype(str) + '_' +
+        final_df['norm_baths'].astype(str) + '_' +
         final_df['norm_sqft'].astype(str)
     )
-    
+
     # --- UNIFICATION: Force display_price to PropertyGuru standard ---
     def standard_format_price(row):
         p = row.get('price')

@@ -43,7 +43,10 @@ _TYPE_KEYS = {
 NUMERIC_FEATURES = [
     "beds", "sqft", "log_sqft", "beds_sqft", "beds_sq",
     "log_beds_sqft", "sqft_bin", "is_freehold",
+    "property_age",   # 2026 - built_year (99.8% coverage in DB)
 ]
+
+_CURRENT_YEAR = 2026
 
 # sqft quantile bin boundaries (approximate, per mode)
 _SALE_BINS = [0, 600, 900, 1300, 2200, 1e9]
@@ -92,11 +95,15 @@ def _get_mape(seg: str) -> float:
 
 
 # ─── feature engineering ──────────────────────────────────────────────────────
-def _build_features(beds: float, sqft: float, tenure: Optional[str], mode: str) -> pd.DataFrame:
-    is_freehold = 1 if tenure and "freehold" in tenure.lower() else 0
-    log_sqft    = np.log10(max(sqft, 1))
-    bins        = _SALE_BINS if mode == "sale" else _RENT_BINS
-    sqft_bin    = int(np.digitize(sqft, bins) - 1)
+def _build_features(
+    beds: float, sqft: float, tenure: Optional[str], mode: str,
+    built_year: Optional[int] = None,
+) -> pd.DataFrame:
+    is_freehold  = 1 if tenure and "freehold" in tenure.lower() else 0
+    log_sqft     = np.log10(max(sqft, 1))
+    bins         = _SALE_BINS if mode == "sale" else _RENT_BINS
+    sqft_bin     = int(np.digitize(sqft, bins) - 1)
+    property_age = (_CURRENT_YEAR - built_year) if built_year and 1960 <= built_year <= _CURRENT_YEAR + 5 else 10
 
     return pd.DataFrame([{
         "beds":          beds,
@@ -107,6 +114,7 @@ def _build_features(beds: float, sqft: float, tenure: Optional[str], mode: str) 
         "log_beds_sqft": beds * log_sqft,
         "sqft_bin":      sqft_bin,
         "is_freehold":   is_freehold,
+        "property_age":  property_age,
     }])
 
 
@@ -120,6 +128,7 @@ _FEATURE_LABELS = {
     "log_beds_sqft": "Beds × log(sqft)",
     "sqft_bin":      "Size tier",
     "is_freehold":   "Freehold tenure",
+    "property_age":  "Property age (yrs)",
 }
 
 
@@ -173,13 +182,14 @@ def estimate(
     sqft:          float,
     tenure:        Optional[str] = None,
     actual_price:  Optional[float] = None,
+    built_year:    Optional[int] = None,
 ) -> dict:
     mode  = _mode_key(buy_rent)
     seg   = _seg_key(property_type, buy_rent)
     model = _load_model(seg)
     mape  = _get_mape(seg)
 
-    X_df    = _build_features(beds, sqft, tenure, mode)
+    X_df    = _build_features(beds, sqft, tenure, mode, built_year=built_year)
     log_est = float(model.predict(X_df)[0])
     est     = round(10 ** log_est)
 
