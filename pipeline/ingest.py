@@ -258,10 +258,12 @@ def strip_title(name):
 
 def ingest_condo_basic(engine):
     """
-    Read data/basic/property_basic.csv and upsert into the condo_basic table.
-    This mirrors the approach in ingest_agent_list.py — the CSV is the
-    authoritative source; aggregated.db is NOT used for this table.
+    Reads condo/HDB basic data from data/basic/property_basic.csv
+    and upserts into the condo_basic table.
     """
+    # Ensure table exists first
+    CondoBasic.__table__.create(engine, checkfirst=True)
+    
     base_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data')
     csv_path = os.path.join(base_dir, 'basic', 'property_basic.csv')
 
