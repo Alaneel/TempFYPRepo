@@ -53,19 +53,27 @@ def clean_property_type(pt_str):
     if pd.isna(pt_str):
         return None
     p = str(pt_str).lower().strip()
-    if 'condo' in p or 'apartment' in p:
+    
+    # 1. Condominium
+    if 'condo' in p or 'apartment' in p or 'walk-up' in p or 'cluster house' in p:
         return 'Condominium'
-    if 'hdb' in p:
+        
+    # 2. HDB
+    # Catching explicit "HDB", SRX room-type strings ("2 Room", "3 Room", "4 Room", "5 Room"),
+    # "Executive", "Studio Apartment", "Jumbo", and generic "Residential" that isn't land.
+    # Note: re.match catches 'X room', re.search catches things like 'hdb 4 room'
+    if 'hdb' in p or re.search(r'\d+\s*-?\s*room', p) or p in ('executive', 'studio apartment', 'jumbo'):
         return 'HDB'
-    # SRX room-type strings: "2 Room", "3 Room", "4 Room", "5 Room", "Executive", "Studio Apartment"
-    if re.match(r'^\d+\s*room', p) or p in ('executive', 'studio apartment', 'jumbo'):
+    if 'residential' in p and 'land' not in p:
         return 'HDB'
-    if 'landed' in p or 'house' in p or 'terrace' in p or 'detached' in p or 'semi-d' in p or 'bungalow' in p:
+        
+    # 3. Landed
+    if 'landed' in p or 'house' in p or 'terrace' in p or 'detached' in p or 'semi-d' in p or 'bungalow' in p or 'townhouse' in p:
         if 'good class' in p or 'gcb' in p:
             return 'Good Class Bungalow'
         return 'Landed'
-    if 'residential' in p and 'land' not in p:
-        return 'HDB'
+        
+    # Fallback to Title Case if we really can't figure it out
     return pt_str.title()
 
 def clean_display_string(s):
