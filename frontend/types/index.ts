@@ -31,6 +31,7 @@ export interface Listing {
   buy_rent?: string;
   has_swimming_pool?: boolean;
   has_gym?: boolean;
+  image_url?: string;
   url?: string;
   agent_id: number;
   agent?: Agent;

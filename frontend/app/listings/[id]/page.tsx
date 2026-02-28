@@ -93,11 +93,22 @@ export default function ListingDetailPage() {
       <Navbar />
 
       {/* Hero / Images */}
-      <div className="bg-gray-100 h-[400px] md:h-[500px] relative">
-        <div className="absolute inset-0 flex items-center justify-center text-gray-400">
-          <span className="text-xl font-medium">Image Gallery Placeholder</span>
-        </div>
-        <div className="absolute bottom-4 right-4 flex gap-2">
+      <div className="bg-gray-100 h-[400px] md:h-[500px] relative w-full overflow-hidden">
+        {listing.image_url ? (
+            <img 
+              src={listing.image_url} 
+              alt={listing.title} 
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+        ) : (
+            <div className="absolute inset-0 flex items-center justify-center text-gray-400">
+              <span className="text-xl font-medium">Image Gallery Placeholder</span>
+            </div>
+        )}
+        {/* Dark gradient overlay for text readability */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+
+        <div className="absolute bottom-4 right-4 flex gap-2 z-10">
           <Button variant="secondary">View Photos (5)</Button>
           <Button variant="secondary">View Map</Button>
         </div>

@@ -32,6 +32,7 @@ async def get_listings(
     max_lat: Optional[float] = None,
     min_lng: Optional[float] = None,
     max_lng: Optional[float] = None,
+    sort_by: Optional[str] = Query(None, description="Sort order: recommended, price_asc, price_desc, newest"),
     db: AsyncSession = Depends(get_db)
 ):
     # Generate Cache Key
@@ -39,7 +40,8 @@ async def get_listings(
         "page": page, "limit": limit, "min_price": min_price, "max_price": max_price,
         "beds": beds, "property_type": property_type, "buy_rent": buy_rent, "district": district, 
         "agent_id": agent_id, "q": q,
-        "min_lat": min_lat, "max_lat": max_lat, "min_lng": min_lng, "max_lng": max_lng
+        "min_lat": min_lat, "max_lat": max_lat, "min_lng": min_lng, "max_lng": max_lng,
+        "sort_by": sort_by
     }
     params_str = json.dumps(params, sort_keys=True)
     cache_key = f"listings:{hashlib.md5(params_str.encode()).hexdigest()}"
@@ -67,7 +69,8 @@ async def get_listings(
         min_lat=min_lat,
         max_lat=max_lat,
         min_lng=min_lng,
-        max_lng=max_lng
+        max_lng=max_lng,
+        sort_by=sort_by
     )
     
     total = await service.get_total_count(
@@ -102,6 +105,7 @@ async def semantic_search_listings(
     q: str = Query(..., description="Natural language search query"),
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
+    sort_by: Optional[str] = Query(None, description="Sort order: recommended, price_asc, price_desc, newest"),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -139,6 +143,7 @@ async def semantic_search_listings(
         district=filters.get("district"),
         tenure=filters.get("tenure"),
         query=filters.get("query"),
+        sort_by=sort_by
     )
 
     total = await service.get_total_count(

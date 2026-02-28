@@ -17,6 +17,12 @@ export function ListingCard({ listing }: ListingCardProps) {
 
 // Deterministic image generator based on listing ID and type
   const getListingImage = (listing: Listing) => {
+    // If backend provides an image, use it!
+    if (listing.image_url) {
+        return listing.image_url;
+    }
+    
+    // Fallback deterministic generator
     const images = {
       Condo: [
         "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=800&q=80", // High rise
@@ -36,7 +42,6 @@ export function ListingCard({ listing }: ListingCardProps) {
       ]
     };
 
-    // Fallback category
     let category = "Condo";
     const type = listing.property_type?.toLowerCase() || "";
     if (type.includes("hdb")) category = "HDB";
@@ -94,18 +99,20 @@ export function ListingCard({ listing }: ListingCardProps) {
                 <Bath className="h-4 w-4" />
                 <span>{listing.baths || 0} Baths</span>
              </div>
-             <div className="flex items-center gap-1">
-                <Ruler className="h-4 w-4" />
-                <span>{listing.sqft ? `${listing.sqft.toLocaleString()} sqft` : "-"}</span>
+             <div className="flex items-center gap-1 overflow-hidden">
+                <Ruler className="h-4 w-4 shrink-0" />
+                <span className="truncate">{listing.sqft ? `${listing.sqft.toLocaleString()} sqft` : "-"}</span>
              </div>
           </div>
         </CardContent>
         
         <CardFooter className="p-4 pt-0 text-xs text-muted-foreground border-t bg-muted/10">
-           <div className="flex justify-between w-full items-center mt-3">
-              <span>{listing.tenure || "Unknown Tenure"}</span>
-              <span>
-                {listing.built_year ? listing.built_year.replace(/\D/g, '') : (listing.created_at ? new Date(listing.created_at).getFullYear() : "New")}
+           <div className="flex justify-between w-full items-center mt-3 gap-2">
+              <span className="truncate">{listing.tenure || "Unknown Tenure"}</span>
+              <span className="shrink-0">
+                {listing.built_year && listing.built_year.replace(/\D/g, '') 
+                  ? listing.built_year.replace(/\D/g, '') 
+                  : "-"}
               </span>
            </div>
         </CardFooter>

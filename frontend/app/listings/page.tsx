@@ -59,6 +59,7 @@ function ListingsContent() {
   );
   const [buyRent, setBuyRent] = useState(searchParams.get("buy_rent") || "all");
   const [page, setPage] = useState(Number(searchParams.get("page")) || 1);
+  const [sortBy, setSortBy] = useState(searchParams.get("sort_by") || "recommended");
 
   // Parsed filters returned by semantic search (for display)
   const [parsedFilters, setParsedFilters] = useState<ParsedFilters | null>(
@@ -72,6 +73,7 @@ function ListingsContent() {
     setBuyRent(searchParams.get("buy_rent") || "all");
     setPage(Number(searchParams.get("page")) || 1);
     setAiMode(searchParams.get("mode") === "ai");
+    setSortBy(searchParams.get("sort_by") || "recommended");
   }, [searchParams]);
 
   const updateFilters = (overrides?: {
@@ -80,12 +82,14 @@ function ListingsContent() {
     buyRent?: string;
     page?: number;
     mode?: string;
+    sortBy?: string;
   }) => {
     const nextQ = overrides?.q ?? q;
     const nextPropertyType = overrides?.propertyType ?? propertyType;
     const nextBuyRent = overrides?.buyRent ?? buyRent;
     const nextPage = overrides?.page ?? page;
     const nextMode = overrides?.mode ?? (aiMode ? "ai" : "");
+    const nextSortBy = overrides?.sortBy ?? sortBy;
 
     const params = new URLSearchParams(searchParams.toString());
 
@@ -99,6 +103,8 @@ function ListingsContent() {
     else params.delete("buy_rent");
     if (nextMode) params.set("mode", nextMode);
     else params.delete("mode");
+    if (nextSortBy && nextSortBy !== "recommended") params.set("sort_by", nextSortBy);
+    else params.delete("sort_by");
 
     if (overrides?.page) {
       params.set("page", nextPage.toString());
@@ -124,6 +130,7 @@ function ListingsContent() {
           q: currentQ,
           page: Number(searchParams.get("page")) || 1,
           limit: 12,
+          sort_by: searchParams.get("sort_by") || "recommended",
         },
       });
       if (data._parsed_filters) setParsedFilters(data._parsed_filters);
@@ -144,6 +151,11 @@ function ListingsContent() {
     const currentBuyRent = searchParams.get("buy_rent");
     if (currentBuyRent && currentBuyRent !== "all")
       params.buy_rent = currentBuyRent;
+      
+    const currentSortBy = searchParams.get("sort_by");
+    if (currentSortBy && currentSortBy !== "recommended")
+      params.sort_by = currentSortBy;
+      
     const { data } = await api.get<PaginatedResponse<Listing>>("/listings/", {
       params,
     });
@@ -178,113 +190,117 @@ function ListingsContent() {
     <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
 
-      <div className="container mx-auto px-4 py-8 flex-grow">
-        {/* Search Bar */}
-        <div className="mb-6 space-y-3">
-          <div className="flex flex-col md:flex-row gap-3 items-end">
-            {/* Search input */}
-            <div className="grid w-full gap-1.5 md:max-w-lg">
-              <Label htmlFor="search" className="flex items-center gap-2">
-                Search
-                {aiMode && (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-violet-600 text-white">
-                    <Sparkles className="h-3 w-3" /> AI
-                  </span>
-                )}
-              </Label>
-              <form onSubmit={handleSearch} className="flex gap-2">
-                <Input
-                  id="search"
-                  placeholder={
-                    aiMode
-                      ? "e.g. 3BR condo Tampines 1.2m freehold..."
-                      : "Search location, project..."
-                  }
-                  value={q}
-                  onChange={(e) => setQ(e.target.value)}
-                />
-                <Button
-                  type="submit"
-                  className={aiMode ? "bg-violet-600 hover:bg-violet-700" : ""}
-                >
-                  {aiMode ? (
-                    <Sparkles className="mr-1 h-4 w-4" />
-                  ) : (
-                    <Search className="mr-1 h-4 w-4" />
-                  )}
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow">
+        {/* Search & Filter Bar */}
+        <div className="mb-8 space-y-4">
+          <div className="bg-white border rounded-2xl p-4 shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between">
+            {/* Search input group */}
+            <div className="w-full flex-1 max-w-2xl flex flex-col sm:flex-row gap-4 items-end sm:items-center">
+              <div className="grid w-full gap-2 relative">
+                <Label htmlFor="search" className="flex items-center gap-2 sr-only">
                   Search
-                </Button>
+                  {aiMode && (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-violet-600 text-white">
+                      <Sparkles className="h-3 w-3" /> AI
+                    </span>
+                  )}
+                </Label>
+              <form onSubmit={handleSearch} className="flex gap-2 w-full">
+                <div className="relative flex items-center w-full">
+                  {!aiMode && <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />}
+                  {aiMode && <Sparkles className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-violet-500" />}
+                  <Input
+                    id="search"
+                    className="pl-10 h-10 text-base rounded-xl border-gray-300 focus-visible:ring-violet-500/50 w-full"
+                    placeholder={
+                      aiMode
+                        ? "e.g. 3BR condo Tampines 1.2m freehold..."
+                        : "Search location, project..."
+                    }
+                    value={q}
+                    onChange={(e) => setQ(e.target.value)}
+                  />
+                  <Button
+                    type="submit"
+                    className={`absolute right-1 top-1 h-8 rounded-lg px-4 ${aiMode ? "bg-violet-600 hover:bg-violet-700" : ""}`}
+                  >
+                    Search
+                  </Button>
+                </div>
               </form>
             </div>
-
-            {/* AI toggle */}
-            <div className="flex items-center gap-2 pb-0.5">
-              <button
-                type="button"
-                onClick={() => {
-                  const next = !aiMode;
-                  setAiMode(next);
-                  setParsedFilters(null);
-                  updateFilters({ mode: next ? "ai" : "" });
-                }}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${aiMode ? "bg-violet-600" : "bg-gray-300"}`}
-              >
-                <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${aiMode ? "translate-x-6" : "translate-x-1"}`}
-                />
-              </button>
-              <span className="text-sm font-medium whitespace-nowrap flex items-center gap-1">
-                <Sparkles className="h-3.5 w-3.5 text-violet-500" /> AI Search
-              </span>
-            </div>
-
-            {/* Standard filters (hidden in AI mode) */}
-            {!aiMode && (
-              <>
-                <div className="grid gap-1.5 min-w-[140px]">
-                  <Label>Type</Label>
-                  <Select
-                    value={propertyType}
-                    onValueChange={(val) => {
-                      setPropertyType(val);
-                      setPage(1);
-                      updateFilters({ propertyType: val, page: 1 });
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="All Types" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Types</SelectItem>
-                      <SelectItem value="Condo">Condo</SelectItem>
-                      <SelectItem value="Landed">Landed</SelectItem>
-                      <SelectItem value="HDB">HDB</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid gap-1.5 min-w-[140px]">
-                  <Label>Mode</Label>
-                  <Select
-                    value={buyRent}
-                    onValueChange={(val) => {
-                      setBuyRent(val);
-                      setPage(1);
-                      updateFilters({ buyRent: val, page: 1 });
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="All Modes" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Modes</SelectItem>
-                      <SelectItem value="Buy">Buy</SelectItem>
-                      <SelectItem value="Rent">Rent</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </>
-            )}
           </div>
+
+          {/* Filter controls right side */}
+            <div className="flex flex-wrap items-center gap-3 w-full md:w-auto justify-start md:justify-end shrink-0">
+              {/* AI toggle */}
+              <div className="flex items-center gap-2 bg-gray-50 px-3 h-10 rounded-xl border shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = !aiMode;
+                    setAiMode(next);
+                    setParsedFilters(null);
+                    updateFilters({ mode: next ? "ai" : "" });
+                  }}
+                  className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus:outline-none ${aiMode ? "bg-violet-600" : "bg-gray-300"}`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${aiMode ? "translate-x-6" : "translate-x-1"}`}
+                  />
+                </button>
+                <span className="text-sm font-semibold whitespace-nowrap flex items-center gap-1.5 w-max">
+                  <Sparkles className="h-4 w-4 text-violet-500" /> AI Search
+                </span>
+              </div>
+
+              {/* Standard filters (hidden in AI mode) */}
+              {!aiMode && (
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="grid gap-1">
+                    <Label className="text-xs text-muted-foreground sr-only">Type</Label>
+                    <Select
+                      value={propertyType}
+                      onValueChange={(val) => {
+                        setPropertyType(val);
+                        setPage(1);
+                        updateFilters({ propertyType: val, page: 1 });
+                      }}
+                    >
+                      <SelectTrigger className="w-[130px] h-10 bg-gray-50 rounded-xl">
+                        <SelectValue placeholder="All Types" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Types</SelectItem>
+                        <SelectItem value="Condo">Condo</SelectItem>
+                        <SelectItem value="Landed">Landed</SelectItem>
+                        <SelectItem value="HDB">HDB</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid gap-1">
+                    <Label className="text-xs text-muted-foreground sr-only">Mode</Label>
+                    <Select
+                      value={buyRent}
+                      onValueChange={(val) => {
+                        setBuyRent(val);
+                        setPage(1);
+                        updateFilters({ buyRent: val, page: 1 });
+                      }}
+                    >
+                      <SelectTrigger className="w-[120px] h-10 bg-gray-50 rounded-xl">
+                        <SelectValue placeholder="All Modes" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Modes</SelectItem>
+                        <SelectItem value="Buy">Buy</SelectItem>
+                        <SelectItem value="Rent">Rent</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              )}
+            </div>
 
           {/* Parsed filter tags (AI mode) */}
           {isSemanticMode &&
@@ -306,6 +322,7 @@ function ListingsContent() {
                 )}
               </div>
             )}
+          </div>
         </div>
 
         {/* Results */}
@@ -323,9 +340,9 @@ function ListingsContent() {
             Failed to load listings. Please try again.
           </div>
         ) : (
-          <div className="flex flex-col lg:flex-row gap-6 h-full">
+          <div className="flex flex-col lg:flex-row gap-8 h-full items-start">
             {/* Map View */}
-            <div className="hidden lg:block w-1/3 h-[calc(100vh-200px)] sticky top-24 rounded-xl overflow-hidden border">
+            <div className="hidden lg:block w-1/3 h-[calc(100vh-140px)] sticky top-[100px] rounded-2xl overflow-hidden border shadow-sm z-10">
               <MapView
                 listings={data?.data}
                 center={DEFAULT_CENTER}
@@ -334,21 +351,44 @@ function ListingsContent() {
             </div>
 
             {/* List View */}
-            <div className="flex-1">
-              <div className="flex justify-between items-center mb-4">
-                <span className="text-muted-foreground">
-                  {data?.total} results found
-                </span>
-                <Button
-                  variant="outline"
-                  className="lg:hidden"
-                  onClick={() => alert("Mobile map view coming soon")}
-                >
-                  View Map
-                </Button>
+            <div className="flex-1 w-full lg:w-2/3">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 pb-4 border-b">
+                <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                  <span className="text-muted-foreground font-normal">Showing</span>
+                  {data?.total.toLocaleString()} results
+                </h2>
+                
+                <div className="flex items-center gap-3 mt-4 sm:mt-0">
+                  <Select 
+                    value={sortBy}
+                    onValueChange={(val) => {
+                      setSortBy(val);
+                      setPage(1);
+                      updateFilters({ sortBy: val, page: 1 });
+                    }}
+                  >
+                    <SelectTrigger className="w-[160px] h-9">
+                      <SelectValue placeholder="Sort by" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="recommended">Recommended</SelectItem>
+                      <SelectItem value="price_asc">Price: Low to High</SelectItem>
+                      <SelectItem value="price_desc">Price: High to Low</SelectItem>
+                      <SelectItem value="newest">Newest First</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="lg:hidden h-9"
+                    onClick={() => alert("Mobile map view coming soon")}
+                  >
+                    Map View
+                  </Button>
+                </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                 {data?.data.map((listing) => (
                   <ListingCard key={listing.id} listing={listing} />
                 ))}
