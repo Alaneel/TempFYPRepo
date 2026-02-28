@@ -26,7 +26,8 @@ class ListingService:
         min_lat: Optional[float] = None,
         max_lat: Optional[float] = None,
         min_lng: Optional[float] = None,
-        max_lng: Optional[float] = None
+        max_lng: Optional[float] = None,
+        sort_by: Optional[str] = None
     ) -> List[Listing]:
         stmt = select(Listing).options(selectinload(Listing.agent), selectinload(Listing.condo))
         
@@ -67,6 +68,19 @@ class ListingService:
                     Listing.address.ilike(search_query),
                     Listing.description.ilike(search_query)
                 )
+            )
+            
+        # Sorting
+        if sort_by == "price_asc":
+            stmt = stmt.order_by(Listing.price.asc().nulls_last())
+        elif sort_by == "price_desc":
+            stmt = stmt.order_by(Listing.price.desc().nulls_last())
+        elif sort_by == "newest":
+            stmt = stmt.order_by(Listing.created_at.desc().nulls_last())
+        elif sort_by == "recommended" or not sort_by:
+            # Default sorting: by newest (since image generation is handled in frontend)
+            stmt = stmt.order_by(
+                Listing.created_at.desc().nulls_last()
             )
             
         # Pagination

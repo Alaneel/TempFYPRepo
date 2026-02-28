@@ -1,6 +1,5 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, computed_field
 from typing import Optional
-from datetime import datetime
 from datetime import datetime
 from app.schemas.agent import AgentResponse
 from app.schemas.condo import CondoResponse
@@ -50,6 +49,25 @@ class ListingResponse(ListingBase):
     # Relationships
     agent: Optional[AgentResponse] = None
     condo: Optional[CondoResponse] = None
+    
+    # We add an image_url property to ensure the UI does not display broken images.
+    @computed_field
+    def image_url(self) -> str:
+        # We can seed the image selection with the property's ID so that 
+        # the same property always gets the exact same placeholder image.
+        seed = self.id % 5
+        
+        ptype = str(self.property_type).lower() if self.property_type else ""
+        
+        # Using local Next.js static asset URLs to avoid 404s from external hosts
+        frontend_url = "http://localhost:3000"
+        
+        if 'hdb' in ptype:
+            return f"{frontend_url}/placeholders/hdb_{seed % 4}.png"
+        elif 'landed' in ptype or 'bungalow' in ptype or 'terrace' in ptype:
+            return f"{frontend_url}/placeholders/landed_{seed % 4}.png"
+        else: # Condominiums / Others
+            return f"{frontend_url}/placeholders/condo_{seed % 2}.png"
     
     class Config:
         from_attributes = True
