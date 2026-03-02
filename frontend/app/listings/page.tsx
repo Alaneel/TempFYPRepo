@@ -6,6 +6,7 @@ import { useState, useEffect, Suspense } from "react";
 import api from "@/lib/api";
 import { Listing, PaginatedResponse } from "@/types";
 import { ListingCard } from "@/components/features/listings/listing-card";
+import { FilterModal, FilterValues } from "@/components/features/listings/filter-modal";
 import { Navbar } from "@/components/layout/navbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,12 +20,17 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Label } from "@/components/ui/label";
 import MapView from "@/components/features/map/map-view";
-import { Sparkles, Search, X } from "lucide-react";
+import { Sparkles, Search, X, SlidersHorizontal } from "lucide-react";
 
 const DEFAULT_CENTER: [number, number] = [1.3521, 103.8198];
 
-// Parsed filter tags from semantic search
 type ParsedFilters = Record<string, string | number | null>;
+
+const AI_EXAMPLES = [
+  "3BR freehold condo near Tampines MRT under $1.5m",
+  "HDB 4-room flat for rent in Bishan below $3000/mo",
+  "Landed bungalow in Bukit Timah freehold above $5m",
+];
 
 function FilterTag({
   label,
@@ -54,67 +60,82 @@ function ListingsContent() {
   // ── Search mode ───────────────────────────────────────────────
   const [aiMode, setAiMode] = useState(searchParams.get("mode") === "ai");
   const [q, setQ] = useState(searchParams.get("q") || "");
-  const [propertyType, setPropertyType] = useState(
-    searchParams.get("property_type") || "all",
-  );
-  const [buyRent, setBuyRent] = useState(searchParams.get("buy_rent") || "all");
   const [page, setPage] = useState(Number(searchParams.get("page")) || 1);
   const [sortBy, setSortBy] = useState(searchParams.get("sort_by") || "recommended");
+  const [filterOpen, setFilterOpen] = useState(false);
+
+  // ── Filter values (all synced to URL) ─────────────────────────
+  const [filterValues, setFilterValues] = useState<FilterValues>({
+    propertyType: searchParams.get("property_type") || "all",
+    buyRent: searchParams.get("buy_rent") || "all",
+    minPrice: searchParams.get("min_price") || "",
+    maxPrice: searchParams.get("max_price") || "",
+    beds: searchParams.get("beds") || "any",
+  });
 
   // Parsed filters returned by semantic search (for display)
-  const [parsedFilters, setParsedFilters] = useState<ParsedFilters | null>(
-    null,
-  );
+  const [parsedFilters, setParsedFilters] = useState<ParsedFilters | null>(null);
 
   // Sync state with URL params
   useEffect(() => {
     setQ(searchParams.get("q") || "");
-    setPropertyType(searchParams.get("property_type") || "all");
-    setBuyRent(searchParams.get("buy_rent") || "all");
     setPage(Number(searchParams.get("page")) || 1);
     setAiMode(searchParams.get("mode") === "ai");
     setSortBy(searchParams.get("sort_by") || "recommended");
+    setFilterValues({
+      propertyType: searchParams.get("property_type") || "all",
+      buyRent: searchParams.get("buy_rent") || "all",
+      minPrice: searchParams.get("min_price") || "",
+      maxPrice: searchParams.get("max_price") || "",
+      beds: searchParams.get("beds") || "any",
+    });
   }, [searchParams]);
 
-  const updateFilters = (overrides?: {
+  const buildParams = (overrides?: {
     q?: string;
-    propertyType?: string;
-    buyRent?: string;
     page?: number;
     mode?: string;
     sortBy?: string;
+    filters?: FilterValues;
   }) => {
+    const fv = overrides?.filters ?? filterValues;
     const nextQ = overrides?.q ?? q;
-    const nextPropertyType = overrides?.propertyType ?? propertyType;
-    const nextBuyRent = overrides?.buyRent ?? buyRent;
     const nextPage = overrides?.page ?? page;
     const nextMode = overrides?.mode ?? (aiMode ? "ai" : "");
     const nextSortBy = overrides?.sortBy ?? sortBy;
 
-    const params = new URLSearchParams(searchParams.toString());
-
+    const params = new URLSearchParams();
     if (nextQ) params.set("q", nextQ);
-    else params.delete("q");
-    if (nextPropertyType && nextPropertyType !== "all")
-      params.set("property_type", nextPropertyType);
-    else params.delete("property_type");
-    if (nextBuyRent && nextBuyRent !== "all")
-      params.set("buy_rent", nextBuyRent);
-    else params.delete("buy_rent");
     if (nextMode) params.set("mode", nextMode);
-    else params.delete("mode");
     if (nextSortBy && nextSortBy !== "recommended") params.set("sort_by", nextSortBy);
-    else params.delete("sort_by");
+    if (nextPage > 1) params.set("page", nextPage.toString());
+    if (fv.propertyType && fv.propertyType !== "all") params.set("property_type", fv.propertyType);
+    if (fv.buyRent && fv.buyRent !== "all") params.set("buy_rent", fv.buyRent);
+    if (fv.minPrice) params.set("min_price", fv.minPrice);
+    if (fv.maxPrice) params.set("max_price", fv.maxPrice);
+    if (fv.beds && fv.beds !== "any" && fv.beds !== "") params.set("beds", fv.beds);
+    return params;
+  };
 
-    if (overrides?.page) {
-      params.set("page", nextPage.toString());
-    } else if (overrides) {
-      params.set("page", "1");
-      setPage(1);
-    }
-
+  const updateFilters = (overrides?: Parameters<typeof buildParams>[0]) => {
+    const params = buildParams(overrides);
     router.push(`/listings?${params.toString()}`);
   };
+
+  const handleApplyFilters = (values: FilterValues) => {
+    setFilterValues(values);
+    const params = buildParams({ filters: values, page: 1 });
+    router.push(`/listings?${params.toString()}`);
+  };
+
+  // Active filter count badge
+  const activeFilterCount = [
+    filterValues.propertyType !== "all",
+    filterValues.buyRent !== "all",
+    filterValues.minPrice !== "",
+    filterValues.maxPrice !== "",
+    filterValues.beds !== "any" && filterValues.beds !== "",
+  ].filter(Boolean).length;
 
   // ── API call ──────────────────────────────────────────────────
   const isSemanticMode = searchParams.get("mode") === "ai";
@@ -122,7 +143,6 @@ function ListingsContent() {
 
   const queryFn = async () => {
     if (isSemanticMode && currentQ) {
-      // Semantic search
       const { data } = await api.get<
         PaginatedResponse<Listing> & { _parsed_filters?: ParsedFilters }
       >("/listings/semantic-search", {
@@ -137,7 +157,6 @@ function ListingsContent() {
       return data;
     }
 
-    // Standard search
     setParsedFilters(null);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const params: any = {
@@ -145,20 +164,20 @@ function ListingsContent() {
       limit: 12,
     };
     if (currentQ) params.q = currentQ;
-    const currentPropertyType = searchParams.get("property_type");
-    if (currentPropertyType && currentPropertyType !== "all")
-      params.property_type = currentPropertyType;
-    const currentBuyRent = searchParams.get("buy_rent");
-    if (currentBuyRent && currentBuyRent !== "all")
-      params.buy_rent = currentBuyRent;
-      
-    const currentSortBy = searchParams.get("sort_by");
-    if (currentSortBy && currentSortBy !== "recommended")
-      params.sort_by = currentSortBy;
-      
-    const { data } = await api.get<PaginatedResponse<Listing>>("/listings/", {
-      params,
-    });
+    const pt = searchParams.get("property_type");
+    if (pt && pt !== "all") params.property_type = pt;
+    const br = searchParams.get("buy_rent");
+    if (br && br !== "all") params.buy_rent = br;
+    const minP = searchParams.get("min_price");
+    if (minP) params.min_price = Number(minP);
+    const maxP = searchParams.get("max_price");
+    if (maxP) params.max_price = Number(maxP);
+    const beds = searchParams.get("beds");
+    if (beds && beds !== "any") params.beds = beds === "Studio" ? 0 : Number(beds.replace("+", ""));
+    const sb = searchParams.get("sort_by");
+    if (sb && sb !== "recommended") params.sort_by = sb;
+
+    const { data } = await api.get<PaginatedResponse<Listing>>("/listings/", { params });
     return data;
   };
 
@@ -171,10 +190,9 @@ function ListingsContent() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setPage(1);
-    updateFilters({ q, mode: aiMode ? "ai" : "" });
+    updateFilters({ q, mode: aiMode ? "ai" : "", page: 1 });
   };
 
-  // Friendly label map for parsed filter tags
   const filterLabels: Record<string, string> = {
     min_price: "Min $",
     max_price: "Max $",
@@ -190,21 +208,20 @@ function ListingsContent() {
     <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
 
+      <FilterModal
+        open={filterOpen}
+        onClose={() => setFilterOpen(false)}
+        values={filterValues}
+        onApply={handleApplyFilters}
+      />
+
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow">
         {/* Search & Filter Bar */}
-        <div className="mb-8 space-y-4">
+        <div className="mb-8 space-y-3">
           <div className="bg-white border rounded-2xl p-4 shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between">
-            {/* Search input group */}
-            <div className="w-full flex-1 max-w-2xl flex flex-col sm:flex-row gap-4 items-end sm:items-center">
-              <div className="grid w-full gap-2 relative">
-                <Label htmlFor="search" className="flex items-center gap-2 sr-only">
-                  Search
-                  {aiMode && (
-                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-violet-600 text-white">
-                      <Sparkles className="h-3 w-3" /> AI
-                    </span>
-                  )}
-                </Label>
+            {/* Search input */}
+            <div className="w-full flex-1 max-w-2xl">
+              <Label htmlFor="search" className="sr-only">Search</Label>
               <form onSubmit={handleSearch} className="flex gap-2 w-full">
                 <div className="relative flex items-center w-full">
                   {!aiMode && <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />}
@@ -229,9 +246,8 @@ function ListingsContent() {
                 </div>
               </form>
             </div>
-          </div>
 
-          {/* Filter controls right side */}
+            {/* Right controls */}
             <div className="flex flex-wrap items-center gap-3 w-full md:w-auto justify-start md:justify-end shrink-0">
               {/* AI toggle */}
               <div className="flex items-center gap-2 bg-gray-50 px-3 h-10 rounded-xl border shrink-0">
@@ -249,80 +265,83 @@ function ListingsContent() {
                     className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${aiMode ? "translate-x-6" : "translate-x-1"}`}
                   />
                 </button>
-                <span className="text-sm font-semibold whitespace-nowrap flex items-center gap-1.5 w-max">
+                <span className="text-sm font-semibold whitespace-nowrap flex items-center gap-1.5">
                   <Sparkles className="h-4 w-4 text-violet-500" /> AI Search
                 </span>
               </div>
 
-              {/* Standard filters (hidden in AI mode) */}
+              {/* Filters button (hidden in AI mode) */}
               {!aiMode && (
-                <div className="flex flex-wrap items-center gap-3">
-                  <div className="grid gap-1">
-                    <Label className="text-xs text-muted-foreground sr-only">Type</Label>
-                    <Select
-                      value={propertyType}
-                      onValueChange={(val) => {
-                        setPropertyType(val);
-                        setPage(1);
-                        updateFilters({ propertyType: val, page: 1 });
-                      }}
-                    >
-                      <SelectTrigger className="w-[130px] h-10 bg-gray-50 rounded-xl">
-                        <SelectValue placeholder="All Types" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Types</SelectItem>
-                        <SelectItem value="Condo">Condo</SelectItem>
-                        <SelectItem value="Landed">Landed</SelectItem>
-                        <SelectItem value="HDB">HDB</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="grid gap-1">
-                    <Label className="text-xs text-muted-foreground sr-only">Mode</Label>
-                    <Select
-                      value={buyRent}
-                      onValueChange={(val) => {
-                        setBuyRent(val);
-                        setPage(1);
-                        updateFilters({ buyRent: val, page: 1 });
-                      }}
-                    >
-                      <SelectTrigger className="w-[120px] h-10 bg-gray-50 rounded-xl">
-                        <SelectValue placeholder="All Modes" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Modes</SelectItem>
-                        <SelectItem value="Buy">Buy</SelectItem>
-                        <SelectItem value="Rent">Rent</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
+                <Button
+                  variant="outline"
+                  className="h-10 rounded-xl gap-2 relative"
+                  onClick={() => setFilterOpen(true)}
+                >
+                  <SlidersHorizontal className="h-4 w-4" />
+                  Filters
+                  {activeFilterCount > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center">
+                      {activeFilterCount}
+                    </span>
+                  )}
+                </Button>
               )}
             </div>
+          </div>
+
+          {/* AI example prompts */}
+          {aiMode && !currentQ && (
+            <div className="flex flex-wrap gap-2 items-center">
+              <span className="text-xs text-muted-foreground">Try:</span>
+              {AI_EXAMPLES.map((ex) => (
+                <button
+                  key={ex}
+                  onClick={() => {
+                    setQ(ex);
+                    updateFilters({ q: ex, mode: "ai", page: 1 });
+                  }}
+                  className="text-xs px-3 py-1.5 rounded-full border border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-100 transition-colors"
+                >
+                  {ex}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Active filter tags summary (standard mode) */}
+          {!aiMode && activeFilterCount > 0 && (
+            <div className="flex flex-wrap gap-2 items-center">
+              {filterValues.propertyType !== "all" && (
+                <FilterTag label="Type" value={filterValues.propertyType} onRemove={() => handleApplyFilters({ ...filterValues, propertyType: "all" })} />
+              )}
+              {filterValues.buyRent !== "all" && (
+                <FilterTag label="Mode" value={filterValues.buyRent === "sale" ? "Buy" : "Rent"} onRemove={() => handleApplyFilters({ ...filterValues, buyRent: "all" })} />
+              )}
+              {filterValues.minPrice && (
+                <FilterTag label="Min $" value={`$${Number(filterValues.minPrice).toLocaleString()}`} onRemove={() => handleApplyFilters({ ...filterValues, minPrice: "" })} />
+              )}
+              {filterValues.maxPrice && (
+                <FilterTag label="Max $" value={`$${Number(filterValues.maxPrice).toLocaleString()}`} onRemove={() => handleApplyFilters({ ...filterValues, maxPrice: "" })} />
+              )}
+              {filterValues.beds && filterValues.beds !== "any" && (
+                <FilterTag label="Beds" value={filterValues.beds === "Studio" ? "Studio" : `${filterValues.beds}+`} onRemove={() => handleApplyFilters({ ...filterValues, beds: "any" })} />
+              )}
+            </div>
+          )}
 
           {/* Parsed filter tags (AI mode) */}
-          {isSemanticMode &&
-            parsedFilters &&
-            Object.keys(parsedFilters).length > 0 && (
-              <div className="flex flex-wrap gap-2 items-center pt-1">
-                <span className="text-xs text-muted-foreground flex items-center gap-1">
-                  <Sparkles className="h-3 w-3 text-violet-500" /> Understood
-                  as:
-                </span>
-                {Object.entries(parsedFilters).map(([key, val]) =>
-                  val != null ? (
-                    <FilterTag
-                      key={key}
-                      label={filterLabels[key] ?? key}
-                      value={val}
-                    />
-                  ) : null,
-                )}
-              </div>
-            )}
-          </div>
+          {isSemanticMode && parsedFilters && Object.keys(parsedFilters).length > 0 && (
+            <div className="flex flex-wrap gap-2 items-center pt-1">
+              <span className="text-xs text-muted-foreground flex items-center gap-1">
+                <Sparkles className="h-3 w-3 text-violet-500" /> Understood as:
+              </span>
+              {Object.entries(parsedFilters).map(([key, val]) =>
+                val != null ? (
+                  <FilterTag key={key} label={filterLabels[key] ?? key} value={val} />
+                ) : null,
+              )}
+            </div>
+          )}
         </div>
 
         {/* Results */}
@@ -357,9 +376,9 @@ function ListingsContent() {
                   <span className="text-muted-foreground font-normal">Showing</span>
                   {data?.total.toLocaleString()} results
                 </h2>
-                
+
                 <div className="flex items-center gap-3 mt-4 sm:mt-0">
-                  <Select 
+                  <Select
                     value={sortBy}
                     onValueChange={(val) => {
                       setSortBy(val);
@@ -377,14 +396,6 @@ function ListingsContent() {
                       <SelectItem value="newest">Newest First</SelectItem>
                     </SelectContent>
                   </Select>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="lg:hidden h-9"
-                    onClick={() => alert("Mobile map view coming soon")}
-                  >
-                    Map View
-                  </Button>
                 </div>
               </div>
 
@@ -400,69 +411,40 @@ function ListingsContent() {
                   variant="outline"
                   size="icon"
                   disabled={page <= 1}
-                  onClick={() => {
-                    setPage(1);
-                    updateFilters({ page: 1 });
-                  }}
+                  onClick={() => { setPage(1); updateFilters({ page: 1 }); }}
                   title="First Page"
-                >
-                  «
-                </Button>
+                >«</Button>
                 <Button
                   variant="outline"
                   size="icon"
                   disabled={page <= 1}
-                  onClick={() => {
-                    const p = page - 1;
-                    setPage(p);
-                    updateFilters({ page: p });
-                  }}
+                  onClick={() => { const p = page - 1; setPage(p); updateFilters({ page: p }); }}
                   title="Previous Page"
-                >
-                  ‹
-                </Button>
+                >‹</Button>
 
                 {(() => {
-                  const totalPages = data
-                    ? Math.ceil(data.total / data.limit)
-                    : 1;
+                  const totalPages = data ? Math.ceil(data.total / data.limit) : 1;
                   const items: (number | string)[] = [];
                   items.push(1);
                   if (page > 3) items.push("...");
                   let start = Math.max(2, page - 1);
                   let end = Math.min(totalPages - 1, page + 1);
-                  if (page < 4) {
-                    end = Math.min(totalPages - 1, 4);
-                    start = 2;
-                  }
-                  if (page > totalPages - 3) {
-                    start = Math.max(2, totalPages - 3);
-                    end = totalPages - 1;
-                  }
+                  if (page < 4) { end = Math.min(totalPages - 1, 4); start = 2; }
+                  if (page > totalPages - 3) { start = Math.max(2, totalPages - 3); end = totalPages - 1; }
                   for (let i = start; i <= end; i++) items.push(i);
                   if (page < totalPages - 2) items.push("...");
                   if (totalPages > 1) items.push(totalPages);
                   return items.map((item, idx) =>
                     item === "..." ? (
-                      <span
-                        key={`e-${idx}`}
-                        className="px-2 text-muted-foreground"
-                      >
-                        ...
-                      </span>
+                      <span key={`e-${idx}`} className="px-2 text-muted-foreground">...</span>
                     ) : (
                       <Button
                         key={item}
                         variant={item === page ? "default" : "outline"}
                         size="icon"
                         className="w-10"
-                        onClick={() => {
-                          setPage(item as number);
-                          updateFilters({ page: item as number });
-                        }}
-                      >
-                        {item}
-                      </Button>
+                        onClick={() => { setPage(item as number); updateFilters({ page: item as number }); }}
+                      >{item}</Button>
                     ),
                   );
                 })()}
@@ -470,33 +452,17 @@ function ListingsContent() {
                 <Button
                   variant="outline"
                   size="icon"
-                  disabled={
-                    data ? page >= Math.ceil(data.total / data.limit) : true
-                  }
-                  onClick={() => {
-                    const p = page + 1;
-                    setPage(p);
-                    updateFilters({ page: p });
-                  }}
+                  disabled={data ? page >= Math.ceil(data.total / data.limit) : true}
+                  onClick={() => { const p = page + 1; setPage(p); updateFilters({ page: p }); }}
                   title="Next Page"
-                >
-                  ›
-                </Button>
+                >›</Button>
                 <Button
                   variant="outline"
                   size="icon"
-                  disabled={
-                    data ? page >= Math.ceil(data.total / data.limit) : true
-                  }
-                  onClick={() => {
-                    const tp = data ? Math.ceil(data.total / data.limit) : 1;
-                    setPage(tp);
-                    updateFilters({ page: tp });
-                  }}
+                  disabled={data ? page >= Math.ceil(data.total / data.limit) : true}
+                  onClick={() => { const tp = data ? Math.ceil(data.total / data.limit) : 1; setPage(tp); updateFilters({ page: tp }); }}
                   title="Last Page"
-                >
-                  »
-                </Button>
+                >»</Button>
               </div>
             </div>
           </div>

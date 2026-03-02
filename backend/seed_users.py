@@ -4,9 +4,13 @@ import sys
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.future import select
+from dotenv import load_dotenv
 
 # Add the backend directory to the sys.path to resolve imports
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+# Load environment variables from the root .env file
+load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '.env'))
 
 from app.models.user import User
 from app.utils.security import get_password_hash
@@ -15,10 +19,13 @@ DB_HOST = os.getenv("DB_HOST", "localhost")
 DB_PORT = os.getenv("DB_PORT", "5432")
 DB_NAME = os.getenv("DB_NAME", "real_estate_app")
 DB_USER = os.getenv("DB_USER", "postgres")
-DB_PASS = os.getenv("DB_PASS", "postgres")
+DB_PASS = os.getenv("DB_PASS", "")
 
-# Note the +asyncpg for async operations
-DATABASE_URL = f"postgresql+asyncpg://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+# Build connection string handling empty passwords natively
+if DB_PASS:
+    DATABASE_URL = f"postgresql+asyncpg://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+else:
+    DATABASE_URL = f"postgresql+asyncpg://{DB_USER}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
 async def seed_users():
     print(f"Connecting to: {DATABASE_URL}")

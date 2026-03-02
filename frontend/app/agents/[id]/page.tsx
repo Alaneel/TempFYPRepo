@@ -44,7 +44,7 @@ export default function AgentDetailPage() {
     enabled: !!id,
   });
 
-  const isLoading = isAgentLoading || isListingsLoading;
+  const isLoading = isAgentLoading;
 
   // Helper to get full photo URL
   const getPhotoUrl = (photoUrl?: string) => {
@@ -125,6 +125,26 @@ export default function AgentDetailPage() {
                     </div>
                   </div>
                   
+                  {/* Stats row */}
+                  <div className="flex flex-wrap gap-4 text-sm justify-center md:justify-start">
+                    <div className="flex items-center gap-1.5 font-medium">
+                      <Building2 className="h-4 w-4 text-primary" />
+                      <span>{agent.listing_count ?? listingsData?.total ?? 0} Active Listings</span>
+                    </div>
+                    {agent.registration_date && (
+                      <div className="flex items-center gap-1.5 text-muted-foreground">
+                        <BadgeCheck className="h-4 w-4 text-green-600" />
+                        <span>Registered: {formatDate(agent.registration_date)}</span>
+                      </div>
+                    )}
+                    {agent.license_expiry && (
+                      <div className="flex items-center gap-1.5 text-muted-foreground">
+                        <Calendar className="h-4 w-4" />
+                        <span>License Expires: {formatDate(agent.license_expiry)}</span>
+                      </div>
+                    )}
+                  </div>
+                  
                   {/* Company Info Card */}
                   {agent.company_name && (
                     <Card className="inline-block">
@@ -141,24 +161,6 @@ export default function AgentDetailPage() {
                         </div>
                       </CardContent>
                     </Card>
-                  )}
-                  
-                  {/* License Info */}
-                  {(agent.license_expiry || agent.registration_date) && (
-                    <div className="flex flex-wrap gap-4 text-sm text-muted-foreground justify-center md:justify-start">
-                      {agent.registration_date && (
-                        <div className="flex items-center gap-1">
-                          <BadgeCheck className="h-4 w-4 text-green-600" />
-                          Registered: {formatDate(agent.registration_date)}
-                        </div>
-                      )}
-                      {agent.license_expiry && (
-                        <div className="flex items-center gap-1">
-                          <Calendar className="h-4 w-4" />
-                          License Expires: {formatDate(agent.license_expiry)}
-                        </div>
-                      )}
-                    </div>
                   )}
                   
                   <p className="max-w-2xl text-muted-foreground whitespace-pre-line">
@@ -195,17 +197,25 @@ export default function AgentDetailPage() {
       </div>
 
       <div className="container mx-auto px-4 py-12">
-        <h2 className="text-2xl font-bold mb-6">Active Listings ({listingsData?.total || 0})</h2>
+        <h2 className="text-2xl font-bold mb-6">
+          Active Listings ({agent.listing_count ?? listingsData?.total ?? 0})
+        </h2>
         
-        {listingsData && listingsData.data.length > 0 ? (
+        {isListingsLoading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[1,2,3,4].map(i => <div key={i} className="h-80 bg-muted animate-pulse rounded-xl" />)}
+          </div>
+        ) : listingsData && listingsData.data.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {listingsData.data.map((listing) => (
                 <ListingCard key={listing.id} listing={listing} />
               ))}
             </div>
         ) : (
-            <div className="text-center py-12 text-muted-foreground bg-muted/20 rounded-xl">
-               No active listings at the moment.
+            <div className="text-center py-16 text-muted-foreground bg-muted/20 rounded-xl space-y-2">
+               <Building2 className="h-10 w-10 mx-auto text-muted-foreground/40" />
+               <p className="font-medium">No active listings at the moment.</p>
+               <p className="text-sm">Check back later for new properties from this agent.</p>
             </div>
         )}
       </div>

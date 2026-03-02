@@ -1,12 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, text
+from sqlalchemy import select, text, func
 from sqlalchemy.orm import selectinload
 from typing import List, Optional
 
 from app.database import get_db
 from app.models.agent import Agent
 from app.models.agent_list import AgentList
+from app.models.listing import Listing
 from app.models.user import User
 from app.schemas.agent import AgentResponse, AgentCreate, AgentUpdate
 from app.services.auth import get_current_active_user
@@ -14,7 +15,7 @@ from app.services.auth import get_current_active_user
 router = APIRouter()
 
 
-def _build_agent_response(agent: Agent, agent_list_data: Optional[AgentList] = None) -> dict:
+def _build_agent_response(agent: Agent, agent_list_data: Optional[AgentList] = None, listing_count: int = 0) -> dict:
     """Build agent response dict with agent_list data if available."""
     response = {
         'id': agent.id,
@@ -33,6 +34,7 @@ def _build_agent_response(agent: Agent, agent_list_data: Optional[AgentList] = N
         'license_expiry': None,
         'registration_date': None,
         'photo_url': None,
+        'listing_count': listing_count,
     }
     
     # Enrich with agent_list data if available
@@ -72,7 +74,13 @@ async def read_my_agent_profile(
         )
         agent_list_data = result.scalar_one_or_none()
     
-    return _build_agent_response(agent, agent_list_data)
+    # Count listings
+    count_result = await db.execute(
+        select(func.count()).select_from(Listing).where(Listing.agent_id == agent.id)
+    )
+    listing_count = count_result.scalar() or 0
+    
+    return _build_agent_response(agent, agent_list_data, listing_count)
 
 
 @router.post("/", response_model=AgentResponse)
@@ -141,7 +149,13 @@ async def get_agent(
         )
         agent_list_data = result.scalar_one_or_none()
     
-    return _build_agent_response(agent, agent_list_data)
+    # Count listings
+    count_result = await db.execute(
+        select(func.count()).select_from(Listing).where(Listing.agent_id == agent_id)
+    )
+    listing_count = count_result.scalar() or 0
+    
+    return _build_agent_response(agent, agent_list_data, listing_count)
 
 
 @router.get("/", response_model=List[AgentResponse])
