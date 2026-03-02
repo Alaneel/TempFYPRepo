@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Listing } from "@/types";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { BedDouble, Bath, Ruler, MapPin } from "lucide-react";
 
 interface ListingCardProps {
@@ -106,8 +107,30 @@ export function ListingCard({ listing }: ListingCardProps) {
           </div>
         </CardContent>
         
-        <CardFooter className="p-4 pt-0 text-xs text-muted-foreground border-t bg-muted/10">
-           <div className="flex justify-between w-full items-center mt-3 gap-2">
+        <CardFooter className="p-4 pt-3 flex-col gap-3 text-xs text-muted-foreground border-t bg-muted/10">
+           {listing.agent && (
+             <div className="flex items-center gap-2 w-full">
+               <Avatar className="h-6 w-6 border">
+                 <AvatarImage 
+                   src={
+                     listing.agent.photo_url
+                       ? listing.agent.photo_url.startsWith("http")
+                         ? listing.agent.photo_url
+                         : `${process.env.NEXT_PUBLIC_API_URL?.replace("/api/v1", "") || "http://localhost:8000"}${listing.agent.photo_url}`
+                       : undefined
+                   } 
+                   alt={listing.agent.name || "Agent"} 
+                 />
+                 <AvatarFallback className="text-[10px] bg-primary/10 text-primary">
+                   {(listing.agent.name || "A").charAt(0).toUpperCase()}
+                 </AvatarFallback>
+               </Avatar>
+               <span className="truncate font-medium text-foreground">
+                 {listing.agent.name || "Contact Agent"}
+               </span>
+             </div>
+           )}
+           <div className="flex justify-between w-full items-center gap-2">
               <span className="truncate">{listing.tenure || "Unknown Tenure"}</span>
               <span className="shrink-0">
                 {listing.built_year && listing.built_year.replace(/\D/g, '') 
