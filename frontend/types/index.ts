@@ -56,6 +56,7 @@ export interface Agent {
   agency_license?: string;
   license_expiry?: string;
   registration_date?: string;
+  listing_count?: number;
 }
 
 export interface Condo {

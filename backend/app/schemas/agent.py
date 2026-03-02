@@ -28,6 +28,7 @@ class AgentResponse(AgentBase):
     license_expiry: Optional[date] = None
     registration_date: Optional[date] = None
     photo_url: Optional[str] = None
+    listing_count: Optional[int] = None
     
     class Config:
         from_attributes = True
