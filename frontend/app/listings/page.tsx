@@ -64,6 +64,10 @@ function ListingsContent() {
   const [sortBy, setSortBy] = useState(searchParams.get("sort_by") || "recommended");
   const [filterOpen, setFilterOpen] = useState(false);
 
+  // ── Map bbox state ─────────────────────────────────────────────
+  const [mapBounds, setMapBounds] = useState<{ minLat: number; maxLat: number; minLng: number; maxLng: number } | null>(null);
+  const [mapFilterActive, setMapFilterActive] = useState(false);
+
   // ── Filter values (all synced to URL) ─────────────────────────
   const [filterValues, setFilterValues] = useState<FilterValues>({
     propertyType: searchParams.get("property_type") || "all",
@@ -177,12 +181,20 @@ function ListingsContent() {
     const sb = searchParams.get("sort_by");
     if (sb && sb !== "recommended") params.sort_by = sb;
 
+    // bbox 过滤
+    if (mapFilterActive && mapBounds) {
+      params.min_lat = mapBounds.minLat;
+      params.max_lat = mapBounds.maxLat;
+      params.min_lng = mapBounds.minLng;
+      params.max_lng = mapBounds.maxLng;
+    }
+
     const { data } = await api.get<PaginatedResponse<Listing>>("/listings/", { params });
     return data;
   };
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ["listings", searchParams.toString()],
+    queryKey: ["listings", searchParams.toString(), mapFilterActive ? mapBounds : null],
     queryFn,
     placeholderData: (previousData) => previousData,
   });
@@ -361,12 +373,34 @@ function ListingsContent() {
         ) : (
           <div className="flex flex-col lg:flex-row gap-8 h-full items-start">
             {/* Map View */}
-            <div className="hidden lg:block w-1/3 h-[calc(100vh-140px)] sticky top-[100px] rounded-2xl overflow-hidden border shadow-sm z-10">
-              <MapView
-                listings={data?.data}
-                center={DEFAULT_CENTER}
-                zoom={11}
-              />
+            <div className="hidden lg:flex lg:flex-col w-1/3 h-[calc(100vh-140px)] sticky top-[100px] gap-2 z-10">
+              <div className="rounded-2xl overflow-hidden border shadow-sm flex-1">
+                <MapView
+                  listings={data?.data}
+                  center={DEFAULT_CENTER}
+                  zoom={11}
+                  onBoundsChange={(bounds) => {
+                    setMapBounds(bounds);
+                    if (mapFilterActive) {
+                      setPage(1);
+                    }
+                  }}
+                />
+              </div>
+              {/* 在地图范围内搜索 按钮 */}
+              <button
+                onClick={() => {
+                  setMapFilterActive((v) => !v);
+                  setPage(1);
+                }}
+                className={`w-full py-2 px-4 rounded-xl text-sm font-semibold border transition-colors ${
+                  mapFilterActive
+                    ? "bg-slate-900 text-white border-slate-900"
+                    : "bg-white text-slate-700 border-slate-300 hover:border-slate-500"
+                }`}
+              >
+                {mapFilterActive ? "✓ 只显示地图范围内的房源" : "在地图范围内搜索"}
+              </button>
             </div>
 
             {/* List View */}

@@ -102,6 +102,7 @@ interface MapClientProps {
   zoom?: number;
   className?: string;
   singleListing?: boolean;
+  onBoundsChange?: (bounds: { minLat: number; maxLat: number; minLng: number; maxLng: number }) => void;
 }
 
 // Component to update map center when props change
@@ -116,15 +117,31 @@ function MapController({ center, zoom }: { center: [number, number]; zoom: numbe
 }
 
 // Inner component with access to map instance for initial bounds
-function ClusterLayer({ listings, singleListing, activeId, onActiveChange }: {
+function ClusterLayer({ listings, singleListing, activeId, onActiveChange, onBoundsChange }: {
   listings: Listing[];
   singleListing: boolean;
   activeId: number | null;
   onActiveChange: (id: number | null) => void;
+  onBoundsChange?: (bounds: { minLat: number; maxLat: number; minLng: number; maxLng: number }) => void;
 }) {
   const map = useMap();
   const [currentZoom, setCurrentZoom] = useState(map.getZoom());
   const [bounds, setBounds] = useState(map.getBounds());
+
+  const emitBounds = (b: L.LatLngBounds) => {
+    onBoundsChange?.({
+      minLat: b.getSouth(),
+      maxLat: b.getNorth(),
+      minLng: b.getWest(),
+      maxLng: b.getEast(),
+    });
+  };
+
+  // 初始化时触发一次，让列表知道初始视野
+  useEffect(() => {
+    emitBounds(map.getBounds());
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Build supercluster index from all listings
   const supercluster = useMemo(() => {
@@ -135,8 +152,8 @@ function ClusterLayer({ listings, singleListing, activeId, onActiveChange }: {
     });
     const points: Supercluster.PointFeature<{ listingId: number; price?: number; display_price?: string }>[] = listings.map((l) => {
       const seed = l.id;
-      const lat = 1.3521 + (Math.sin(seed) * 0.05);
-      const lng = 103.8198 + (Math.cos(seed) * 0.05);
+      const lat = l.latitude ?? (1.3521 + (Math.sin(seed) * 0.05));
+      const lng = l.longitude ?? (103.8198 + (Math.cos(seed) * 0.05));
       return {
         type: "Feature",
         geometry: { type: "Point", coordinates: [lng, lat] },
@@ -150,6 +167,7 @@ function ClusterLayer({ listings, singleListing, activeId, onActiveChange }: {
   const handleViewChange = (zoom: number, b: L.LatLngBounds) => {
     setCurrentZoom(zoom);
     setBounds(b);
+    emitBounds(b);
   };
 
   // Get clusters for current viewport
@@ -233,7 +251,8 @@ export default function MapClient({
   center = [1.3521, 103.8198],
   zoom = 12,
   className = "h-full w-full rounded-lg",
-  singleListing = false
+  singleListing = false,
+  onBoundsChange,
 }: MapClientProps) {
   const [activeId, setActiveId] = useState<number | null>(null);
 
@@ -242,15 +261,17 @@ export default function MapClient({
   if (singleListing && listings.length > 0) {
     const listing = listings[0];
     const seed = listing.id;
-    mapCenter = [1.3521 + Math.sin(seed) * 0.05, 103.8198 + Math.cos(seed) * 0.05];
+    const lat = listing.latitude ?? (1.3521 + Math.sin(seed) * 0.05);
+    const lng = listing.longitude ?? (103.8198 + Math.cos(seed) * 0.05);
+    mapCenter = [lat, lng];
   }
 
   if (singleListing && listings.length > 0) {
     // Single listing: just show the home icon, no clustering needed
     const listing = listings[0];
     const seed = listing.id;
-    const lat = 1.3521 + Math.sin(seed) * 0.05;
-    const lng = 103.8198 + Math.cos(seed) * 0.05;
+    const lat = listing.latitude ?? (1.3521 + Math.sin(seed) * 0.05);
+    const lng = listing.longitude ?? (103.8198 + Math.cos(seed) * 0.05);
     return (
       <MapContainer center={mapCenter} zoom={zoom} className={className} scrollWheelZoom={true}>
         <TileLayer
@@ -285,6 +306,7 @@ export default function MapClient({
         singleListing={singleListing}
         activeId={activeId}
         onActiveChange={setActiveId}
+        onBoundsChange={onBoundsChange}
       />
     </MapContainer>
   );
