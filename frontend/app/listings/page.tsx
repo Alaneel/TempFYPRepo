@@ -2,7 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams, useRouter } from "next/navigation";
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, Suspense, useCallback } from "react";
 import api from "@/lib/api";
 import { Listing, PaginatedResponse } from "@/types";
 import { ListingCard } from "@/components/features/listings/listing-card";
@@ -67,6 +67,11 @@ function ListingsContent() {
   // ── Map bbox state ─────────────────────────────────────────────
   const [mapBounds, setMapBounds] = useState<{ minLat: number; maxLat: number; minLng: number; maxLng: number } | null>(null);
   const [mapFilterActive, setMapFilterActive] = useState(false);
+  const [activeMapId, setActiveMapId] = useState<number | null>(null);
+
+  const handleBoundsChange = useCallback((bounds: { minLat: number; maxLat: number; minLng: number; maxLng: number }) => {
+    setMapBounds(bounds);
+  }, []);
 
   // ── Filter values (all synced to URL) ─────────────────────────
   const [filterValues, setFilterValues] = useState<FilterValues>({
@@ -379,12 +384,8 @@ function ListingsContent() {
                   listings={data?.data}
                   center={DEFAULT_CENTER}
                   zoom={11}
-                  onBoundsChange={(bounds) => {
-                    setMapBounds(bounds);
-                    if (mapFilterActive) {
-                      setPage(1);
-                    }
-                  }}
+                  onBoundsChange={handleBoundsChange}
+                  onActiveChange={setActiveMapId}
                 />
               </div>
               {/* 在地图范围内搜索 按钮 */}
@@ -435,11 +436,12 @@ function ListingsContent() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                 {data?.data.map((listing) => (
-                  <ListingCard key={listing.id} listing={listing} />
+                  <ListingCard key={listing.id} listing={listing} isHighlighted={activeMapId === listing.id} />
                 ))}
               </div>
 
-              {/* Pagination */}
+              {/* Pagination — 地图筛选模式下隐藏（结果已由地图范围决定，无需翻页） */}
+              {!mapFilterActive && (
               <div className="flex justify-center mt-12 gap-2 items-center flex-wrap">
                 <Button
                   variant="outline"
@@ -498,6 +500,7 @@ function ListingsContent() {
                   title="Last Page"
                 >»</Button>
               </div>
+              )}
             </div>
           </div>
         )}

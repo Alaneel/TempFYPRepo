@@ -61,15 +61,14 @@ class ListingResponse(ListingBase):
         
         ptype = str(self.property_type).lower() if self.property_type else ""
         
-        # Using local Next.js static asset URLs to avoid 404s from external hosts
-        frontend_url = "http://localhost:3000"
-        
+        # Return relative paths — frontend resolves them against its own origin,
+        # so this works correctly in both local dev and production deployment.
         if 'hdb' in ptype:
-            return f"{frontend_url}/placeholders/hdb_{seed % 4}.png"
+            return f"/placeholders/hdb_{seed % 4}.png"
         elif 'landed' in ptype or 'bungalow' in ptype or 'terrace' in ptype:
-            return f"{frontend_url}/placeholders/landed_{seed % 4}.png"
+            return f"/placeholders/landed_{seed % 4}.png"
         else: # Condominiums / Others
-            return f"{frontend_url}/placeholders/condo_{seed % 2}.png"
+            return f"/placeholders/condo_{seed % 2}.png"
     
     class Config:
         from_attributes = True

@@ -40,7 +40,7 @@ export default function Home() {
         <div className="absolute inset-0 bg-gradient-to-r from-black/80 to-black/40 z-10" />
         <div 
           className="absolute inset-0 bg-cover bg-center opacity-60"
-          style={{ backgroundImage: "url('https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=2670&auto=format&fit=crop')" }} 
+          style={{ backgroundImage: "url('/placeholders/condo_1.png')" }} 
         />
         
         <div className="relative z-20 container mx-auto px-4 text-center">

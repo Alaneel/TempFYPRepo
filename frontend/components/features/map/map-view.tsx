@@ -19,6 +19,7 @@ interface MapViewProps {
   className?: string;
   singleListing?: boolean;
   onBoundsChange?: (bounds: { minLat: number; maxLat: number; minLng: number; maxLng: number }) => void;
+  onActiveChange?: (id: number | null) => void;
 }
 
 export default function MapView(props: MapViewProps) {

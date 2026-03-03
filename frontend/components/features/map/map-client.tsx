@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import Supercluster from "supercluster";
@@ -103,6 +103,7 @@ interface MapClientProps {
   className?: string;
   singleListing?: boolean;
   onBoundsChange?: (bounds: { minLat: number; maxLat: number; minLng: number; maxLng: number }) => void;
+  onActiveChange?: (id: number | null) => void;
 }
 
 // Component to update map center when props change
@@ -117,33 +118,41 @@ function MapController({ center, zoom }: { center: [number, number]; zoom: numbe
 }
 
 // Inner component with access to map instance for initial bounds
-function ClusterLayer({ listings, singleListing, activeId, onActiveChange, onBoundsChange }: {
+function ClusterLayer({ listings, singleListing, onActiveChange, onBoundsChange }: {
   listings: Listing[];
   singleListing: boolean;
-  activeId: number | null;
   onActiveChange: (id: number | null) => void;
   onBoundsChange?: (bounds: { minLat: number; maxLat: number; minLng: number; maxLng: number }) => void;
 }) {
   const map = useMap();
   const [currentZoom, setCurrentZoom] = useState(map.getZoom());
   const [bounds, setBounds] = useState(map.getBounds());
+  // activeId 完全在 ClusterLayer 内部管理，避免父组件 setState → 重渲染 → 传回 prop 的循环
+  const [activeId, setActiveId] = useState<number | null>(null);
 
-  const emitBounds = (b: L.LatLngBounds) => {
-    onBoundsChange?.({
+  // ref 存最新的回调，彻底避免因函数引用变化导致的无限循环
+  const onBoundsChangeRef = useRef(onBoundsChange);
+  useEffect(() => { onBoundsChangeRef.current = onBoundsChange; });
+
+  const onActiveChangeRef = useRef(onActiveChange);
+  useEffect(() => { onActiveChangeRef.current = onActiveChange; });
+
+  const handleActiveChange = useCallback((id: number | null) => {
+    setActiveId(id);
+    onActiveChangeRef.current(id);
+  }, []);
+
+  const handleViewChange = useCallback((zoom: number, b: L.LatLngBounds) => {
+    setCurrentZoom(zoom);
+    setBounds(b);
+    onBoundsChangeRef.current?.({
       minLat: b.getSouth(),
       maxLat: b.getNorth(),
       minLng: b.getWest(),
       maxLng: b.getEast(),
     });
-  };
-
-  // 初始化时触发一次，让列表知道初始视野
-  useEffect(() => {
-    emitBounds(map.getBounds());
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Build supercluster index from all listings
   const supercluster = useMemo(() => {
     const sc = new Supercluster<{ listingId: number; price?: number; display_price?: string }>({
       radius: 60,
@@ -163,12 +172,6 @@ function ClusterLayer({ listings, singleListing, activeId, onActiveChange, onBou
     sc.load(points);
     return sc;
   }, [listings]);
-
-  const handleViewChange = (zoom: number, b: L.LatLngBounds) => {
-    setCurrentZoom(zoom);
-    setBounds(b);
-    emitBounds(b);
-  };
 
   // Get clusters for current viewport
   const clusters = useMemo(() => {
@@ -215,12 +218,12 @@ function ClusterLayer({ listings, singleListing, activeId, onActiveChange, onBou
 
         return (
           <Marker
-            key={`listing-${listingId}`}
+            key={`listing-${listingId}-${isActive}`}
             position={[lat, lng]}
             icon={createPriceIcon(price, display_price, isActive)}
             zIndexOffset={isActive ? 500 : 0}
             eventHandlers={{
-              click: () => onActiveChange(isActive ? null : listingId),
+              click: () => handleActiveChange(isActive ? null : listingId),
             }}
           >
             {listing && (
@@ -253,8 +256,9 @@ export default function MapClient({
   className = "h-full w-full rounded-lg",
   singleListing = false,
   onBoundsChange,
+  onActiveChange: onActiveChangeProp,
 }: MapClientProps) {
-  const [activeId, setActiveId] = useState<number | null>(null);
+  // activeId 已移至 ClusterLayer 内部管理，此处仅保留 onActiveChangeProp 透传
 
   // Calculate effective center
   let mapCenter: [number, number] = center;
@@ -304,8 +308,7 @@ export default function MapClient({
       <ClusterLayer
         listings={listings}
         singleListing={singleListing}
-        activeId={activeId}
-        onActiveChange={setActiveId}
+        onActiveChange={onActiveChangeProp ?? (() => {})}
         onBoundsChange={onBoundsChange}
       />
     </MapContainer>
