@@ -153,6 +153,11 @@ DB_NAME=real_estate_app
 # Semantic Search (optional — only needed for AI Search feature)
 ANTHROPIC_API_KEY=sk-ant-...
 
+# OneMap (for district reverse geocoding — run pipeline/refresh_onemap_token.py to auto-refresh)
+ONEMAP_EMAIL=your_onemap_email
+ONEMAP_PASSWORD=your_onemap_password
+ONEMAP_TOKEN=                      # auto-filled by refresh_onemap_token.py
+
 # Backend settings
 SECRET_KEY=your-random-secret-key
 ```
@@ -271,7 +276,8 @@ Imports listings, agents, and condo reference data into PostgreSQL.
 ### 8. Train Valuation Models
 
 > [!NOTE]
-> Models are gitignored (large binary files). Each team member must train locally.
+> Models are included in the repository (`*.pkl`, ~8MB total). No training needed after cloning — the valuation API works immediately.
+> To retrain (e.g. after new data):
 
 ```bash
 # Full training — 8 models (Condo/HDB/Landed/GCB × sale/rent) ~3 min
@@ -315,16 +321,18 @@ Natural language property queries powered by Claude AI.
 
 ### 🏷 AI Valuation
 
-Per-property-type price estimation using XGBoost/RF models trained on 50K+ listings.
+Per-property-type price estimation using LightGBM/XGBoost/RF models trained on 50K+ listings, with district-level location features derived from OneMap reverse geocoding.
 
 | Model       | Accuracy (MAPE) | R²   |
 | ----------- | --------------- | ---- |
-| Condo Sale  | 22.7%           | 0.81 |
-| Condo Rent  | 19.0%           | 0.90 |
-| HDB Sale    | 14.7%           | 0.56 |
-| HDB Rent    | 18.1%           | 0.86 |
-| Landed Sale | 26.2%           | 0.61 |
-| Landed Rent | 24.6%           | 0.90 |
+| Condo Sale  | 11.2%           | 0.945 |
+| Condo Rent  | 9.8%            | 0.933 |
+| HDB Sale    | 7.2%            | 0.897 |
+| HDB Rent    | 9.3%            | 0.798 |
+| Landed Sale | 24.8%           | 0.627 |
+| Landed Rent | 25.2%           | 0.786 |
+| GCB Sale    | 22.0%           | 0.376 |
+| GCB Rent    | 21.8%           | 0.513 |
 
 **Two usage points:**
 
@@ -344,9 +352,12 @@ PythonProject/
 ├── propertyguru/           # PropertyGuru scraper
 ├── srx/                    # SRX scraper
 ├── pipeline/               # Data pipeline
-│   ├── aggregate.py        # Merge multi-platform scraper data
-│   ├── ingest.py           # Import to PostgreSQL
-│   ├── valuation_model.py  # ML training pipeline (8 models)
+│   ├── aggregate.py                 # Merge multi-platform scraper data
+│   ├── ingest.py                    # Import to PostgreSQL
+│   ├── geocode_listings.py          # Forward geocode (address → lat/lng)
+│   ├── reverse_geocode_district.py  # Reverse geocode (lat/lng → district)
+│   ├── refresh_onemap_token.py      # Auto-refresh OneMap API token
+│   ├── valuation_model.py           # ML training pipeline (8 models)
 │   └── README.md
 ├── backend/                # FastAPI backend
 │   ├── app/

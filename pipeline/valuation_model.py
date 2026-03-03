@@ -96,6 +96,7 @@ NUMERIC_FEATURES = [
     "beds", "sqft", "log_sqft", "beds_sqft", "beds_sq",
     "log_beds_sqft", "sqft_bin", "is_freehold",
     "property_age",   # CURRENT_YEAR - built_year (99.8% coverage)
+    "district",       # Singapore district 1-28 (from reverse geocode, ~92% coverage)
 ]
 CATEGORICAL_FEATURES = []   # no cat features after splitting by type
 TARGET = "log_price"
@@ -139,7 +140,7 @@ def load_data(no_db: bool = False) -> pd.DataFrame:
         query = """
             SELECT id, price, psf, beds, baths, sqft,
                    property_type, tenure, buy_rent, source,
-                   built_year
+                   built_year, district
             FROM listings
             WHERE price IS NOT NULL AND price > 0
         """
@@ -278,6 +279,12 @@ def engineer_features(df: pd.DataFrame, property_type: str, mode: str) -> pd.Dat
     df["property_age"] = df["built_year"].apply(_parse_year)
     median_age = df["property_age"].median()
     df["property_age"] = df["property_age"].fillna(median_age if not np.isnan(median_age) else 10)
+
+    # district: 1-28, fill missing with segment median (imputer also handles this,
+    # but pre-fill here so the median is segment-specific, not global)
+    df["district"] = pd.to_numeric(df["district"], errors="coerce")
+    median_district = df["district"].median()
+    df["district"] = df["district"].fillna(median_district if not np.isnan(median_district) else 15)
 
     return df
 

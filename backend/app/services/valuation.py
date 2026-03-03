@@ -44,6 +44,7 @@ NUMERIC_FEATURES = [
     "beds", "sqft", "log_sqft", "beds_sqft", "beds_sq",
     "log_beds_sqft", "sqft_bin", "is_freehold",
     "property_age",   # 2026 - built_year (99.8% coverage in DB)
+    "district",       # Singapore district 1-28 (from postal code or reverse geocode)
 ]
 
 _CURRENT_YEAR = 2026
@@ -54,6 +55,49 @@ _RENT_BINS = [0, 350, 520, 750, 1200, 1e9]
 
 # Default MAPE fallback if metrics.json missing
 _DEFAULT_MAPE = 0.25
+
+# Default district when none provided (central Singapore median ≈ 15)
+_DEFAULT_DISTRICT = 15
+
+# ─── postal code → district mapping ──────────────────────────────────────────
+_POSTAL_TO_DISTRICT: dict[str, int] = {
+    "01": 1, "02": 1, "03": 1, "04": 1, "05": 1, "06": 1,
+    "07": 2, "08": 2,
+    "14": 3, "15": 3, "16": 3,
+    "09": 4, "10": 4,
+    "11": 5, "12": 5, "13": 5,
+    "17": 6,
+    "18": 7, "19": 7,
+    "20": 8, "21": 8,
+    "22": 9, "23": 9,
+    "24": 10, "25": 10, "26": 10, "27": 10,
+    "28": 11, "29": 11, "30": 11,
+    "31": 12, "32": 12, "33": 12,
+    "34": 13, "35": 13, "36": 13, "37": 13,
+    "38": 14, "39": 14, "40": 14, "41": 14,
+    "42": 15, "43": 15, "44": 15, "45": 15,
+    "46": 16, "47": 16, "48": 16,
+    "49": 17, "50": 17, "81": 17,
+    "51": 18, "52": 18,
+    "53": 19, "54": 19, "55": 19, "82": 19,
+    "56": 20, "57": 20,
+    "58": 21, "59": 21,
+    "60": 22, "61": 22, "62": 22, "63": 22, "64": 22,
+    "65": 23, "66": 23, "67": 23, "68": 23,
+    "69": 24, "70": 24, "71": 24,
+    "72": 25, "73": 25,
+    "77": 26, "78": 26,
+    "75": 27, "76": 27,
+    "79": 28, "80": 28,
+}
+
+
+def postal_to_district(postal_code: Optional[str]) -> Optional[int]:
+    """6位新加坡邮政编码 → district (1-28)，无法映射返回 None"""
+    if not postal_code:
+        return None
+    code = str(postal_code).strip().zfill(6)
+    return _POSTAL_TO_DISTRICT.get(code[:2])
 
 # ─── model + metrics cache ────────────────────────────────────────────────────
 _models:  dict = {}
@@ -98,12 +142,14 @@ def _get_mape(seg: str) -> float:
 def _build_features(
     beds: float, sqft: float, tenure: Optional[str], mode: str,
     built_year: Optional[int] = None,
+    district: Optional[int] = None,
 ) -> pd.DataFrame:
     is_freehold  = 1 if tenure and "freehold" in tenure.lower() else 0
     log_sqft     = np.log10(max(sqft, 1))
     bins         = _SALE_BINS if mode == "sale" else _RENT_BINS
     sqft_bin     = int(np.digitize(sqft, bins) - 1)
     property_age = (_CURRENT_YEAR - built_year) if built_year and 1960 <= built_year <= _CURRENT_YEAR + 5 else 10
+    district_val = district if district and 1 <= district <= 28 else _DEFAULT_DISTRICT
 
     return pd.DataFrame([{
         "beds":          beds,
@@ -115,6 +161,7 @@ def _build_features(
         "sqft_bin":      sqft_bin,
         "is_freehold":   is_freehold,
         "property_age":  property_age,
+        "district":      district_val,
     }])
 
 
@@ -129,6 +176,7 @@ _FEATURE_LABELS = {
     "sqft_bin":      "Size tier",
     "is_freehold":   "Freehold tenure",
     "property_age":  "Property age (yrs)",
+    "district":      "Location (district)",
 }
 
 
@@ -183,13 +231,18 @@ def estimate(
     tenure:        Optional[str] = None,
     actual_price:  Optional[float] = None,
     built_year:    Optional[int] = None,
+    postal_code:   Optional[str] = None,
+    district:      Optional[int] = None,
 ) -> dict:
     mode  = _mode_key(buy_rent)
     seg   = _seg_key(property_type, buy_rent)
     model = _load_model(seg)
     mape  = _get_mape(seg)
 
-    X_df    = _build_features(beds, sqft, tenure, mode, built_year=built_year)
+    # Resolve district: direct override > postal code lookup > None (model default)
+    resolved_district = district if district else postal_to_district(postal_code)
+
+    X_df    = _build_features(beds, sqft, tenure, mode, built_year=built_year, district=resolved_district)
     log_est = float(model.predict(X_df)[0])
     est     = round(10 ** log_est)
 
@@ -218,8 +271,8 @@ def estimate(
         "verdict":       verdict,
         "shap_factors":  shap_factors,
         "disclaimer": (
-            "Estimate based on property characteristics only (size, tenure). "
-            "Location premium not factored in due to limited geographic data."
+            "Estimate based on property characteristics (size, tenure, age, district). "
+            "Micro-level location factors (floor, view, exact street) not included."
         ),
     }
 
