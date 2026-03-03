@@ -27,6 +27,8 @@ class ListingBase(BaseModel):
     display_psf: Optional[str] = None
     amenities_json: Optional[str] = None
     facilities_json: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
 
 class ListingCreate(ListingBase):
     pass

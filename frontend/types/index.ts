@@ -40,6 +40,8 @@ export interface Listing {
   created_at: string;
   updated_at: string;
   match_score?: number;
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface Agent {
