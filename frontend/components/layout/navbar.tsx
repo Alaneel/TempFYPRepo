@@ -34,6 +34,9 @@ const NavLinks = () => (
       <Link href="/listings?property_type=HDB" className="text-sm font-medium transition-colors hover:text-primary">
         HDB
       </Link>
+      <Link href="/valuate" className="text-sm font-medium transition-colors hover:text-primary">
+        Valuate
+      </Link>
     </>
 );
 
@@ -66,6 +69,7 @@ export function Navbar() {
                <Link href="/listings?buy_rent=Sale" onClick={() => setIsOpen(false)} className="text-lg font-medium">Buy</Link>
                <Link href="/listings?buy_rent=Rent" onClick={() => setIsOpen(false)} className="text-lg font-medium">Rent</Link>
                <Link href="/agents" onClick={() => setIsOpen(false)} className="text-lg font-medium">Find Agent</Link>
+               <Link href="/valuate" onClick={() => setIsOpen(false)} className="text-lg font-medium">Valuate</Link>
             </nav>
           </SheetContent>
         </Sheet>

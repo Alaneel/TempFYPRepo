@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { useEffect, useRef } from "react";
 import { Listing } from "@/types";
 import {
   Card,
@@ -13,9 +14,18 @@ import { BedDouble, Bath, Ruler, MapPin, Star } from "lucide-react";
 
 interface ListingCardProps {
   listing: Listing;
+  isHighlighted?: boolean;
 }
 
-export function ListingCard({ listing }: ListingCardProps) {
+export function ListingCard({ listing, isHighlighted = false }: ListingCardProps) {
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  // 高亮时自动滚动到可见位置
+  useEffect(() => {
+    if (isHighlighted && cardRef.current) {
+      cardRef.current.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+  }, [isHighlighted]);
   const formatPrice = (price?: number, display?: string) => {
     if (display) return display;
     if (!price) return "Price on Ask";
@@ -33,24 +43,11 @@ export function ListingCard({ listing }: ListingCardProps) {
       return listing.image_url;
     }
 
-    // Fallback deterministic generator
+    // Fallback deterministic generator — 用本地图避免外链挂掉
     const images = {
-      Condo: [
-        "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=800&q=80", // High rise
-        "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=800&q=80", // Modern apt
-        "https://images.unsplash.com/photo-1515263487990-61b07816b324?auto=format&fit=crop&w=800&q=80", // Condo balcony
-        "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=800&q=80", // Luxury home
-      ],
-      HDB: [
-        "https://images.unsplash.com/photo-1626284620022-262254de5c01?auto=format&fit=crop&w=800&q=80", // HDB blocks
-        "https://images.unsplash.com/photo-1634552402120-dcee914e6b5d?auto=format&fit=crop&w=800&q=80", // HDB exterior
-        "https://images.unsplash.com/photo-1599557452655-226e47c134bf?auto=format&fit=crop&w=800&q=80", // HDB corridor
-      ],
-      Landed: [
-        "https://images.unsplash.com/photo-1600596542815-2250657d2fc5?auto=format&fit=crop&w=800&q=80", // Modern house
-        "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80", // Villa
-        "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=800&q=80", // Luxury house
-      ],
+      Condo: ["/placeholders/condo_0.png", "/placeholders/condo_1.png", "/placeholders/condo.png"],
+      HDB:   ["/placeholders/hdb_0.png", "/placeholders/hdb_1.png", "/placeholders/hdb_2.png", "/placeholders/hdb_3.png"],
+      Landed:["/placeholders/landed_0.png", "/placeholders/landed_1.png", "/placeholders/landed_2.png", "/placeholders/landed_3.png"],
     };
 
     let category = "Condo";
@@ -72,8 +69,9 @@ export function ListingCard({ listing }: ListingCardProps) {
   const imageUrl = getListingImage(listing);
 
   return (
+    <div ref={cardRef}>
     <Link href={`/listings/${listing.id}`} className="block h-full">
-      <Card className="h-full overflow-hidden hover:shadow-lg transition-shadow duration-300 flex flex-col group cursor-pointer">
+      <Card className={`h-full overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col group cursor-pointer ${isHighlighted ? "ring-2 ring-slate-900 shadow-xl scale-[1.02]" : ""}`}>
         <div className="relative aspect-video bg-gray-200 overflow-hidden">
           <img
             src={imageUrl}
@@ -174,5 +172,6 @@ export function ListingCard({ listing }: ListingCardProps) {
         </CardFooter>
       </Card>
     </Link>
+    </div>
   );
 }

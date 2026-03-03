@@ -44,16 +44,19 @@ export default function ValuatePage() {
     beds:          "3",
     sqft:          "1000",
     tenure:        "Freehold",
+    built_year:    "2010",
   });
 
   const mutation = useMutation<ValuationResult, Error, typeof form>({
     mutationFn: async (vals) => {
+      const builtYearNum = Number(vals.built_year);
       const { data } = await api.post("/valuation/estimate", {
         property_type: vals.property_type,
         buy_rent:      vals.buy_rent,
         beds:          Number(vals.beds),
         sqft:          Number(vals.sqft),
         tenure:        vals.tenure || null,
+        built_year:    builtYearNum >= 1960 && builtYearNum <= 2030 ? builtYearNum : null,
       });
       return data;
     },
@@ -142,6 +145,19 @@ export default function ValuatePage() {
                   onChange={(e) => setForm(f => ({ ...f, sqft: e.target.value }))}
                 />
               </div>
+            </div>
+
+            <div className="grid gap-1.5">
+              <Label htmlFor="built_year">
+                Year Built / TOP Year
+                <span className="ml-1.5 text-xs font-normal text-muted-foreground">(affects property age in model)</span>
+              </Label>
+              <Input
+                id="built_year" type="number" min={1960} max={2030} step={1}
+                placeholder="e.g. 2005"
+                value={form.built_year}
+                onChange={(e) => setForm(f => ({ ...f, built_year: e.target.value }))}
+              />
             </div>
 
             <Button
