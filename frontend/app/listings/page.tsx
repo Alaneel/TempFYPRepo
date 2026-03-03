@@ -210,17 +210,6 @@ function ListingsContent() {
     updateFilters({ q, mode: aiMode ? "ai" : "", page: 1 });
   };
 
-  const filterLabels: Record<string, string> = {
-    min_price: "Min $",
-    max_price: "Max $",
-    beds: "Beds ≥",
-    property_type: "Type",
-    buy_rent: "Mode",
-    tenure: "Tenure",
-    district: "District",
-    query: "Keyword",
-  };
-
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
@@ -346,19 +335,41 @@ function ListingsContent() {
             </div>
           )}
 
-          {/* Parsed filter tags (AI mode) */}
-          {isSemanticMode && parsedFilters && Object.keys(parsedFilters).length > 0 && (
-            <div className="flex flex-wrap gap-2 items-center pt-1">
-              <span className="text-xs text-muted-foreground flex items-center gap-1">
-                <Sparkles className="h-3 w-3 text-violet-500" /> Understood as:
-              </span>
-              {Object.entries(parsedFilters).map(([key, val]) =>
-                val != null ? (
-                  <FilterTag key={key} label={filterLabels[key] ?? key} value={val} />
-                ) : null,
-              )}
-            </div>
-          )}
+          {/* AI 解析摘要横幅 */}
+          {isSemanticMode && parsedFilters && Object.keys(parsedFilters).length > 0 && (() => {
+            // 将 parsedFilters 转成人类可读的摘要短语
+            const f = parsedFilters;
+            const chips: string[] = [];
+
+            // beds
+            if (f.beds != null) chips.push(`${f.beds}BR`);
+            // property_type
+            if (f.property_type) chips.push(String(f.property_type));
+            // buy/rent
+            if (f.buy_rent) chips.push(String(f.buy_rent) === "property-for-rent" ? "For Rent" : "For Sale");
+            // tenure
+            if (f.tenure) chips.push(String(f.tenure));
+            // district
+            if (f.district != null) chips.push(`District ${f.district}`);
+            // location keyword
+            if (f.query) chips.push(String(f.query));
+            // price range
+            const fmt$ = (n: number) => n >= 1_000_000 ? `$${(n/1_000_000).toFixed(1)}M` : `$${(n/1000).toFixed(0)}K`;
+            if (f.min_price != null && f.max_price != null)
+              chips.push(`${fmt$(Number(f.min_price))}–${fmt$(Number(f.max_price))}`);
+            else if (f.max_price != null) chips.push(`Under ${fmt$(Number(f.max_price))}`);
+            else if (f.min_price != null) chips.push(`Above ${fmt$(Number(f.min_price))}`);
+
+            return (
+              <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-violet-50 border border-violet-200 text-sm">
+                <Sparkles className="h-4 w-4 text-violet-500 flex-shrink-0" />
+                <span className="text-violet-600 font-semibold mr-1">AI understood:</span>
+                <span className="text-violet-900 font-medium">
+                  {chips.join(" · ")}
+                </span>
+              </div>
+            );
+          })()}
         </div>
 
         {/* Results */}
@@ -400,7 +411,9 @@ function ListingsContent() {
                     : "bg-white text-slate-700 border-slate-300 hover:border-slate-500"
                 }`}
               >
-                {mapFilterActive ? "✓ 只显示地图范围内的房源" : "在地图范围内搜索"}
+                {mapFilterActive ? (
+                    <>✓ 只显示地图范围内的房源{data?.total != null ? <span className="ml-1.5 font-normal opacity-80">· {data.total.toLocaleString()} 个</span> : null}</>
+                  ) : "在地图范围内搜索"}
               </button>
             </div>
 

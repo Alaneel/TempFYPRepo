@@ -45,6 +45,7 @@ export default function ValuatePage() {
     sqft:          "1000",
     tenure:        "Freehold",
     built_year:    "2010",
+    postal_code:   "",
   });
 
   const mutation = useMutation<ValuationResult, Error, typeof form>({
@@ -57,6 +58,7 @@ export default function ValuatePage() {
         sqft:          Number(vals.sqft),
         tenure:        vals.tenure || null,
         built_year:    builtYearNum >= 1960 && builtYearNum <= 2030 ? builtYearNum : null,
+        postal_code:   vals.postal_code.trim().length === 6 ? vals.postal_code.trim() : null,
       });
       return data;
     },
@@ -157,6 +159,19 @@ export default function ValuatePage() {
                 placeholder="e.g. 2005"
                 value={form.built_year}
                 onChange={(e) => setForm(f => ({ ...f, built_year: e.target.value }))}
+              />
+            </div>
+
+            <div className="grid gap-1.5">
+              <Label htmlFor="postal_code">
+                Postal Code
+                <span className="ml-1.5 text-xs font-normal text-muted-foreground">(optional — improves district accuracy)</span>
+              </Label>
+              <Input
+                id="postal_code" type="text" inputMode="numeric" maxLength={6}
+                placeholder="e.g. 238859"
+                value={form.postal_code}
+                onChange={(e) => setForm(f => ({ ...f, postal_code: e.target.value.replace(/\D/g, "").slice(0, 6) }))}
               />
             </div>
 

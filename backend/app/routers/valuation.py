@@ -14,6 +14,8 @@ class EstimateRequest(BaseModel):
     tenure:        Optional[str]   = Field(None, examples=["Freehold"])
     actual_price:  Optional[float] = Field(None, ge=0)
     built_year:    Optional[int]   = Field(None, ge=1960, le=2035, description="Year of TOP/completion")
+    postal_code:   Optional[str]   = Field(None, examples=["238859"], description="6-digit Singapore postal code")
+    district:      Optional[int]   = Field(None, ge=1, le=28, description="Singapore district number (1-28)")
 
 
 @router.post("/estimate")
@@ -31,6 +33,8 @@ def estimate(req: EstimateRequest):
             tenure=req.tenure,
             actual_price=req.actual_price,
             built_year=req.built_year,
+            postal_code=req.postal_code,
+            district=req.district,
         )
         return result
     except FileNotFoundError as e:
