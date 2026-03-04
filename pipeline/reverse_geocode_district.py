@@ -191,12 +191,12 @@ def main():
     )
     cur = conn.cursor()
 
-    # 查询目标：有坐标 + (district IS NULL 或 --overwrite)
+    # 查询目标：有坐标或有地址 + (district IS NULL 或 --overwrite)
     if args.overwrite:
-        where = "latitude IS NOT NULL AND longitude IS NOT NULL"
+        where = "(latitude IS NOT NULL AND longitude IS NOT NULL) OR (address IS NOT NULL AND address != '')"
         print("模式：--overwrite，将覆盖所有已有 district")
     else:
-        where = "latitude IS NOT NULL AND longitude IS NOT NULL AND district IS NULL"
+        where = "((latitude IS NOT NULL AND longitude IS NOT NULL) OR (address IS NOT NULL AND address != '')) AND district IS NULL"
         print("模式：只填 district IS NULL 的记录")
 
     query = f"SELECT id, latitude, longitude, address FROM listings WHERE {where} ORDER BY id"
@@ -225,10 +225,11 @@ def main():
 
     def fetch_one(row):
         listing_id, lat, lng, address = row
-        # 第一步：反向地理编码（坐标 → 邮编）
-        district = reverse_geocode(float(lat), float(lng))
-        if district is not None:
-            return listing_id, district, "rev"
+        # 第一步：反向地理编码（坐标 → 邮编），坐标不存在则跳过
+        if lat is not None and lng is not None:
+            district = reverse_geocode(float(lat), float(lng))
+            if district is not None:
+                return listing_id, district, "rev"
         # 第二步：地址正向搜索兜底
         district = geocode_by_address(address)
         if district is not None:

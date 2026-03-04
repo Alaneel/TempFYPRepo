@@ -357,8 +357,27 @@ async def run_all(purpose: str, out_dir: str|None, towns: list[int], concurrency
     print(f"[start] {start_local:%Y-%m-%d %H:%M:%S} • purposes={purposes} • towns={towns} • conc={concurrency}")
 
     async with async_playwright() as play:
-        browser = await play.chromium.launch(headless=headless)
-        ctx = await browser.new_context(viewport={"width": 1366, "height": 900})
+        browser = await play.chromium.launch(
+            headless=headless,
+            args=[
+                "--disable-blink-features=AutomationControlled",
+                "--no-sandbox",
+                "--disable-dev-shm-usage",
+            ],
+        )
+        ctx = await browser.new_context(
+            viewport={"width": 1366, "height": 900},
+            user_agent=(
+                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/122.0.0.0 Safari/537.36"
+            ),
+            locale="en-SG",
+            timezone_id="Asia/Singapore",
+        )
+        await ctx.add_init_script(
+            "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})"
+        )
 
         if block_media:
             async def handler(route: Route, request: Request):

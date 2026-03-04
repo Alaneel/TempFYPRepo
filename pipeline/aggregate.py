@@ -244,6 +244,10 @@ def normalize_srx(df):
     if 'tenure' in df.columns:
         df['tenure'] = df['tenure'].apply(clean_tenure) # 'leasehold-99' -> 'Leasehold 99'
     
+    # Drop the short 'address' field (listing description) before renaming full_address → address
+    if 'full_address' in df.columns and 'address' in df.columns:
+        df = df.drop(columns=['address'])
+
     # Map fields including new ones from merged scraper (from skwips)
     rename_map = {
         'listing_id': 'id',
@@ -261,12 +265,15 @@ def normalize_srx(df):
         'posted_age': 'posted_date',
         'full_address': 'address',  # NEW from skwips - now have better address
         'town': 'nearby_text',  # Map town to nearby_text
+        'built_year': 'built_year',  # built year from scraper
     }
     df = df.rename(columns=rename_map)
     
     # Use full_address if available, otherwise fallback to title
     if 'address' not in df.columns or df['address'].isna().all():
         df['address'] = df['title']
+    else:
+        df['address'] = df['address'].fillna(df['title'])
     
     df['price'] = df['price_numeric']
     df['psf'] = df['psf_numeric']
@@ -333,7 +340,7 @@ def main():
     df_ep = normalize_edgeprop(df_ep)
     
     # 4. SRX
-    srx_file = os.path.join(base_dir, 'srx', 'srx_listings.csv')
+    srx_file = os.path.join(base_dir, 'srx', 'rent_sale_all_towns.csv')
     print(f"Loading SRX: {srx_file}")
     df_srx = pd.read_csv(srx_file)
     df_srx = normalize_srx(df_srx)
