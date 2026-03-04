@@ -1,8 +1,8 @@
 {
   "n_total": 42,
-  "total_factual_consistency": 32,
+  "total_factual_consistency": 39,
   "total_relevance": 42,
-  "pct_factual_consistency": 76.2,
+  "pct_factual_consistency": 92.9,
   "pct_relevance": 100.0,
   "by_segment": {
     "Condo Sale": {
@@ -12,19 +12,19 @@
     },
     "HDB Rent": {
       "n": 12,
-      "factual_consistency": "8/12 (66%)",
+      "factual_consistency": "11/12 (91%)",
       "relevance": "12/12 (100%)"
     },
     "Landed Sale": {
       "n": 12,
-      "factual_consistency": "8/12 (66%)",
+      "factual_consistency": "12/12 (100%)",
       "relevance": "12/12 (100%)"
     }
   },
   "by_category": {
     "Valuation verdict": {
       "n": 13,
-      "factual_consistency": "8/13 (61%)",
+      "factual_consistency": "12/13 (92%)",
       "relevance": "13/13 (100%)"
     },
     "SHAP factor attribution": {
@@ -34,7 +34,7 @@
     },
     "Price range interpretation": {
       "n": 10,
-      "factual_consistency": "5/10 (50%)",
+      "factual_consistency": "8/10 (80%)",
       "relevance": "10/10 (100%)"
     },
     "Market comparison": {
@@ -54,7 +54,7 @@
       "segment": "Condo Sale",
       "category": "Valuation verdict",
       "question": "Is this condo fairly priced?",
-      "response": "Based on the valuation analysis, this condo appears overpriced. The listing at S$2.00M is about 17% higher than the estimated value of S$1.71M. The valuation model suggests a fair range of S$1.48M to S$1.94M, so you're looking at the upper end of asking price.\n\nThe main value drivers are the District 9 location (adds S$187K) and freehold tenure (adds S$63K), which are positives. However, the 980 sqft floor area and the property's 21-year age work against the valuation, reducing value by S$142K and S$98K respectively.\n\nIf you're serious about this property, there may be room to negotiate down toward the S$1.71M-S$1.85M range.",
+      "response": "Based on the valuation analysis, this condo appears overpriced. The listing is at S$2.00M but the estimated market value is S$1.71M, suggesting it's about 17% above what comparable properties are trading for. The valuation range is S$1.48M to S$1.94M, so treat this as a rough guide with meaningful uncertainty since the model accuracy is around ±13.4%.\n\nThe District 9 location adds value, and freehold tenure helps too. However, the 980 sqft size and 21-year age work against it. You might have room to negotiate down from the asking price, or consider similar properties in the area that may offer better value.",
       "factual_consistency": 1,
       "relevance": 1
     },
@@ -63,7 +63,7 @@
       "segment": "Condo Sale",
       "category": "Valuation verdict",
       "question": "How does the listed price compare to the AI estimate?",
-      "response": "The listed price of S$2.00M is about 17% higher than the AI estimate of S$1.71M. The valuation model suggests a fair range of S$1.48M to S$1.94M, so the asking price sits above even the upper end of that range. The property's main value drivers are its District 9 location which adds S$187K and freehold tenure adding S$63K, but these are offset by the 980 sqft floor area costing S$142K in value and the 21-year age deducting S$98K. So you're paying a premium above the estimated fair value right now.",
+      "response": "The listed price of S$2.00M is about 17% higher than the AI estimate of S$1.71M. So the property appears overpriced based on the model, though keep in mind the estimate has a margin of error of around ±13.4%, so the true value could differ significantly. The estimated range is S$1.48M to S$1.94M. That said, these are just model predictions and don't account for things like your personal preferences, market timing, or unique property features that might justify a premium. You'd want to compare it against recent comparable sales in Robertson Quay too.",
       "factual_consistency": 1,
       "relevance": 1
     },
@@ -72,7 +72,7 @@
       "segment": "Condo Sale",
       "category": "Valuation verdict",
       "question": "Should I negotiate the price down?",
-      "response": "Based on the valuation analysis, yes, there's a good case for negotiation. The property is listed at S$2.00M but estimated at S$1.71M, making it about 17% overpriced. That puts it above the valuation range of S$1.48M–S$1.94M.\n\nThe main headwinds are the 980 sqft floor area and 21-year age, which work against the value. The District 9 location and freehold tenure help, but not enough to justify the current asking price.\n\nI'd suggest targeting somewhere closer to S$1.75M–S$1.85M as a reasonable negotiating position. Keep in mind the valuation carries a ±13.4% margin of error, so there's some uncertainty, but the direction is clear—you have leverage to push back.",
+      "response": "Based on the valuation data, there's a case for negotiation. The listing at S$2.00M appears about 17% above the estimated market value of S$1.71M. However, keep in mind the model has a MAPE of ±13.4%, so the true value could differ significantly — the actual range is roughly S$1.48M to S$1.94M.\n\nThe property's main value drivers are the District 9 location (Robertson Quay is desirable) and freehold tenure, which add significant value. Working against the price are the 980 sqft floor area and the 21-year age of the building.\n\nI'd suggest making an offer around S$1.75M to S$1.80M as a starting point, giving some buffer for valuation uncertainty while still reflecting the overpricing signal. Get a professional valuation done before committing, and consider",
       "factual_consistency": 1,
       "relevance": 1
     },
@@ -81,7 +81,7 @@
       "segment": "Condo Sale",
       "category": "Valuation verdict",
       "question": "What is the fair value range for this property?",
-      "response": "Based on the valuation model, the fair value range for Riverside Suites is S$1.48M to S$1.94M, with an estimated value of S$1.71M. The model has a margin of error of about 13.4%, so there's some variance to account for.\n\nThe property is currently listed at S$2.00M, which puts it about 17% above the estimated fair value. The main factors pulling the price down are the floor area at 980 sqft and the property's age at 21 years, while the District 9 location and freehold tenure add value. If you're considering this property, negotiating closer to the S$1.71M estimate might be more aligned with market value.",
+      "response": "Based on the valuation model, the estimated fair value range for this Riverside Suites unit is S$1.48M to S$1.94M, with a central estimate of S$1.71M. So the true value could differ significantly — the model has around 13.4% average error, meaning this range is a rough guide rather than a precise figure.\n\nThe listed price of S$2.00M sits above this range, suggesting the property is overpriced by about 17 percent. The valuation factors in the strong District 9 location and freehold tenure as positives, but the 980 sqft floor area and 21-year age work against the value.",
       "factual_consistency": 1,
       "relevance": 1
     },
@@ -90,8 +90,8 @@
       "segment": "Condo Sale",
       "category": "Valuation verdict",
       "question": "Is the S$2M asking price reasonable for Robertson Quay?",
-      "response": "Based on the valuation model, the S$2M asking price looks on the high side. The estimated value is S$1.71M, which puts the listing at about 17 percent above the predicted market price. That said, the valuation range runs from S$1.48M to S$1.94M, so there's some overlap with the asking price depending on specific buyer preferences and market conditions.\n\nThe main value drivers here are the District 9 location (adds about S$187K) and freehold tenure (adds S$63K), which are strong positives. However, the 980 sqft size and the 21-year age of the property from 2005 pull down the valuation somewhat.\n\nIf you're a buyer, you might have negotiation room. If you're selling, the asking price is optimistic but not completely unrealistic given market variability.",
-      "factual_consistency": 1,
+      "response": "Based on the AI valuation model, the S$2M asking price appears high. The estimated value is S$1.71M with a range of S$1.48M to S$1.94M, so the true value could differ significantly given the model's ±13.4% accuracy margin.\n\nThis suggests the listing is about 17 percent above the estimated fair value. The main drag on value is the property age at 21 years and the relatively modest 980 sqft floor area. The District 9 location does add appeal worth around S$187K.\n\nYou're paying a premium here. If the unit is in exceptional condition or has unique features not captured in the valuation, that could justify the higher price. Otherwise, you might have negotiation room or should compare similar units in the area first.",
+      "factual_consistency": 0,
       "relevance": 1
     },
     {
@@ -99,7 +99,7 @@
       "segment": "Condo Sale",
       "category": "SHAP factor attribution",
       "question": "What factors are dragging down the valuation?",
-      "response": "A couple of things are working against this property's value. The floor area of 980 sqft is dragging it down by about S$142K, which is on the smaller side for a 2-bedroom. The age is also a factor - at 21 years old, the property loses roughly S$98K in valuation. And interestingly, having only 2 bedrooms instead of more costs about S$31K compared to similar properties.\n\nOn the positive side though, the District 9 location near Robertson Quay adds S$187K, and the freehold tenure adds S$63K. So the location and tenure are actually strong points helping the valuation.",
+      "response": "The main factors pulling down the valuation are floor area and property age. The 980 sqft size is reducing value by around S$142K compared to larger units. Being 21 years old is also costing about S$98K, which makes sense given it was built in 2005. The 2-bedroom count is dragging down another S$31K.\n\nOn the flip side, the District 9 location near Robertson Quay is adding significant value at S$187K, and the freehold tenure adds S$63K. So you're looking at a property where age and size are headwinds, but the prime location helps offset that.\n\nThe AI estimates this unit at S$1.71M, so treat that as a rough guide with meaningful uncertainty given the ±13.4% margin of error. The listed price of S$2.00M appears notably higher than the model suggests.",
       "factual_consistency": 1,
       "relevance": 1
     },
@@ -108,7 +108,7 @@
       "segment": "Condo Sale",
       "category": "SHAP factor attribution",
       "question": "Why is the valuation lower than the asking price?",
-      "response": "The valuation is about S$290k lower than the asking price mainly due to a few factors. The property is 21 years old, which reduces value by around S$98k. The floor area of 980 sqft is relatively modest, costing roughly S$142k in valuation. On the positive side, the District 9 location adds S$187k and the freehold tenure adds S$63k.\n\nOverall, the asking price of S$2.00M appears optimistic compared to the estimated S$1.71M valuation. The model suggests it's overpriced by about 17 percent. Of course, location appeal, recent renovations, or market demand could justify asking higher, but based on comparable data, the listing is positioned above current market value.",
+      "response": "The AI model estimates this property at S$1.71M versus the S$2.00M asking price, suggesting it's overpriced by about 17%. Here's why the valuation came in lower:\n\nThe main factors dragging down the value are the floor area at 980 sqft, which is on the smaller side, and the property's age at 21 years old. Together these reduce value by around S$240K. The 2-bedroom layout also brings it down slightly.\n\nWhat helps the valuation is the prime District 9 location near Robertson Quay, which adds S$187K in value, plus the freehold tenure adding S$63K.\n\nKeep in mind the model has a margin of error of ±13.4%, so the true value could differ significantly from the S$1.71M estimate. The actual market price depends on factors like current demand, condition, and recent comparable sales",
       "factual_consistency": 1,
       "relevance": 1
     },
@@ -117,7 +117,7 @@
       "segment": "Condo Sale",
       "category": "SHAP factor attribution",
       "question": "What is the biggest positive factor in the valuation?",
-      "response": "The biggest positive factor is the District 9 location, which adds S$187K to the valuation. This is a premium area that significantly boosts the property's value. The freehold tenure also helps, adding S$63K. However, these positives are offset by the floor area, property age, and bedroom count working against the valuation.",
+      "response": "The biggest positive factor is the District 9 location, which adds S$187K to the valuation. This is the prime area appeal — Robertson Quay's central location and river frontage command a significant premium. The freehold tenure also helps, adding S$63K. These location and ownership benefits are what keep the valuation relatively strong despite the property's age and modest size.",
       "factual_consistency": 1,
       "relevance": 1
     },
@@ -126,7 +126,7 @@
       "segment": "Condo Sale",
       "category": "SHAP factor attribution",
       "question": "Does the freehold tenure help the valuation?",
-      "response": "Yes, freehold tenure does help the valuation. According to the data, freehold status adds about S$63K to the property's value. However, this positive boost is outweighed by other factors. The property's age of 21 years reduces value by S$98K, and the relatively modest floor area of 980 sqft brings it down by S$142K. So while freehold is definitely a plus, the overall estimated value of S$1.71M still comes in below the listed S$2.00M asking price.",
+      "response": "Yes, freehold tenure does help. The model shows it adds about S$63K to the valuation compared to leasehold properties. That's a meaningful boost for this property.\n\nHowever, keep in mind the overall AI estimate is S$1.71M with a possible range of S$1.48M to S$1.94M (±13.4% margin of error), so treat that S$63K contribution as a rough guide, not a precise figure. The bigger factors working against the valuation here are the property's age at 21 years and its floor area at 980 sqft, which together reduce the value significantly more than the freehold benefit adds back.",
       "factual_consistency": 1,
       "relevance": 1
     },
@@ -135,7 +135,7 @@
       "segment": "Condo Sale",
       "category": "Price range interpretation",
       "question": "What is the confidence interval for this estimate?",
-      "response": "The valuation estimate of S$1.71M has a confidence range of S$1.48M to S$1.94M. This range reflects the model's typical accuracy level of plus or minus 13.4% MAPE (mean absolute percentage error). So there's reasonable confidence the true market value falls somewhere in that band, though it's not a guarantee. The actual price will depend on factors like specific unit condition, exact floor level, and current buyer demand.",
+      "response": "The confidence interval is S$1.48M to S$1.94M, which represents roughly a 13.4% margin of error either side of the S$1.71M estimate, so the true value could differ significantly from this range.\n\nHowever, treat this as a rough guide, not a precise figure. The model's 13.4% MAPE means valuations can vary meaningfully in real transactions due to factors like unit-specific condition, exact floor level, views, and market timing that the model doesn't capture. So while S$1.48M to S$1.94M gives you a ballpark, actual comparable sales in Robertson Quay could fall outside this range depending on property-specific attributes.",
       "factual_consistency": 0,
       "relevance": 1
     },
@@ -144,7 +144,7 @@
       "segment": "Condo Sale",
       "category": "Price range interpretation",
       "question": "If I offer S$1.75M, is that within the fair range?",
-      "response": "Yes, S$1.75M is within the fair range. The AI valuation puts the property between S$1.48M and S$1.94M, so your offer sits comfortably in that window, just slightly above the estimated value of S$1.71M.\n\nThe listing price of S$2.00M appears overpriced by about 17%, so negotiating down to S$1.75M is reasonable. That's only around S$40K above the estimated value, which is well within the model's margin of error (±13.4%).\n\nYou'd be in a solid negotiating position with this offer.",
+      "response": "Your offer of S$1.75M sits comfortably within the estimated fair range of S$1.48M to S$1.94M. The AI model estimates the property at S$1.71M with a margin of error of around ±13.4%, so treat this as a rough guide rather than a precise figure—the true value could differ significantly.\n\nAt S$1.75M, you'd be just slightly above the model estimate, which is quite reasonable. It's still notably lower than the S$2.00M asking price, representing about a 12.5% discount. Whether that offer gets accepted depends on the seller's motivation, but from a valuation perspective you're in solid territory—not undervaluing nor overpaying based on the analysis.",
       "factual_consistency": 1,
       "relevance": 1
     },
@@ -153,8 +153,8 @@
       "segment": "Condo Sale",
       "category": "Price range interpretation",
       "question": "How accurate is the AI valuation?",
-      "response": "The AI model has a MAPE (Mean Absolute Percentage Error) of plus or minus 13.4%, which means valuations typically fall within that margin of accuracy. For this property, the estimated value sits at S$1.71M with a range of S$1.48M to S$1.94M, so there's built-in uncertainty.\n\nReal estate valuations involve many variables, and no model is perfect. The 13.4% margin translates to roughly S$230K swing in either direction for a property at this price point. You'd want to factor that in when making decisions. The valuation suggests the S$2.00M asking price is about 17% above the estimated value, but that gap could narrow if actual market conditions or specific property features differ from the model's inputs.",
-      "factual_consistency": 0,
+      "response": "The model has a MAPE of ±13.4%, so the true value could differ significantly from the estimate. This means the actual price typically falls within roughly that margin of error from the model's prediction, though it could be outside that range.\n\nIn practical terms, treat this as a rough guide rather than a precise figure. The estimated S$1.71M comes with a stated range of S$1.48M to S$1.94M, which gives you a sense of the uncertainty. Real valuations depend on many factors the model might not fully capture, like specific unit condition, views, or market timing. Use this as one data point among others, not as definitive pricing.",
+      "factual_consistency": 1,
       "relevance": 1
     },
     {
@@ -162,7 +162,7 @@
       "segment": "Condo Sale",
       "category": "Price range interpretation",
       "question": "What's the lowest reasonable offer I could make?",
-      "response": "Based on the valuation, the estimated value is S$1.71M with a range of S$1.48M to S$1.94M. The property is listed at S$2.00M, which is about 17% above the estimated value.\n\nA reasonable offer would likely start around S$1.65M to S$1.75M range, closer to the lower end of the valuation given it's currently overpriced. You could consider opening at S$1.60M depending on how motivated the seller is, but anything below S$1.48M would be pushing well below the valuation floor. The freehold tenure and District 9 location are its strongest value drivers, so those won't budge the price down much. The 980 sqft size and 21-year age work slightly against the property's value.",
+      "response": "Based on the valuation, the AI estimates this property at S$1.71M with a range of S$1.48M to S$1.94M, so the true value could differ significantly given the model's ±13.4% uncertainty. That's about 17% below the S$2.00M asking price.\n\nA reasonable starting offer would likely be around S$1.50M to S$1.60M. This sits near the lower end of the estimated range and accounts for negotiation room. The property's age (21 years) and smaller size (980 sqft) are working in your favor for negotiation, though the District 9 location and freehold status add some value.\n\nThat said, the seller's asking price suggests they may have other considerations. I'd recommend checking recent comparable sales in Robertson Quay to see what similar units actually transacted for. Market conditions matter too — treat the",
       "factual_consistency": 1,
       "relevance": 1
     },
@@ -171,7 +171,7 @@
       "segment": "Condo Sale",
       "category": "Market comparison",
       "question": "How does this compare to other condos in District 9?",
-      "response": "Based on the valuation model, this 2-bedroom at S$2.00M is overpriced by about 17 percent compared to similar District 9 condos. The estimated value is S$1.71M, with a range of S$1.48M to S$1.94M.\n\nThe District 9 location actually adds value, contributing about S$187K to the price. However, the 980 sqft size and 21-year age work against it, reducing value by S$142K and S$98K respectively. The freehold tenure is a plus, adding S$63K.\n\nFor context, comparable District 9 condos would typically be in the S$1.48M to S$1.94M range. The listing price sits above that ceiling, so you'd likely find better value elsewhere in the district unless this property has unique features not captured in the model.",
+      "response": "The listing at S$2.00M appears overpriced compared to what the model predicts. The estimated value is S$1.71M, suggesting you're paying about S$290K more than comparable District 9 condos, so roughly 17% above market.\n\nThat said, the model has a ±13.4% uncertainty margin, meaning the true value could differ significantly—so treat this as a rough guide, not a precise figure.\n\nThe District 9 location itself adds value (worth about S$187K), which is good for the area. However, the property's age at 21 years and smaller floor area of 980 sqft are dragging the value down compared to newer units. The freehold tenure helps though.\n\nIf you're serious about this unit, I'd recommend checking recent sales of similar 2-bed condos in Robertson Quay or nearby District 9 areas to verify whether",
       "factual_consistency": 1,
       "relevance": 1
     },
@@ -180,7 +180,7 @@
       "segment": "Condo Sale",
       "category": "Market comparison",
       "question": "Is Robertson Quay a good location for a condo?",
-      "response": "Robertson Quay is a solid location in District 9. It's a riverside area with good amenities and accessibility. However, the AI valuation suggests this particular unit at Riverside Suites is overpriced by about 17 percent. The listing is S$2.00M but estimated value is S$1.71M, so location alone isn't compensating for the price premium.\n\nThe District 9 location adds roughly S$187K to the property's value according to the model, which is positive. But you'd want to consider whether you're paying extra for the brand, views, or other factors beyond the market fundamentals. At S$2.04M per thousand sqft, it's steep compared to what the valuation suggests.",
+      "response": "Robertson Quay is a solid location in District 9. It's a well-established riverside area with good amenities, dining, and entertainment options. The freehold tenure adds value too, contributing around S$63K to the valuation here.\n\nThat said, the location premium for District 9 is moderate—it adds about S$187K to this property's value compared to other districts. It's desirable but not a top-tier prime location like Orchard or Marina Bay. The area works well if you want riverside living with convenient access to the CBD without paying peak prices. Whether it's good for you depends on your lifestyle needs and commute, but it's reasonably popular for condos.",
       "factual_consistency": 1,
       "relevance": 1
     },
@@ -189,7 +189,7 @@
       "segment": "Condo Sale",
       "category": "Renovation inference",
       "question": "Is the unit likely renovated given it's 21 years old?",
-      "response": "The listing doesn't specify renovation details, so I can't say for certain. However, at 21 years old (built 2005), it's plausible the unit has been renovated since then, but there's no guarantee. Many older units in prime locations like Robertson Quay do get updated, but some owners maintain original finishes. You'd need to check the actual listing photos, agent notes, or arrange a viewing to confirm the condition and any recent upgrades. This info would definitely matter for the S$2M asking price versus the estimated S$1.71M valuation.",
+      "response": "The listing doesn't specify renovation status, so I can't say for certain. However, at 21 years old (built 2005), it's plausible the unit could have undergone some updates, but that's just a guess. Many properties that age have had at least cosmetic work done, but some might still have original fittings. You'd really need to check the actual listing photos or schedule a viewing to see the condition. If it hasn't been renovated, that could partly explain why the AI valuation comes in at S$1.71M versus the S$2.00M asking price — buyers typically factor in renovation costs for older units.",
       "factual_consistency": 1,
       "relevance": 1
     },
@@ -198,7 +198,7 @@
       "segment": "Condo Sale",
       "category": "Renovation inference",
       "question": "How much would renovation cost affect the fair value?",
-      "response": "That's a good question, but the valuation data I have doesn't include renovation costs or condition details. The estimated fair value of S$1.71M is based on comparable sales in the market, assuming the property is in typical condition for its age.\n\nIf this unit needs significant renovation, that could justify some of the S$290K gap between the listing price (S$2.00M) and estimated value. However, renovation costs vary wildly depending on scope—could be S$50K for cosmetic updates or S$300K+ for a full overhaul.\n\nI'd recommend getting a property inspector's report and a contractor's quote to see if renovation needs might explain the pricing premium. That said, even accounting for moderate updates, the listed price still looks steep compared to market comps.",
+      "response": "Good question, but I don't have specific renovation cost data for this property or how it would adjust the valuation. The AI model estimates fair value at S$1.71M based on current condition, with a range of S$1.48M to S$1.94M, so the true value could differ significantly given the 13.4% model uncertainty.\n\nIn general, renovations could push value upward, but the return depends heavily on what's done and the market's appetite. A full refresh might add 5-15% in some cases, but older units like this 2005 build sometimes see diminishing returns on reno spend. I'd suggest getting quotes from contractors and comparing to similar recently renovated units in Robertson Quay to estimate realistic uplift. Your agent can also pull comps with recent updates.",
       "factual_consistency": 1,
       "relevance": 1
     },
@@ -207,7 +207,7 @@
       "segment": "Condo Sale",
       "category": "Renovation inference",
       "question": "Would a newly renovated unit change the valuation?",
-      "response": "Yes, renovations would likely improve the valuation, but the extent depends on the scope and quality. The current estimate of S$1.71M already assumes a standard condition for a 21-year-old property. A comprehensive renovation addressing layout, finishes, and systems could add meaningful value, potentially pushing closer to or above the listed S$2.00M.\n\nHowever, the model's uncertainty range is S$1.48M to S$1.94M, so renovations might just move the property within that existing band rather than dramatically changing things. The biggest challenge here is the listed price still appears high relative to comparable sales in District 9. I'd recommend getting actual renovation quotes and comparing recently renovated comps in the area to gauge the real uplift you'd see at resale.",
+      "response": "Yes, renovations would likely improve the valuation, but the extent depends on the scope and quality. The model doesn't have specific renovation data, so treat this as a rough estimate with uncertainty.\n\nA well-executed modern renovation addressing the unit's age (built 2005) could add somewhere in the range of S$50K to S$150K, potentially pushing the estimated value closer to S$1.76M to S$1.86M. High-end finishes in a prime location like Robertson Quay might command more.\n\nHowever, the listing at S$2.00M would still likely be above market based on comparable sales data the model trained on. Renovations help, but probably won't close a S$290K gap entirely. I'd suggest getting a professional appraisal if renovation is planned, since buyer perception of quality varies significantly.",
       "factual_consistency": 1,
       "relevance": 1
     },
@@ -216,8 +216,8 @@
       "segment": "HDB Rent",
       "category": "Valuation verdict",
       "question": "Is this HDB flat priced fairly for rent?",
-      "response": "The flat appears slightly overpriced. It's listed at S$3,200/month, but the estimated fair rental value is around S$2,880/month based on comparable properties. That's about 11% above market rate.\n\nThe valuation model suggests a reasonable range of S$2,624 to S$3,136/month, so the listing price sits at the higher end. The property benefits from having 4 bedrooms and decent floor area of 1,100 sqft, which adds value. However, it's working against you that the flat is 38 years old and in District 12, which slightly reduces rental appeal.\n\nIf you're the tenant, you might try negotiating down to around S$2,900-S$3,000/month. If you're the landlord, consider that S$3,200 could be challenging to secure in the current market.",
-      "factual_consistency": 0,
+      "response": "Based on the valuation data, this flat appears overpriced. The model estimates S$2,880/month, but it's listed at S$3,200/month—that's about 11% higher. The estimated range is S$2,624 to S$3,136/month, so the asking price sits just above the upper band, treat this as a rough guide with uncertainty of around ±8.9%.\n\nThe 4 bedrooms and 1,100 sqft are strong positives adding about S$730/month combined value. However, the 38-year age and Toa Payoh's District 12 location are mild headwinds. If you're a tenant, negotiating down toward S$2,900-S$3,000 seems reasonable. For landlords, you might struggle finding renters at S$3,200 compared to similar nearby units.",
+      "factual_consistency": 1,
       "relevance": 1
     },
     {
@@ -225,8 +225,8 @@
       "segment": "HDB Rent",
       "category": "Valuation verdict",
       "question": "How much above market rate is the asking rent?",
-      "response": "The listing price of S$3,200/month is about 11.1% above the estimated market rate of S$2,880/month. That's roughly S$320 extra per month.\n\nThe valuation model suggests a fair range between S$2,624 and S$3,136/month, so the asking price is on the higher end but still within the ballpark. The 38-year age of the flat and the dwindling 99-year lease are dragging the value down, but the 4 bedrooms and decent 1,100 sqft size are working in its favor.",
-      "factual_consistency": 0,
+      "response": "The asking rent of S$3,200/month is about 11% above the estimated market rate. The AI model suggests a fair rental value around S$2,880/month, so the true market rate could differ significantly given the model's 8.9% margin of error. That means the actual market rate might range from roughly S$2,624 to S$3,136/month.\n\nThe 4 bedrooms and 1,100 sqft size are pushing the price up, but the 1988 build year and aging lease are working against it. If you're looking to rent, you might have room to negotiate lower.",
+      "factual_consistency": 1,
       "relevance": 1
     },
     {
@@ -234,8 +234,8 @@
       "segment": "HDB Rent",
       "category": "Valuation verdict",
       "question": "Should I try to negotiate the rent down?",
-      "response": "Based on the valuation, yes, there's room to negotiate. The listing at S$3,200 is about 11% above the estimated fair value of S$2,880. The model suggests a reasonable range is S$2,624 to S$3,136, so you're at the higher end.\n\nKey factors working against the rent are the property age (1988, so 38 years old) which pulls down value by about S$290, and the leasehold tenure which costs another S$95 monthly. The 4 bedrooms and 1,100 sqft do add value, but not enough to justify the premium.\n\nI'd suggest negotiating down toward S$2,900-S$3,000 range. You have a solid argument based on the property's age and remaining lease tenure. Start with S$2,900 and see how they respond.",
-      "factual_consistency": 0,
+      "response": "The listing at S$3,200/month does appear high compared to our estimate of S$2,880/month — that's about 11% above what similar properties are renting for, so treat this as a rough guide with meaningful uncertainty given our model's ±8.9% accuracy range.\n\nThat said, negotiation is worth trying. The realistic range based on comparable data is roughly S$2,624 to S$3,136/month. You could reasonably ask for S$2,900-S$3,000/month and see how the landlord responds. The main headwinds are the property's age (1988) and the -S$180/month discount for District 12 location, which slightly offset the benefit of four bedrooms and 1,100 sqft.\n\nIf the landlord won't budge significantly, check a few other 4-bed units in Toa Payoh",
+      "factual_consistency": 1,
       "relevance": 1
     },
     {
@@ -243,7 +243,7 @@
       "segment": "HDB Rent",
       "category": "Valuation verdict",
       "question": "What rent should I expect to pay for a 4-room HDB in Toa Payoh?",
-      "response": "For a 4-room HDB in Toa Payoh, you should expect to pay around S$2,880 per month based on current market conditions. The typical range is S$2,624 to S$3,136 per month depending on specific condition and amenities.\n\nThis particular listing at S$3,200 per month is running about 11% above the estimated fair market value. The 4 bedrooms and 1,100 sqft size are strong positives, but the property's age (built 1988) and District 12 location are factors that weigh against a premium price. The 99-year leasehold tenure is also slightly lower value compared to longer leases.\n\nIf you're seriously considering this unit, you might negotiate lower or look at comparable units in the area.",
+      "response": "Based on our valuation model, a 4-room HDB in Toa Payoh like this one should rent for around S$2,880 per month, so the true value could differ significantly given our model's 8.9% margin of error.\n\nThis property is listed at S$3,200, which is about 11% above that estimate. The valuation suggests you'd be overpaying at the asking price.\n\nThe main factors driving the rental value are the 4 bedrooms adding S$420/month and the 1,100 sqft size adding S$310/month. However, the property's age (built 1988) reduces value by S$290/month, and being in District 12 has a slight negative impact of S$180/month compared to more central areas.\n\nThat said, actual rents vary based on exact location, condition, and amenities, so treat this as",
       "factual_consistency": 1,
       "relevance": 1
     },
@@ -252,7 +252,7 @@
       "segment": "HDB Rent",
       "category": "SHAP factor attribution",
       "question": "Why is the valuation lower than the asking rent?",
-      "response": "The valuation is lower mainly because of the property's age and location. At 38 years old, the flat is assessed at around S$290 less per month compared to newer units. Being in District 12 (Toa Payoh) also costs about S$180 less monthly than more prime locations.\n\nThe positive factors are the 4 bedrooms adding S$420 and the 1,100 sqft floor area adding S$310. But these don't fully offset the age and location discounts.\n\nOverall, the model estimates fair rent at S$2,880, suggesting the S$3,200 asking price is about 11% above market. The valuation range is S$2,624 to S$3,136, so the asking rent is at the higher end of reasonable, though not impossible depending on demand and condition.",
+      "response": "The model estimates this 4-bed HDB should rent for around S$2,880/month, but it's listed at S$3,200 — that's about S$320 higher. The main reasons for the lower valuation are property age and location. This flat was built in 1988, so it's 38 years old, which reduces the rental value by roughly S$290/month. Being in District 12 (Toa Payoh) also brings it down by S$180/month compared to more prime areas. These factors outweigh the positive contributions from having 4 bedrooms and 1,100 sqft of space. That said, the model has a margin of error around ±8.9%, so the true market rate could differ significantly. The asking price might still be justified if the unit has recent renovations or premium finishes not captured in the data.",
       "factual_consistency": 1,
       "relevance": 1
     },
@@ -261,7 +261,7 @@
       "segment": "HDB Rent",
       "category": "SHAP factor attribution",
       "question": "What is the biggest factor boosting the valuation?",
-      "response": "The biggest factor boosting the valuation is the 4-bedroom count, which adds S$310/month to the rental value. Actually, let me correct that - the bedroom count contributes S$420/month, which is the largest positive factor. The floor area of 1,100 sqft also helps significantly with an additional S$310/month. These two features are what's driving up the value most compared to smaller units.",
+      "response": "The biggest factor boosting the valuation is the 4-bedroom layout, which adds around S$420/month to the rental value. The spacious 1,100 sqft floor area also contributes positively with an additional S$310/month.\n\nHowever, keep in mind the model has a MAPE of ±8.9%, so the true value could differ significantly from these estimates. These factors help explain why a larger flat like this commands higher rent, but market conditions and specific tenant demand also play a role in actual pricing.",
       "factual_consistency": 1,
       "relevance": 1
     },
@@ -270,7 +270,7 @@
       "segment": "HDB Rent",
       "category": "SHAP factor attribution",
       "question": "Does the age of this HDB block affect the rent?",
-      "response": "Yes, definitely. The property age is actually one of the factors pulling the rent down. At 38 years old, this 1988-built flat shows an estimated negative impact of S$290/month on the rental price. That's significant.\n\nOlder HDB blocks typically command lower rents because tenants may perceive them as less modern, with older fixtures, layouts, and building conditions. The leasehold also decreases over time, which can affect value. So while the 4 bedrooms and 1,100 sqft add value, the age is working against this property's rental appeal. That's part of why the asking price of S$3,200/month seems about 11% above the estimated fair value of S$2,880/month.",
+      "response": "Yes, the property age definitely affects the rent. This 1988-built HDB is 38 years old, and according to the valuation model, it reduces the monthly rent by around S$290. That's a meaningful discount because older flats typically have more wear and tear, outdated fixtures, and fewer modern amenities compared to newer units.\n\nHowever, keep in mind the model has a MAPE of ±8.9%, so the true impact could differ significantly from this S$290 figure. Age is just one factor — the 4-bedroom size and 1,100 sqft area add value, while the District 12 location and leasehold tenure slightly reduce it. Overall, the model estimates this flat at S$2,880/month, treat this as a rough guide rather than a precise figure, but the S$3,200 asking rent does seem on the high side.",
       "factual_consistency": 1,
       "relevance": 1
     },
@@ -279,7 +279,7 @@
       "segment": "HDB Rent",
       "category": "Price range interpretation",
       "question": "How confident is the AI in this rental estimate?",
-      "response": "The AI has moderate confidence in this estimate. The model's accuracy level is around plus or minus 8.9 percent, which means the true rental value likely falls somewhere between S$2,624 and S$3,136 per month.\n\nThe S$2,880 estimate sits comfortably in that range, but there's still meaningful uncertainty. Real estate valuations depend on many factors that can vary between individual properties, so you should treat this as a guide rather than definitive truth.\n\nFor a 4-bedroom HDB in Toa Payoh, I'd say the estimate is reasonably reliable, but it's worth getting multiple quotes from agents familiar with the area to cross-check.",
+      "response": "The model has a MAPE of ±8.9%, so the true value could differ significantly from the estimate. This means the prediction is typically off by roughly 9% in either direction—treat this as a rough guide, not a precise figure.\n\nGiven the estimated value of S$2,880/month, that uncertainty range translates to S$2,624 to S$3,136/month. The listed price of S$3,200 actually falls just outside the upper end of this range, which suggests it's higher than the model expects, but the overlap is close enough that it's not drastically off.\n\nThe confidence is moderate—helpful for ballpark assessment but not definitive for major decisions. The estimate considers relevant factors like the 4 bedrooms, floor area, age, and location, but real market factors like tenant demand, landlord motivation, or recent renovations aren't captured here.",
       "factual_consistency": 0,
       "relevance": 1
     },
@@ -288,7 +288,7 @@
       "segment": "HDB Rent",
       "category": "Price range interpretation",
       "question": "If I counter-offer at S$3,000/month, is that reasonable?",
-      "response": "A counter-offer at S$3,000/month is reasonable and fairly strategic. The AI valuation estimates S$2,880/month, so S$3,000 sits just S$120 above that middle estimate—well within the valuation range of S$2,624 to S$3,136/month.\n\nAt S$3,000, you'd be paying about 4.2% above the estimated fair value instead of the current 11.1% premium. The listing is a bit high given the property's age (1988, so 38 years old) and District 12 location, which both pull value down. However, the 4-bedroom, 1,100 sqft size adds appeal.\n\nI'd say S$3,000 is a solid middle ground. It shows you're serious while acknowledging the listing might be optimistic. The landlord can likely accept this without feeling short",
+      "response": "A S$3,000/month counter-offer looks pretty reasonable. The AI estimate is S$2,880/month with a range of S$2,624 to S$3,136, so treat this as a rough guide not a precise figure given the ±8.9% model uncertainty. Your S$3,000 offer falls comfortably within that range and is only about S$120 above the estimate, so it's well-positioned. \n\nThe listing at S$3,200 does seem a bit high based on the data, but your counter at S$3,000 gives room for negotiation while staying fair to both sides. It's close enough that a landlord might accept it without too much back-and-forth. The main value drags here are the property's age (38 years) and the remaining 99-year lease, which factor into the valuation.",
       "factual_consistency": 1,
       "relevance": 1
     },
@@ -297,7 +297,7 @@
       "segment": "HDB Rent",
       "category": "Price range interpretation",
       "question": "What is the estimated fair rent range for this flat?",
-      "response": "Based on the valuation model, the estimated fair rent range for this 4-bedroom HDB flat in Toa Payoh is S$2,624 to S$3,136 per month, with a central estimate of S$2,880/month.\n\nThe listing price of S$3,200/month sits above this range, making it about 11% overpriced according to the model. The main factors supporting the rental value are the 4 bedrooms (adds S$420/month) and 1,100 sqft floor area (adds S$310/month). However, the property's age of 38 years and leasehold tenure reduce the value by S$290 and S$95 respectively. The model has an estimated accuracy of ±8.9%.",
+      "response": "Based on the valuation model, the estimated fair rent range for this 4-bedroom HDB flat in Toa Payoh is S$2,624 to S$3,136 per month, with a central estimate of S$2,880/month. The model has a margin of error of around 8.9%, so the true fair value could differ significantly from these figures — treat this as a rough guide rather than a precise prediction.\n\nThe listed price of S$3,200/month sits above this estimated range, suggesting it's about 11% overpriced based on comparable rentals. The flat's main value drivers are the 4 bedrooms and reasonable floor area of 1,100 sqft, though the 38-year age and district location pull the rental value down somewhat.",
       "factual_consistency": 1,
       "relevance": 1
     },
@@ -306,7 +306,7 @@
       "segment": "HDB Rent",
       "category": "Market comparison",
       "question": "Is Toa Payoh a good location for renting an HDB?",
-      "response": "Toa Payoh is a reasonably established location with good infrastructure. However, according to the valuation data, District 12 actually carries a slight location penalty of S$180/month compared to average, suggesting it's not among the most premium rental areas in Singapore.\n\nThe 4-bedroom, 1,100 sqft flat here is listed at S$3,200/month, but the model estimates it should rent for around S$2,880/month. So you'd be paying about 11% above the estimated fair value.\n\nThat said, Toa Payoh offers decent connectivity and amenities. Whether it's good depends on your priorities. If you're price-sensitive, this particular listing seems a bit steep. But if the location works for your lifestyle, it might still be worth considering despite being somewhat overpriced.",
+      "response": "Toa Payoh is a fairly established location with decent infrastructure. However, the rental market data suggests it carries a slight location discount of S$180/month compared to other areas, meaning it's not among the most premium rental districts.\n\nThat said, Toa Payoh has good amenities, MRT connectivity, and schools, so it attracts families. The 4-bedroom flat itself is spacious at 1,100 sqft, which adds value. The main drawback here is the property's age at 38 years, which reduces appeal and costs about S$290/month in valuation terms.\n\nFor renters, Toa Payoh offers decent value for mid-range family housing, though it's not commanding top rental premiums compared to newer or more central locations.",
       "factual_consistency": 1,
       "relevance": 1
     },
@@ -315,7 +315,7 @@
       "segment": "HDB Rent",
       "category": "Renovation inference",
       "question": "This HDB was built in 1988. Should I worry about its condition?",
-      "response": "The flat is 38 years old, which is definitely worth considering. At this age, you'll want to check for common issues like aging plumbing, electrical systems, and potential water seepage or structural concerns typical of older HDB blocks. However, many 1988 HDBs have been well-maintained or upgraded over time, so condition varies significantly from unit to unit.\n\nI'd recommend getting a professional inspection done before committing. Also check if the block has undergone any SERS (Selective En bloc Redevelopment Scheme) announcements or major renovations. The property's age does factor into its valuation—it's estimated at S$2,880/month compared to the listed S$3,200, partly due to its 38-year age reducing rental appeal.",
+      "response": "The 1988 build year is definitely worth considering since the flat is now 36 years old. HDB flats of that era can vary quite a bit depending on maintenance history. You should definitely do a thorough inspection yourself or hire a surveyor to check for common aging issues like water seepage, electrical wiring condition, plumbing reliability, and structural cracks.\n\nThat said, many older HDB flats have been well-maintained and some owners invest in renovations. The model actually factors in the property age as a negative of S$290/month on the rental value, so the market already prices in some depreciation concern.\n\nBefore committing, I'd recommend getting a professional inspection done and asking the current owner or agent about recent repairs or upgrades they've made. This will give you a clearer picture than just the age alone.",
       "factual_consistency": 1,
       "relevance": 1
     },
@@ -324,8 +324,8 @@
       "segment": "Landed Sale",
       "category": "Valuation verdict",
       "question": "Is this landed property overpriced at S$4.8M?",
-      "response": "Yes, the property appears overpriced at S$4.8M. The AI valuation estimates it at S$4.15M, suggesting it's about 15.7% above fair market value. That said, the valuation has a margin of error of ±26.3%, so the actual fair range is roughly S$3.06M to S$5.24M, which does encompass the listing price.\n\nThe main value drivers are the generous 3,200 sqft floor area and freehold tenure, which add significant value. However, the 31-year-old age detracts about S$380K from the valuation. For a final decision, I'd recommend getting a professional appraisal and comparing with recent sales of similar Bukit Timah semi-detached homes.",
-      "factual_consistency": 0,
+      "response": "According to our valuation model, the property appears overpriced by around 15.7 percent. The estimated value is S$4.15M, while it's listed at S$4.80M. However, keep in mind the model has a MAPE of ±26.3%, so the true value could differ significantly from this estimate.\n\nThe main value drivers are the generous 3,200 sqft floor area adding about S$820K, freehold tenure contributing S$410K, and the desirable District 21 location worth roughly S$290K. Working against it is the property's age at 31 years, which detracts around S$380K from value.\n\nThe listing sits within the model's estimated range of S$3.06M to S$5.24M, so it's not unreasonable, but there appears to be some upside risk at the current asking price. You",
+      "factual_consistency": 1,
       "relevance": 1
     },
     {
@@ -333,7 +333,7 @@
       "segment": "Landed Sale",
       "category": "Valuation verdict",
       "question": "How does the asking price compare to the AI estimate?",
-      "response": "The asking price of S$4.80M is about 15.7% higher than the AI valuation estimate of S$4.15M. So it's considered overpriced based on the model.\n\nThat said, the valuation comes with a margin of error of ±26.3%, so the true value could reasonably range between S$3.06M and S$5.24M. The asking price falls within that range, though on the higher end.\n\nThe main value drivers are the spacious 3,200 sqft floor area and freehold tenure, which add significant value. However, the property's age of 31 years is bringing the valuation down by about S$380K. Location in District 21 is also a positive factor worth S$290K.",
+      "response": "The listing price of S$4.80M is about 16% higher than the AI estimate of S$4.15M, so it's flagged as overpriced. However, treat this as a rough guide with significant uncertainty — the model has a MAPE of ±26.3%, so the true value could range anywhere from S$3.06M to S$5.24M. The listing price sits within that range, so it's not unreasonable, just on the higher end. Market factors, condition, specific location appeal, and recent comparable sales in Bukit Timah would matter more than this estimate alone. I'd recommend checking recent transactions in the area to validate.",
       "factual_consistency": 1,
       "relevance": 1
     },
@@ -342,7 +342,7 @@
       "segment": "Landed Sale",
       "category": "Valuation verdict",
       "question": "What is the estimated value of this semi-detached house?",
-      "response": "The AI valuation estimates this Bukit Timah semi-detached house at S$4.15M, with a range of S$3.06M to S$5.24M. However, the listing price is S$4.80M, which suggests it's about 15.7% overpriced based on the valuation model. The model has a margin of error of ±26.3%, so there's some uncertainty, but the property appears to be priced above estimated fair value. The large floor area of 3,200 sqft and freehold tenure are positive factors adding value, while the 31-year-old age detracts around S$380K from the valuation.",
+      "response": "The AI estimates this Bukit Timah semi-detached house at S$4.15M, though treat this as a rough guide since the model has a ±26.3% uncertainty range, so the true value could differ significantly. The estimated range is S$3.06M to S$5.24M.\n\nThe listing price of S$4.80M sits above the estimate, suggesting it's overpriced by about 15.7% based on comparable sales data. However, factors like the property's condition, exact location within Bukit Timah, or unique features not captured in the model could justify a premium. I'd recommend getting a professional valuation if you're seriously considering this purchase.",
       "factual_consistency": 1,
       "relevance": 1
     },
@@ -351,8 +351,8 @@
       "segment": "Landed Sale",
       "category": "Valuation verdict",
       "question": "Should I be worried about the wide price range shown?",
-      "response": "The range reflects uncertainty in valuation models, which is normal. The ±26.3% margin of error means the true value could reasonably be anywhere from S$3.06M to S$5.24M. That's wide, but not unusual for landed properties which vary more than other types.\n\nWhat matters more is that the AI estimates S$4.15M versus the listed S$4.80M. The listing appears about 15.7% above the valuation. Whether that's a concern depends on the market—Bukit Timah is competitive and the property is freehold with good size. You might negotiate down, but getting a professional valuation would be smarter than relying solely on this AI estimate.",
-      "factual_consistency": 0,
+      "response": "The wide range reflects real uncertainty in valuing landed properties. The model has a MAPE of plus or minus 26.3%, so treat this as a rough guide rather than a precise figure — the true value could differ significantly from the estimate.\n\nThat said, the S$3.06M to S$5.24M range does capture genuine market variability. Landed homes are less standardized than apartments, so factors like condition, layout quirks, and buyer preferences create wider swings. The listed price of S$4.80M falls comfortably within the range, though the model leans toward the lower end at S$4.15M, suggesting potential overpricing.\n\nRather than worry about the range width, use it as context: the property could reasonably be worth anywhere in that band depending on specifics the model can't see — like actual condition, renovation quality, or market timing. If you love the place, the range shows",
+      "factual_consistency": 1,
       "relevance": 1
     },
     {
@@ -360,7 +360,7 @@
       "segment": "Landed Sale",
       "category": "SHAP factor attribution",
       "question": "What is pulling the valuation below the asking price?",
-      "response": "The main thing pulling the valuation down is the property's age. Built in 1995, it's 31 years old, which reduces the value by about S$380K according to the model. That's the biggest negative factor working against it.\n\nThe listing price of S$4.80M is about 15.7% higher than the estimated S$4.15M valuation. So you're paying a premium here. That said, the valuation range is pretty wide (S$3.06M to S$5.24M with ±26.3% uncertainty), so there's some wiggle room depending on specific condition and market factors the model might not fully capture.",
+      "response": "The main factor pulling the valuation down is the property's age. At 31 years old (built 1995), it's reducing the estimated value by about S$380K compared to newer properties. This is the single biggest negative factor in the model.\n\nThe AI estimates the property at S$4.15M versus the S$4.80M asking price, so you're looking at a S$650K gap. Keep in mind the model has a MAPE of ±26.3%, so the true value could differ significantly—the estimated range is S$3.06M to S$5.24M.\n\nThe positive factors like the 3,200 sqft floor area, freehold tenure, and District 21 location are helping support the value, but the age is the main headwind. Whether that's a fair discount really depends on the property's condition and any recent renovations.",
       "factual_consistency": 1,
       "relevance": 1
     },
@@ -369,7 +369,7 @@
       "segment": "Landed Sale",
       "category": "SHAP factor attribution",
       "question": "What are the key value drivers for this landed property?",
-      "response": "The main value drivers for this Bukit Timah semi-detached are the floor area at 3,200 sqft which adds about S$820K to the value, and the freehold tenure contributing S$410K. The District 21 location adds another S$290K. On the flip side, the property age of 31 years reduces value by roughly S$380K, and having 5 bedrooms contributes S$210K. Overall, the spacious size and freehold status are your biggest positives here, though the age does work against it somewhat.",
+      "response": "The main value drivers for this Bukit Timah semi-detached are the floor area at 3,200 sqft adding around S$820K to the valuation, and the freehold tenure contributing S$410K. The District 21 location adds another S$290K. On the flip side, the property's age at 31 years old reduces value by roughly S$380K. Having 5 bedrooms adds about S$210K. So basically you're paying a premium for the spacious layout and freehold ownership in a good location, but the older construction pulls down the overall value estimate to S$4.15M compared to the listed S$4.80M. The model has a margin of error around plus or minus 26.3%, so treat this as a rough guide rather than a precise figure since the true value could differ significantly.",
       "factual_consistency": 1,
       "relevance": 1
     },
@@ -378,7 +378,7 @@
       "segment": "Landed Sale",
       "category": "SHAP factor attribution",
       "question": "Does the freehold tenure significantly boost the value?",
-      "response": "Yes, freehold tenure adds meaningful value to this property. According to the valuation model, the freehold status contributes approximately S$410K to the price. That's a solid boost, especially in Singapore's market where most residential properties are leasehold.\n\nHowever, it's worth noting that the floor area is the biggest value driver at S$820K, so while freehold matters, the size and layout carry more weight. The property is currently listed at S$4.80M, but the estimated value is S$4.15M, suggesting it's overpriced by about 15.7%. The freehold advantage alone doesn't fully justify the premium being asked here.",
+      "response": "Yes, freehold tenure does add meaningful value here. The model attributes about S$410K to the freehold status, which is a solid contribution. However, it's not the biggest factor—the 3,200 sqft floor area accounts for S$820K, nearly double the freehold boost.\n\nKeep in mind the model has a MAPE of ±26.3%, so treat these individual factor values as rough estimates, not precise figures. The true impact could be meaningfully different. That said, in District 21 where most properties are leasehold, having freehold ownership does make this property stand out and helps justify a premium relative to similar leasehold alternatives.",
       "factual_consistency": 1,
       "relevance": 1
     },
@@ -387,8 +387,8 @@
       "segment": "Landed Sale",
       "category": "Price range interpretation",
       "question": "Why is the price range so wide for this property?",
-      "response": "The wide range of S$3.06M to S$5.24M reflects the model's uncertainty when valuing semi-detached houses. With a MAPE of plus or minus 26.3 percent, there's naturally a lot of variation in comparable sales depending on specific conditions like exact location, renovations, and market timing.\n\nFor this property specifically, the wide range captures that landed homes in Bukit Timah can vary significantly based on factors the model accounts for differently—like the 31-year-old age potentially reducing value, versus strong positives like the 3,200 sqft size, freehold status, and District 21 location adding substantial value. Small differences in how much weight gets placed on any of these factors can swing the estimate quite a bit. The asking price of S$4.80M sits near the higher end of that range, which is why it's flagged as overpriced at plus",
-      "factual_consistency": 0,
+      "response": "The wide range reflects real uncertainty in valuing landed properties. The model has a MAPE of plus or minus 26.3 percent, so the true value could differ significantly from the estimate. This happens because landed houses are unique assets with fewer comparable sales than condos, making it harder to pin down an exact price. Location nuances, condition, and renovations matter hugely but are tough to quantify from listing data alone. The S$3.06M to S$5.24M range basically says the property could reasonably be worth anywhere in that band depending on factors the model doesn't fully capture. Treat this as a rough guide, not a precise figure. You'd want a proper valuation or agent assessment to narrow it down.",
+      "factual_consistency": 1,
       "relevance": 1
     },
     {
@@ -396,7 +396,7 @@
       "segment": "Landed Sale",
       "category": "Price range interpretation",
       "question": "If I offer S$4.2M, is that within the estimated fair range?",
-      "response": "Yes, S$4.2M is within the fair range. The AI valuation puts this property between S$3.06M and S$5.24M, so your offer falls comfortably in that band. \n\nThe estimated fair value is S$4.15M, so S$4.2M is essentially right at that level. The listing price of S$4.80M appears about 15.7% overpriced according to the model. Your offer of S$4.2M would be reasonable and close to the estimated fair value, though keep in mind the model has a margin of error of about ±26.3%. It's a solid starting point for negotiation.",
+      "response": "Yes, S$4.2M is within the estimated fair range. The model estimates the property at S$4.15M with a range of S$3.06M to S$5.24M, so your offer sits right at the upper end of the central estimate, treat this as a rough guide with about 26% uncertainty so the true value could differ significantly.\n\nThat said, the listing price is S$4.80M, which the model suggests is about 15.7% overpriced. An offer of S$4.2M would be roughly 12.5% below asking, which seems reasonable given the age of the property (built 1995) and the model's assessment. Whether the seller accepts depends on their motivation, but it's a defensible negotiating position.",
       "factual_consistency": 1,
       "relevance": 1
     },
@@ -405,8 +405,8 @@
       "segment": "Landed Sale",
       "category": "Price range interpretation",
       "question": "How reliable is the AI valuation for landed properties?",
-      "response": "The valuation comes with a MAPE of ±26.3%, which means there's substantial uncertainty baked in. For landed properties specifically, this margin is fairly typical since they're harder to value than apartments due to variations in land quality, layout, and condition.\n\nThe AI estimate of S$4.15M sits within a wide range of S$3.06M to S$5.24M, so use it as a ballpark rather than gospel. The model flagged this property as overpriced by 15.7% compared to the S$4.80M asking price, but given the margin of error, the actual fair value could easily be anywhere within that S$3–5M range.\n\nThe breakdown makes sense though: it credits the large 3,200 sqft floor area and freehold tenure, while penalizing the 31-year age. I'd recommend getting a professional valuation and comparing with recent",
-      "factual_consistency": 0,
+      "response": "The AI model has a MAPE of ±26.3% for this estimate, so the true value could differ significantly. That's a fairly wide margin, meaning the actual price could reasonably be anywhere from about S$3.06M to S$5.24M. Treat this as a rough guide, not a precise figure.\n\nFor landed properties like this semi-detached house, there's inherent uncertainty because each property is quite unique in terms of layout, condition, renovations, and specific location within the district. The model works better when there's more comparable data, but landed homes vary more than apartments.\n\nI'd suggest using this valuation as one data point alongside a professional property agent's assessment, a physical inspection, and comparable recent sales in Bukit Timah. That combination gives you a much more reliable picture than the AI estimate alone.",
+      "factual_consistency": 1,
       "relevance": 1
     },
     {
@@ -414,7 +414,7 @@
       "segment": "Landed Sale",
       "category": "Market comparison",
       "question": "Is Bukit Timah a premium location for landed housing?",
-      "response": "Yes, Bukit Timah is definitely a premium location for landed housing in Singapore. District 21 is one of the most sought-after areas, known for its established residential character, good schools, and proximity to nature reserves. The valuation shows District 21 contributes +S$290K to the property's value, reflecting its desirability.\n\nHowever, this particular property is listed at S$4.80M while the AI estimates it's worth around S$4.15M, suggesting it may be slightly overpriced by about 15.7%. The spacious 3,200 sqft and freehold tenure are strong assets adding significant value, but the property's age of 31 years does reduce appeal compared to newer homes in the area. For context, the valuation range is S$3.06M to S$5.24M, so there's some variability depending on condition and other factors.",
+      "response": "Yes, Bukit Timah is definitely a premium location for landed properties. District 21 is highly sought after in Singapore for its spacious homes, mature greenery, and proximity to nature reserves. The location contributes about S$290K to the valuation of this particular property.\n\nThat said, this semi-detached at S$4.80M appears overpriced by roughly 15.7% compared to the AI estimate of S$4.15M. The model has a margin of error of around ±26.3%, so the true value could differ significantly from either figure. The main strength here is the freehold tenure and spacious 3,200 sqft floor area, but the 31-year age works against the price. You'd want to compare recent comparable sales in the area to validate whether this specific listing is truly overvalued or if market demand justifies the premium.",
       "factual_consistency": 1,
       "relevance": 1
     },
@@ -423,7 +423,7 @@
       "segment": "Landed Sale",
       "category": "Renovation inference",
       "question": "The house was built in 1995. Does the age significantly affect value?",
-      "response": "Yes, the age does impact value but it's not the biggest factor here. The property being 31 years old reduces the estimated value by about S$380K according to the valuation model. That's meaningful but not dramatic compared to other factors.\n\nThe floor area of 3,200 sqft adds much more value (around S$820K), and the freehold tenure adds S$410K. So while the 1995 build year is a drawback, the property's size and freehold status more than compensate for it.\n\nKeep in mind the model has a ±26.3% margin of error, so there's some uncertainty. But relatively speaking, age is a moderate concern rather than a deal-breaker for a Bukit Timah property of this caliber.",
+      "response": "Yes, age does affect value here. The model shows the 31-year age reduces the estimated value by around S$380K compared to newer properties. That's a meaningful discount, though not massive given the S$4.15M base estimate.\n\nHowever, keep in mind the model has a ±26.3% margin of error, so treat this as a rough guide, not precise. Age impact varies depending on maintenance, renovations, and market sentiment. A well-maintained 1995 semi-D in Bukit Timah might hold value better than the model suggests, while deferred upkeep could justify the discount. You'd want to inspect the property's condition carefully.",
       "factual_consistency": 1,
       "relevance": 1
     }
