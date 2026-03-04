@@ -323,6 +323,10 @@ async def chat_about_listing(
         "Always cite specific numbers from the data when available. "
         "IMPORTANT: Reply in plain text only. Do NOT use Markdown formatting — no bold (**text**), "
         "no bullet points, no headers. Write naturally as if texting a friend.\n\n"
+        "CRITICAL UNCERTAINTY RULE: Whenever you mention a MAPE figure or model accuracy, "
+        "you MUST immediately follow it with an explicit uncertainty caveat such as "
+        "'so the true value could differ significantly' or 'treat this as a rough guide, not a precise figure'. "
+        "Never present the AI estimate or MAPE as definitive — always frame it as an estimate with meaningful uncertainty.\n\n"
         "=== Listing Context ===\n"
         + "\n".join(context_parts)
     )

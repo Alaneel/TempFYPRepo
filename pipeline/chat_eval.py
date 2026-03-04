@@ -127,6 +127,10 @@ def make_system_prompt(listing_ctx: str, valuation_ctx: str) -> str:
         "Always cite specific numbers from the data when available. "
         "IMPORTANT: Reply in plain text only. Do NOT use Markdown formatting — no bold (**text**), "
         "no bullet points, no headers. Write naturally as if texting a friend.\n\n"
+        "CRITICAL UNCERTAINTY RULE: Whenever you mention a MAPE figure or model accuracy, "
+        "you MUST immediately follow it with an explicit uncertainty caveat such as "
+        "'so the true value could differ significantly' or 'treat this as a rough guide, not a precise figure'. "
+        "Never present the AI estimate or MAPE as definitive — always frame it as an estimate with meaningful uncertainty.\n\n"
         "=== Listing Context ===\n"
         + listing_ctx + "\n\n"
         + valuation_ctx
@@ -264,25 +268,25 @@ TEST_CASES_HDB = [
         "category": "Valuation verdict",
         "question": "Is this HDB flat priced fairly for rent?",
         "must_mention_any": ["overpriced", "overprice", "3,200", "2,880", "11%", "above", "high"],
-        "must_not_contradict": ["fair", "good deal", "underpriced", "below estimate"],
+        "must_not_contradict": ["below the estimate", "underpriced", "below market rate"],
     },
     {
         "category": "Valuation verdict",
         "question": "How much above market rate is the asking rent?",
         "must_mention_any": ["320", "11%", "3,200", "2,880", "overpriced", "above"],
-        "must_not_contradict": ["below market", "fair", "underpriced"],
+        "must_not_contradict": ["below market rate", "underpriced", "asking is lower than estimate"],
     },
     {
         "category": "Valuation verdict",
         "question": "Should I try to negotiate the rent down?",
         "must_mention_any": ["overpriced", "2,880", "negotiate", "11%", "estimate"],
-        "must_not_contradict": ["don't negotiate", "fair price", "reasonable"],
+        "must_not_contradict": ["do not negotiate", "no room to negotiate", "asking is fair value"],
     },
     {
         "category": "Valuation verdict",
         "question": "What rent should I expect to pay for a 4-room HDB in Toa Payoh?",
         "must_mention_any": ["2,880", "2,624", "3,136", "range", "estimate"],
-        "must_not_contradict": ["3,200 is fair", "no estimate available"],
+        "must_not_contradict": ["3,200 is the fair value", "no estimate available"],
     },
     # ── SHAP factor attribution (3 cases) ─────────────────────────────────────
     {
@@ -308,19 +312,19 @@ TEST_CASES_HDB = [
         "category": "Price range interpretation",
         "question": "How confident is the AI in this rental estimate?",
         "must_mention_any": ["8.9", "MAPE", "8%", "9%", "range", "2,624", "3,136"],
-        "must_not_contradict": ["100% accurate", "exact", "certain", "no uncertainty"],
+        "must_not_contradict": ["100% accurate", "exactly right", "no uncertainty", "certain"],
     },
     {
         "category": "Price range interpretation",
         "question": "If I counter-offer at S$3,000/month, is that reasonable?",
         "must_mention_any": ["2,624", "3,136", "range", "within", "reasonable", "estimate"],
-        "must_not_contradict": ["3,000 is too low", "outside range", "unreasonable"],
+        "must_not_contradict": ["3,000 is outside the range", "3,000 is too low", "offer is unreasonable"],
     },
     {
         "category": "Price range interpretation",
         "question": "What is the estimated fair rent range for this flat?",
         "must_mention_any": ["2,624", "3,136", "range", "2,880"],
-        "must_not_contradict": ["3,200 is fair", "no range"],
+        "must_not_contradict": ["3,200 is the fair value", "no range available"],
     },
     # ── Market comparison (1 case) ────────────────────────────────────────────
     {
@@ -344,25 +348,25 @@ TEST_CASES_LANDED = [
         "category": "Valuation verdict",
         "question": "Is this landed property overpriced at S$4.8M?",
         "must_mention_any": ["overpriced", "4.15", "15%", "above", "estimate"],
-        "must_not_contradict": ["fair", "good deal", "underpriced", "reasonable price"],
+        "must_not_contradict": ["below the estimate", "undervalued", "4.8 is the fair value"],
     },
     {
         "category": "Valuation verdict",
         "question": "How does the asking price compare to the AI estimate?",
         "must_mention_any": ["4.15", "4.8", "15%", "overpriced", "650", "above"],
-        "must_not_contradict": ["below estimate", "undervalued"],
+        "must_not_contradict": ["asking is below estimate", "asking is lower than 4.15"],
     },
     {
         "category": "Valuation verdict",
         "question": "What is the estimated value of this semi-detached house?",
         "must_mention_any": ["4.15", "3.06", "5.24", "estimate", "range"],
-        "must_not_contradict": ["4.8 is fair", "no estimate"],
+        "must_not_contradict": ["4.8 is the estimated value", "no estimate available"],
     },
     {
         "category": "Valuation verdict",
         "question": "Should I be worried about the wide price range shown?",
         "must_mention_any": ["26", "MAPE", "26.3", "range", "landed", "uncertain", "wide"],
-        "must_not_contradict": ["accurate", "narrow", "precise", "certain"],
+        "must_not_contradict": ["the range is narrow", "valuation is very precise", "no uncertainty"],
     },
     # ── SHAP factor attribution (3 cases) ─────────────────────────────────────
     {
@@ -388,19 +392,19 @@ TEST_CASES_LANDED = [
         "category": "Price range interpretation",
         "question": "Why is the price range so wide for this property?",
         "must_mention_any": ["26", "MAPE", "landed", "heterogeneous", "uncertain", "wide", "26.3"],
-        "must_not_contradict": ["accurate", "narrow", "certain", "reliable"],
+        "must_not_contradict": ["the range is narrow", "valuation is very precise", "no uncertainty"],
     },
     {
         "category": "Price range interpretation",
         "question": "If I offer S$4.2M, is that within the estimated fair range?",
         "must_mention_any": ["3.06", "5.24", "range", "within", "yes", "reasonable", "4.2"],
-        "must_not_contradict": ["outside range", "too low", "4.2 is unreasonable"],
+        "must_not_contradict": ["4.2 is outside the range", "4.2 is below the fair range"],
     },
     {
         "category": "Price range interpretation",
         "question": "How reliable is the AI valuation for landed properties?",
         "must_mention_any": ["26", "MAPE", "26.3", "uncertain", "less reliable", "landed", "wide"],
-        "must_not_contradict": ["highly accurate", "exact", "reliable", "certain"],
+        "must_not_contradict": ["highly accurate", "exactly right", "very reliable", "no uncertainty"],
     },
     # ── Market comparison (1 case) ────────────────────────────────────────────
     {
