@@ -16,8 +16,8 @@ The proposed system adopts a modular architecture consisting of five main stages
         \node (scrape) [process] {Web Scrapers};
         \node (process) [process, right of=scrape, xshift=1cm] {Data Processing};
         \node (db) [storage, right of=process, xshift=1cm] {Unified DB};
-        \node (frontend) [process, below of=db, yshift=-0.5cm] {Mobile App};
-        \node (admin) [process, below of=process, yshift=-0.5cm] {Admin Panel};
+        \node (frontend) [process, below of=db, yshift=-0.5cm] {Web Application (Next.js)};
+        \node (admin) [process, below of=process, yshift=-0.5cm] {FastAPI REST API};
 
         \draw [arrow] (scrape) -- node[anchor=south] {Raw} (process);
         \draw [arrow] (process) -- node[anchor=south] {Clean} (db);
@@ -52,14 +52,59 @@ This project is developed as part of a team effort. The system integrates data f
 
 The PropertyGuru scraper is implemented in Python using Selenium for dynamic content rendering and BeautifulSoup for HTML parsing. It handles pagination, login-wall detection, and incremental re-crawling via a SQLite state database. Data is stored per-session and synchronised to PostgreSQL via a separate ingest script.
 
+\subsubsection{Ethical and Legal Considerations}
+All data collected by the PropertyGuru scraper is publicly accessible without
+authentication. The scraping pipeline was designed with the following safeguards
+to minimise server impact: a one-second inter-request delay
+(\texttt{REQUEST\_DELAY\,=\,1\,s}), a maximum of five concurrent threads
+(\texttt{MAX\_WORKERS\,=\,5}), and an incremental update strategy that avoids
+re-crawling unchanged listings.
+
+The data collected falls into two categories. \textit{Factual property attributes}
+(asking price, floor area, bedroom count, tenure, district, and built year) are
+not subject to copyright protection under Singapore law, as copyright does not
+subsist in facts \cite{singapore_copyright_act}. \textit{Agent contact details}
+(name, CEA registration number, and business telephone number) are publicly
+displayed on the PropertyGuru platform and constitute \textit{business contact
+information} explicitly excluded from the scope of the Singapore Personal Data
+Protection Act 2012 (PDPA), which provides that the Act ``generally does not apply
+to business contact information such as an individual's name, position or title,
+business telephone number, business address, [or] business email''
+\cite{pdpc_overview}.
+
+PropertyGuru does not provide a public data API; access is restricted to enterprise
+partners under commercial agreements. The use of a residential proxy service to
+access publicly listed property data is therefore a necessary approach where official
+APIs are unavailable \cite{landers2016inconvenient}. Under the Singapore Computer
+Misuse Act 1993, access is only ``unauthorised'' if the person ``does not have
+consent to access'' the resource; as the scraped pages are served to any member of
+the public without authentication, this threshold is not met. The project's
+data collection practices have been reviewed in the context of its commercial
+development roadmap, and the pipeline is scoped to factual listing attributes
+consistent with the limits identified through that review.
+
 
 \subsection{Data Processing and Aggregation}
 Raw data fetched from different sources frequently contains inconsistencies and duplicates. The processing module performs the following tasks:
 \begin{itemize}
     \item \textbf{Normalization:} Standardizing field names and formats (e.g., converting "2 beds" and "2 Bedroom" to a standard integer format).
-    \item \textbf{Deduplication:} Identifying and removing duplicate listings based on composite keys (e.g., address, unit size, and price) to ensure data integrity.
+    \item \textbf{Deduplication:} Identifying and removing duplicate listings via a composite-key algorithm (described below).
     \item \textbf{Linking:} Associating temporary rental/sale listings with persistent property master records (HDB or Condo units).
 \end{itemize}
+
+\subsubsection{Deduplication Algorithm}
+
+Cross-platform deduplication is non-trivial because the same physical property may be listed simultaneously on multiple portals with inconsistent identifiers. The author designed a composite-key strategy; the full algorithm is presented in Chapter~4 (Algorithm~\ref{alg:dedup}).
+
+The deduplication key $K$ for a listing $\ell$ is constructed as:
+\[
+K(\ell) =
+\begin{cases}
+\texttt{normalise}(\ell.\textit{address}) \;\|\; \ell.\textit{beds} \;\|\; \ell.\textit{baths} \;\|\; \ell.\textit{sqft} & \text{if } \ell.\textit{address} \neq \varnothing \\[4pt]
+\texttt{normalise}(\ell.\textit{title}) \;\|\; \ell.\textit{beds} \;\|\; \ell.\textit{baths} \;\|\; \ell.\textit{sqft} & \text{otherwise}
+\end{cases}
+\]
+where $\|$ denotes string concatenation and \texttt{normalise} strips punctuation and lowercases the string. The address component achieves \textbf{95.5\%} field coverage; the title fallback ensures 100\% key availability across all 53,497 listings.
 
 \subsection{Data Storage}
 The data storage layer is built upon a PostgreSQL relational database, designed to maintain data integrity while supporting complex analytical queries.
@@ -127,3 +172,187 @@ The \texttt{unified\_listings} table aggregates active rental and sale listings 
     \item \textbf{Association Logic:} Since online listings provided by agents often lack specific unit numbers for privacy reasons, a direct foreign key constraint is not always possible during the scraping phase.
     \item \textbf{Agent-Assisted Mapping:} The system supports a "soft link" where the association between a listing and a specific physical unit (e.g., in \texttt{hdb\_unit}) is finalized when an agent arranges a viewing or verifies the property documentation. This design allows for flexible data ingestion while enabling precise tracking as the transaction progresses.
 \end{itemize}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{AI Valuation Model Design}
+\label{sec:model_design}
+
+\subsection{Per-Segment Stratification}
+
+Eight independent models are trained, one per (property type $\times$ transaction mode) combination:
+$\{$Condominium, HDB, Landed, GCB$\} \times \{$sale, rent$\}$.
+This stratification is preferred over a single global model with property-type indicator variables, because the pricing dynamics of HDB flats (government-regulated, narrow price band) differ fundamentally from those of GCB bungalows (negotiated, multi-million SGD range). A shared model would force a single functional form across these structurally distinct markets, increasing systematic bias.
+
+\subsection{Feature Engineering}
+
+The raw listing attributes are transformed into the feature set shown in Table~\ref{tab:features_design}. The target variable is $\log_{10}(\text{price})$, following standard practice in hedonic pricing models to stabilise variance and reduce the influence of extreme values \cite{park2015using}.
+
+\begin{table}[!ht]
+    \centering
+    \small
+    \caption{Feature Set Used in All Eight Valuation Models}
+    \label{tab:features_design}
+    \renewcommand{\arraystretch}{1.25}
+    \begin{tabular}{@{}llp{6.5cm}@{}}
+    \toprule
+    \textbf{Feature} & \textbf{Source} & \textbf{Description} \\ \midrule
+    \texttt{beds}           & Raw       & Number of bedrooms (clipped 1--20) \\
+    \texttt{sqft}           & Raw       & Floor area in square feet (filtered 50--50,000) \\
+    \texttt{log\_sqft}      & Derived   & $\log_{10}(\texttt{sqft})$; linearises the area--price relationship \\
+    \texttt{beds\_sqft}     & Derived   & $\texttt{beds} \times \texttt{sqft}$; captures size--room interaction \\
+    \texttt{beds\_sq}       & Derived   & $\texttt{beds}^2$; captures diminishing marginal bedroom premium \\
+    \texttt{log\_beds\_sqft}& Derived   & $\texttt{beds} \times \texttt{log\_sqft}$; log-scale interaction \\
+    \texttt{sqft\_bin}      & Derived   & Quintile bin of \texttt{sqft} (0--4); encodes size tier \\
+    \texttt{is\_freehold}   & Derived   & Binary; 1 if tenure contains ``freehold'', 0 otherwise \\
+    \texttt{property\_age}  & Derived   & $2026 - \texttt{built\_year}$; 99.8\% coverage, median-imputed \\
+    \texttt{district}       & Geocoded  & Singapore district 1--28 from reverse geocoding; $\sim$92\% coverage \\
+    \midrule
+    \textbf{Target} & & $\log_{10}(\texttt{price})$ \\
+    \bottomrule
+    \end{tabular}
+\end{table}
+
+Room-for-rent listings (\texttt{beds} = 0, average S\$993--S\$1,544/month) are excluded from all rent models, as their pricing dynamics are structurally distinct from whole-unit rentals (S\$3,500--S\$7,500/month). Including them would introduce systematic bias in the lower price range.
+
+\subsection{Model Selection and Hyperparameters}
+
+Four candidate models are trained per segment: a mean baseline (DummyRegressor), Ridge Regression, Random Forest, and XGBoost. The best model is selected by test-set MAPE, with XGBoost preferred when MAPE differences are negligible ($< 0.5$\,pp). XGBoost consistently achieves the best or near-best MAPE across all segments (see Section~\ref{sec:eval_valuation}).
+
+The XGBoost hyperparameters, selected empirically, are:
+\begin{itemize}
+    \item \texttt{n\_estimators=400}, \texttt{learning\_rate=0.05}, \texttt{max\_depth=5}
+    \item \texttt{subsample=0.8}, \texttt{colsample\_bytree=0.8} (stochastic gradient boosting)
+    \item \texttt{reg\_alpha=0.1} (L1 regularisation to suppress noise features)
+\end{itemize}
+
+All numeric features are standardised (zero mean, unit variance) via \texttt{StandardScaler} within a \texttt{sklearn} \texttt{Pipeline}, ensuring that Ridge and tree-based models operate on the same scale for fair comparison.
+
+\subsection{SHAP Interpretability}
+
+Each prediction is accompanied by SHAP (SHapley Additive exPlanations) values \cite{lundberg2017unified}, which decompose the model output into additive feature contributions:
+\[
+\hat{y} = \phi_0 + \sum_{j=1}^{p} \phi_j
+\]
+where $\phi_0$ is the base value (mean prediction) and $\phi_j$ is the contribution of feature $j$ to the individual prediction. SHAP values are computed using TreeExplainer, which is exact for tree-based models and runs in polynomial time. The top-5 SHAP factors per listing are surfaced in the user interface, providing transparent, property-specific explanations of each valuation estimate.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Semantic Search and Agentic Pipeline Design}
+\label{sec:methodology_nlsearch}
+
+\subsection{Overview}
+
+The natural language search system transforms a free-text user query into a structured
+JSON filter object that is applied directly as a database \texttt{WHERE} clause. The
+design deliberately avoids model fine-tuning: a general-purpose LLM (Anthropic Claude)
+is prompted with a task-specific system message that encodes the output schema and
+Singapore real estate domain knowledge. This zero-shot approach allows the pipeline to
+be updated by editing the prompt alone, without retraining.
+
+\subsection{Output Schema and JSON Filter Contract}
+
+The LLM is instructed to produce a JSON object conforming to the following schema:
+
+\begin{verbatim}
+{
+  "property_type": "HDB" | "Condominium" | "Landed" | "GCB" | null,
+  "transaction_type": "sale" | "rent" | null,
+  "min_price": <number> | null,
+  "max_price": <number> | null,
+  "min_beds":  <integer> | null,
+  "max_beds":  <integer> | null,
+  "tenure":    "freehold" | "leasehold" | null,
+  "district":  <integer 1-28> | null,
+  "districts": [<integer>, ...] | null
+}
+\end{verbatim}
+
+The \texttt{districts} array field (vs.\ the scalar \texttt{district}) is the key
+extension that enables multi-district geographic resolution (see below). The backend
+translates a non-null \texttt{districts} into an SQL \texttt{IN} predicate; a non-null
+scalar \texttt{district} is treated as a single equality constraint.
+
+\subsection{System Prompt Design}
+
+The system prompt performs three functions: (i) it constrains the output to valid JSON
+with no prose; (ii) it provides Singapore-specific grounding (HDB flat types, district
+numbering, common area abbreviations such as ``CCR'', ``RCR'', ``OCR''); and (iii) it
+includes eight in-context few-shot examples covering simple, multi-attribute, and
+conversational query forms. The prompt is approximately 900 tokens, well within the
+context window of the deployed model.
+
+\subsection{Agentic Pipeline Architecture}
+
+Three agentic behaviours are layered on top of the base LLM call, implemented as a
+sequential pipeline in the FastAPI route handler:
+
+\begin{enumerate}
+    \item \textbf{Multi-District Geographic Resolution.}
+    After the initial LLM call, if the query contains a proximity expression (e.g.,
+    ``near Orchard MRT'', ``Bukit Timah area''), a second structured prompt maps
+    the location to a set of adjacent districts. The result overwrites the scalar
+    \texttt{district} field with a \texttt{districts} array, broadening the database
+    query to capture all geographically relevant listings.
+
+    \item \textbf{Progressive Filter Relaxation.}
+    If the database query returns zero results, the pipeline enters a relaxation loop.
+    Constraints are removed in a fixed priority order:
+    \[
+        \texttt{max\_price} \;\to\; \texttt{tenure} \;\to\; \texttt{districts}/\texttt{district}
+    \]
+    After each removal the query is re-executed. The loop terminates on the first
+    non-empty result set or when all optional constraints have been exhausted.
+
+    \item \textbf{LLM-Generated Fallback Explanation.}
+    If relaxation was triggered, a secondary Claude call receives the original query
+    and the relaxed filter as input and produces a one-sentence plain-text explanation
+    of what was changed and why. This explanation is displayed to the user in an amber
+    notice banner above the result list.
+\end{enumerate}
+
+Figure~\ref{fig:agentic_pipeline} summarises the full pipeline as a flowchart.
+
+\begin{figure}[!ht]
+\centering
+\begin{tikzpicture}[
+    node distance=1.4cm,
+    box/.style={rectangle, draw, rounded corners, minimum width=5.5cm,
+                minimum height=0.75cm, text centered, font=\small},
+    decision/.style={diamond, draw, aspect=2.5, minimum width=4cm,
+                     minimum height=0.75cm, text centered, font=\small,
+                     fill=yellow!20},
+    arrow/.style={-stealth, thick}
+]
+\node[box, fill=blue!15]   (query)   {User free-text query};
+\node[box, fill=orange!20, below=of query]  (llm1)    {LLM call: parse to JSON filter};
+\node[box, fill=orange!20, below=of llm1]   (geo)     {Multi-district resolution (if location present)};
+\node[box, fill=gray!15,   below=of geo]    (db)      {Database query};
+\node[decision,            below=of db]     (check)   {Results $> 0$?};
+\node[box, fill=red!15,    right=3.5cm of check] (relax)  {Relax next constraint};
+\node[box, fill=orange!20, below=of relax]  (llm2)    {LLM call: generate fallback explanation};
+\node[box, fill=green!20,  below=of check]  (return)  {Return results to frontend};
+
+\draw[arrow] (query)  -- (llm1);
+\draw[arrow] (llm1)   -- (geo);
+\draw[arrow] (geo)    -- (db);
+\draw[arrow] (db)     -- (check);
+\draw[arrow] (check)  -- node[left,font=\small]{Yes} (return);
+\draw[arrow] (check)  -- node[above,font=\small]{No} (relax);
+\draw[arrow] (relax)  -- (llm2);
+\draw[arrow] (llm2)   |- (db);
+\end{tikzpicture}
+\caption{Agentic search pipeline: base LLM parse, geographic resolution, zero-result
+relaxation loop, and fallback explanation generation.}
+\label{fig:agentic_pipeline}
+\end{figure}
+
+\subsection{Valuation Chat Assistant Design}
+
+The chat assistant reuses the same Claude API but with a different system prompt
+construction strategy. For each request, the backend assembles a context block
+containing: the listing's full attribute set (property type, beds, sqft, tenure,
+built year, district, asking price), the XGBoost point estimate and confidence
+interval, the MAPE of the segment model, and the top-5 SHAP factor attributions.
+This grounded context is prepended to the conversation history before each API call,
+ensuring that every response is anchored to quantitative data rather than general
+market knowledge. The assistant is explicitly instructed to respond in plain prose
+under 120 words and to avoid Markdown formatting.
