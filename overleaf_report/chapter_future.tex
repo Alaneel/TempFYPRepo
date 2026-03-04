@@ -1,22 +1,28 @@
 \chapter{Future Work}
 
 While the current system successfully achieves the core objectives of multi-platform
-aggregation, AI valuation, and semantic search, several avenues remain for future
-enhancement. The following roadmap outlines planned improvements for the next phase,
-focusing on both the author's individual components and the broader team platform.
+aggregation, AI valuation, semantic search, and agentic search enhancements (including
+multi-district resolution, progressive filter relaxation, fallback explanations, and the
+valuation chat assistant), several avenues remain for future enhancement.
 
 \section{Data Pipeline and Feature Enrichment}
 
 \subsection{Geospatial and Proximity Features}
-The current valuation models rely primarily on structural attributes (floor area, bedrooms, tenure, and age). Future iterations will integrate the Singapore Land Authority's \textbf{OneMap API} to compute exact walking distances to key amenities, such as MRT stations, top-tier primary schools, and the Central Business District (CBD). This is expected to significantly reduce the generalisation error of the models, particularly for the Condominium and Landed segments where location commands a high premium.
+The current pipeline already leverages the Singapore Land Authority's \textbf{OneMap API} for address geocoding and reverse-geocoding to district codes. However, the valuation models rely primarily on structural attributes (floor area, bedrooms, tenure, age, and district). Future iterations will extend the OneMap integration to compute precise walking distances to key amenities---MRT stations, top-tier primary schools, and the Central Business District (CBD)---and incorporate these as additional model features. This is expected to significantly reduce the generalisation error, particularly for the Condominium and Landed segments where location commands a high premium.
 
 \subsection{Expanded Team Coverage}
 While the PropertyGuru scraper developed by the author is fully operational and covers the majority of the market, the team plans to expand the \texttt{condo\_basic} master records (managed by other team members) to include historical transaction data explicitly linked to current listings.
 
 \section{Advanced AI Modeling}
 
+\subsection{Domain-Adapted Language Model for Property Search}
+The current semantic search pipeline uses a general-purpose LLM (Claude) with a system prompt specifying Singapore real estate context. A promising future direction is to fine-tune a smaller open-source language model (e.g., Llama 3 or Mistral) on a curated dataset of Singapore property queries and their structured filter equivalents. A fine-tuned model would reduce latency and API cost while potentially improving precision on domain-specific expressions such as HDB flat types and Singapore postal district codes.
+
 \subsection{Computer Vision for Condition Assessment}
-Listings often contain rich visual information about interior renovation quality and natural lighting, which currently cannot be quantified by tabular models. We propose utilising a pre-trained Vision Transformer (ViT) or Convolutional Neural Network (CNN) to extract aesthetic embeddings from listing images, allowing the valuation model to distinguish between "bare" units and "designer renovated" units of identical size and age.
+Listings often contain rich visual information about interior renovation quality and natural lighting, which currently cannot be quantified by tabular models. We propose utilising a pre-trained Vision Transformer (ViT) or Convolutional Neural Network (CNN) to extract aesthetic embeddings from listing images, allowing the valuation model to distinguish between ``bare'' units and ``designer renovated'' units of identical size and age.
 
 \subsection{Spatio-Temporal Market Forecasting}
 The current gradient-boosted models predict point-in-time valuations based on active listings. By accumulating a longitudinal dataset of historical transactions and expired listings over the coming months, we aim to develop a temporal forecasting model (e.g., using Recurrent Neural Networks or spatio-temporal Graph Neural Networks). This would allow the system to predict forward-looking capital appreciation and rental yield trends.
+
+\subsection{Automated Listing Freshness and Alert System}
+The current system scrapes listings on an ad-hoc basis. A future enhancement would implement a scheduled crawler with change detection, alerting registered users when listings matching their saved searches are updated in price, withdrawn, or newly added. This moves the platform from a passive search tool to a proactive market monitoring service.

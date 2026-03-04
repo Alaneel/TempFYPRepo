@@ -79,6 +79,7 @@ routes include:
     \item \texttt{GET /listings} — paginated listing retrieval with filter parameters.
     \item \texttt{POST /listings/semantic-search} — natural language query to structured filters via LLM.
     \item \texttt{POST /valuation/estimate} — AI valuation for a given property specification.
+    \item \texttt{POST /listings/:id/chat} — multi-turn AI chat grounded in listing and valuation context.
     \item \texttt{GET /agents/:id}, \texttt{GET /listings/:id} — detail endpoints.
 \end{itemize}
 
@@ -108,6 +109,7 @@ The following features are constructed for each training sample:
     \texttt{sqft\_bin}      & Quintile bin of floor area               & Derived \\
     \texttt{is\_freehold}   & 1 if freehold tenure, 0 otherwise        & 97.0\% \\
     \texttt{property\_age}  & $\text{CURRENT\_YEAR} - \textit{built\_year}$ & 99.8\% \\
+    \texttt{district}       & Singapore district 1--28 (reverse geocoded)  & $\sim$92\% (median-imputed) \\
     \bottomrule
     \end{tabular}
 \end{table}
@@ -143,7 +145,7 @@ gracefully for out-of-distribution queries.
 
 \section{Frontend Application}
 
-The user-facing web application is built with Next.js~14 and deployed locally.
+The user-facing web application is built with Next.js~15 and deployed locally.
 Key features include:
 \begin{itemize}
     \item A listing search page with both structured filters and a natural-language search bar.

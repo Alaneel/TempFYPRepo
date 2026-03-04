@@ -24,7 +24,8 @@ This project developed an end-to-end AI-driven system that bridges the gap betwe
     \item \textbf{Unified Data Infrastructure:} Automated web scraping pipelines were designed and implemented to aggregate and harmonise listings from Singapore's major property portals into a single deduplicated repository.
     \item \textbf{Intelligent Property Valuation:} Per-segment gradient-boosted regression models (stratified by property type and transaction mode) were trained to estimate market values and provide SHAP-based attribution explanations.
     \item \textbf{Natural Language Interfaces:} A semantic search engine powered by Large Language Models (LLMs) was integrated, allowing users to discover properties using conversational queries.
-    \item \textbf{Actionable User Interface:} Deliver a web application exposing these AI features to end-users through a listing portal with integrated valuation and search capabilities.
+    \item \textbf{Agentic Search and Conversational AI:} Three agentic behaviours (multi-district resolution, progressive filter relaxation, fallback explanations) and a multi-turn valuation chat assistant were implemented to extend the system beyond passive retrieval.
+    \item \textbf{Actionable User Interface:} A web application exposing all AI features to end-users through a listing portal with integrated valuation panel, NL search bar, and chat assistant.
 \end{enumerate}
 
 \section{Contributions}
@@ -44,22 +45,45 @@ portals; the author's personal contributions are as follows:
     The author designed and implemented the unified aggregation layer
     (\texttt{pipeline/aggregate.py}) that consumes data from all four scrapers (built by the
     team), normalises heterogeneous schemas, and applies a composite-key deduplication
-    algorithm. The dedup key achieves \textbf{95.5\% address-field coverage}; a title-fallback
-    strategy eliminates all remaining degenerate collisions (2,410 → 0).
+    algorithm. The pipeline ingested \textbf{86,321 raw listings} across four portals
+    (PropertyGuru 55,357; SRX 24,010; 99.co 5,344; EdgeProp 1,610) and produced a clean
+    deduplicated dataset of \textbf{53,497 listings}. The dedup key achieves
+    \textbf{95.5\% address-field coverage}; a title-fallback strategy eliminates all
+    remaining degenerate collisions (2,410 → 0).
 
     \item \textbf{Per-Segment AI Valuation Models with SHAP Explanations.}
     The author trained \textbf{eight independent XGBoost models} stratified by property type
-    and transaction mode. Best-segment test-set MAPE: \textbf{10.3\%} (HDB rent) and
-    \textbf{12.6\%} (HDB sale). Each prediction is accompanied by SHAP attribution factors.
+    and transaction mode. Best-segment test-set MAPE: \textbf{8.90\%} (HDB Rent) and
+    \textbf{8.96\%} (HDB Sale)---a \textbf{70\%} reduction relative to the mean baseline.
+    Each prediction is accompanied by SHAP attribution factors exposed to the end user.
 
     \item \textbf{LLM-Powered Natural Language Property Search.}
     The author implemented the Claude-backed semantic search pipeline and conducted a formal
     evaluation across 47 ground-truth queries, achieving an average \textbf{F1 of 96.4\%}.
 
+    \item \textbf{Agentic Search Enhancements.}
+    Beyond basic intent extraction, the author implemented three agentic behaviours layered
+    on top of the NL search pipeline: (i) \textit{multi-district geographic resolution},
+    which maps proximity expressions such as ``near Orchard MRT'' to a set of adjacent
+    Singapore districts (e.g., D9/D10/D11) rather than a single district, improving recall
+    for location-aware queries; (ii) \textit{progressive filter relaxation}, which
+    automatically retries queries with successively relaxed constraints (price $\to$ tenure
+    $\to$ location) when no results are found, preventing zero-result dead ends; and (iii)
+    \textit{LLM-generated fallback explanations}, where a secondary Claude call produces a
+    natural-language explanation of why the original query yielded no results and what
+    constraints were relaxed.
+
+    \item \textbf{AI Valuation Chat Assistant.}
+    The author implemented a multi-turn conversational assistant accessible from each
+    property detail page. The assistant is provided with the listing's full attribute set
+    and the XGBoost valuation estimate (including SHAP attribution factors) as context,
+    enabling it to answer questions such as ``Is this fairly priced?'' or ``What factors
+    drive this estimate?'' using grounded, property-specific data.
+
     \item \textbf{Backend API and Frontend Web Application.}
-    The author built the FastAPI backend (JWT authentication, Redis caching, RESTful listing
-    and valuation endpoints) and the Next.js frontend (listing portal, detail page with AI
-    valuation panel, NL search bar).
+    The author built the FastAPI backend (JWT authentication, Redis caching, RESTful listing,
+    valuation, and chat endpoints) and the Next.js frontend (listing portal, detail page with
+    AI valuation panel, NL search bar, and chat assistant panel).
 \end{enumerate}
 
 \section{Report Organisation}
@@ -67,9 +91,10 @@ portals; the author's personal contributions are as follows:
 The remainder of this report is organised as follows:
 \begin{itemize}
     \item \textbf{Chapter 2 (Literature Review)} surveys existing research on real estate valuation models, machine learning applications in property markets, and the specific characteristics of the Singapore housing context.
-    \item \textbf{Chapter 3 (Methodology and System Design)} details the system architecture, data acquisition pipelines, deduplication algorithm, and AI model design.
-    \item \textbf{Chapter 4 (Implementation)} documents the current development status, including the deployed data pipeline, trained models, and web application.
-    \item \textbf{Chapter 5 (Evaluation and Results)} presents quantitative evaluation of the deduplication algorithm, valuation models, and natural language search system.
-    \item \textbf{Chapter 6 (Future Work)} outlines the roadmap for further improvement, including geographic feature enrichment and expanded scraper coverage.
+    \item \textbf{Chapter 3 (Methodology and System Design)} details the system architecture, data acquisition pipelines, deduplication algorithm, AI model design, and the semantic search pipeline.
+    \item \textbf{Chapter 4 (Implementation)} documents the deployed data pipeline, trained valuation models, backend API, and frontend web application.
+    \item \textbf{Chapter 5 (Evaluation and Results)} presents quantitative evaluation of the deduplication algorithm, valuation models, natural language search system, and agentic enhancements.
+    \item \textbf{Chapter 6 (Conclusion)} summarises the contributions, evaluates achievement of project objectives, and reflects on broader impact.
+    \item \textbf{Chapter 7 (Future Work)} outlines the roadmap for further improvement, including proximity feature enrichment, domain-adapted LLMs, and computer vision for condition assessment.
 \end{itemize}
 
