@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "next/navigation";
+import { useState } from "react";
 import Link from "next/link";
 import api from "@/lib/api";
 import { Listing } from "@/types";
@@ -27,10 +28,12 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { ValuationPanel } from "@/components/features/listings/valuation-panel";
+import { PropertyChatPanel } from "@/components/features/listings/property-chat-panel";
 import MapView from "@/components/features/map/map-view";
 
 export default function ListingDetailPage() {
   const { id } = useParams();
+  const [valuationResult, setValuationResult] = useState<object | null>(null);
 
   const {
     data: listing,
@@ -459,23 +462,30 @@ export default function ListingDetailPage() {
               listing.sqft > 50 &&
               listing.beds != null &&
               listing.beds >= 1 && (
-                <ValuationPanel
-                  propertyType={listing.property_type || ""}
-                  buyRent={listing.buy_rent || "property-for-sale"}
-                  beds={listing.beds}
-                  sqft={listing.sqft}
-                  tenure={listing.tenure || undefined}
-                  actualPrice={listing.price || undefined}
-                  builtYear={
-                    listing.built_year
-                      ? parseInt(
-                          String(listing.built_year)
-                            .replace(/\D/g, "")
-                            .slice(0, 4),
-                        )
-                      : undefined
-                  }
-                />
+                <>
+                  <ValuationPanel
+                    propertyType={listing.property_type || ""}
+                    buyRent={listing.buy_rent || "property-for-sale"}
+                    beds={listing.beds}
+                    sqft={listing.sqft}
+                    tenure={listing.tenure || undefined}
+                    actualPrice={listing.price || undefined}
+                    builtYear={
+                      listing.built_year
+                        ? parseInt(
+                            String(listing.built_year)
+                              .replace(/\D/g, "")
+                              .slice(0, 4),
+                          )
+                        : undefined
+                    }
+                    onResult={setValuationResult}
+                  />
+                  <PropertyChatPanel
+                    listingId={Number(id)}
+                    valuation={valuationResult}
+                  />
+                </>
               )}
           </div>
         </div>

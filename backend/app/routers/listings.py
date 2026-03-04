@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.encoders import jsonable_encoder
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Optional
 import hashlib
@@ -12,7 +13,7 @@ from app.services.listing import ListingService
 from app.services.auth import get_current_user, get_current_agent, get_current_admin
 from app.services.cache import cache
 from app.models.user import User
-from app.services.semantic_search import parse_nl_query
+from app.services.semantic_search import parse_nl_query, generate_fallback_explanation, get_client
 
 router = APIRouter()
 
@@ -128,44 +129,87 @@ async def semantic_search_listings(
             detail=f"Failed to parse query: {str(e)}"
         )
 
-    # 2. Query database using existing ListingService
+    # 2. Query database using existing ListingService with progressive fallback
     service = ListingService(db)
     skip = (page - 1) * limit
+
+    # Define fallback stages: progressively relax filters when 0 results
+    # Stage 0: all filters (original)
+    # Stage 1: remove price constraints
+    # Stage 2: remove price + tenure
+    # Stage 3: remove price + tenure + location (keyword/type only)
+    fallback_stages = [
+        # (remove_price, remove_tenure, remove_location, label)
+        (False, False, False, None),
+        (True,  False, False, "price filter removed — showing results in any price range"),
+        (True,  True,  False, "price & tenure filters removed — showing broader results"),
+        (True,  True,  True,  "price, tenure & location filters removed — showing all matching property types"),
+    ]
+
+    active_filters = filters.copy()
+    fallback_label: Optional[str] = None
+
+    for remove_price, remove_tenure, remove_location, label in fallback_stages:
+        query_filters = filters.copy()
+        if remove_price:
+            query_filters.pop("min_price", None)
+            query_filters.pop("max_price", None)
+        if remove_tenure:
+            query_filters.pop("tenure", None)
+        if remove_location:
+            query_filters.pop("districts", None)
+            query_filters.pop("district", None)
+
+        total = await service.get_total_count(
+            min_price=query_filters.get("min_price"),
+            max_price=query_filters.get("max_price"),
+            beds=query_filters.get("beds"),
+            property_type=query_filters.get("property_type"),
+            buy_rent=query_filters.get("buy_rent"),
+            districts=query_filters.get("districts"),
+            tenure=query_filters.get("tenure"),
+            query=query_filters.get("query"),
+        )
+
+        if total > 0:
+            active_filters = query_filters
+            fallback_label = label
+            break
 
     listings = await service.get_listings(
         skip=skip,
         limit=limit,
-        min_price=filters.get("min_price"),
-        max_price=filters.get("max_price"),
-        beds=filters.get("beds"),
-        property_type=filters.get("property_type"),
-        buy_rent=filters.get("buy_rent"),
-        district=filters.get("district"),
-        tenure=filters.get("tenure"),
-        query=filters.get("query"),
+        min_price=active_filters.get("min_price"),
+        max_price=active_filters.get("max_price"),
+        beds=active_filters.get("beds"),
+        property_type=active_filters.get("property_type"),
+        buy_rent=active_filters.get("buy_rent"),
+        districts=active_filters.get("districts"),
+        tenure=active_filters.get("tenure"),
+        query=active_filters.get("query"),
         sort_by=sort_by
     )
 
-    total = await service.get_total_count(
-        min_price=filters.get("min_price"),
-        max_price=filters.get("max_price"),
-        beds=filters.get("beds"),
-        property_type=filters.get("property_type"),
-        buy_rent=filters.get("buy_rent"),
-        district=filters.get("district"),
-        tenure=filters.get("tenure"),
-        query=filters.get("query"),
-    )
-
-    return {
+    response: dict = {
         "total": total,
         "page": page,
         "limit": limit,
         "data": jsonable_encoder(listings),
-        # Include parsed filters in response for frontend to display
-        "_parsed_filters": filters,
+        "_parsed_filters": active_filters,
         "_original_query": q,
     }
+    if fallback_label:
+        # Generate a Claude-powered human-readable explanation asynchronously
+        import asyncio
+        loop = asyncio.get_event_loop()
+        explanation = await loop.run_in_executor(
+            None,
+            generate_fallback_explanation,
+            q, active_filters, total
+        )
+        response["_fallback_notice"] = explanation
+
+    return response
 
 @router.get("/{listing_id}", response_model=ListingResponse)
 async def get_listing(
@@ -185,6 +229,124 @@ async def get_listing(
     data = jsonable_encoder(listing)
     await cache.set(cache_key, data, ttl=300) # 5 mins TTL
     return data
+
+
+# ── Chat endpoint ─────────────────────────────────────────────────────────────
+
+class ChatMessage(BaseModel):
+    role: str   # "user" or "assistant"
+    content: str
+
+class ChatRequest(BaseModel):
+    messages: List[ChatMessage]
+    valuation: Optional[dict] = None   # ValuationResult if available
+
+@router.post("/{listing_id}/chat")
+async def chat_about_listing(
+    listing_id: int,
+    req: ChatRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Multi-turn AI chat about a specific listing.
+    Accepts the conversation history + optional valuation result.
+    Returns the assistant's next reply.
+    """
+    service = ListingService(db)
+    listing = await service.get_listing(listing_id)
+    if not listing:
+        raise HTTPException(status_code=404, detail="Listing not found")
+
+    listing_data = jsonable_encoder(listing)
+
+    # Build a rich context string from listing fields
+    def _fmt_price(p):
+        if not p:
+            return "undisclosed"
+        if p >= 1_000_000:
+            return f"S${p/1_000_000:.2f}M"
+        return f"S${p:,.0f}"
+
+    context_parts = [
+        f"Property: {listing_data.get('title') or listing_data.get('address', 'Unknown')}",
+        f"Type: {listing_data.get('property_type', 'N/A')}",
+        f"Transaction: {listing_data.get('buy_rent', 'N/A')}",
+        f"Listed price: {_fmt_price(listing_data.get('price'))}",
+        f"Bedrooms: {listing_data.get('beds', 'N/A')}",
+        f"Bathrooms: {listing_data.get('baths', 'N/A')}",
+        f"Floor area: {listing_data.get('sqft', 'N/A')} sqft",
+        f"Tenure: {listing_data.get('tenure', 'N/A')}",
+        f"District: {listing_data.get('district', 'N/A')}",
+        f"Built year: {listing_data.get('built_year', 'N/A')}",
+        f"Address: {listing_data.get('address', 'N/A')}",
+    ]
+    if listing_data.get('description'):
+        context_parts.append(f"Description: {listing_data['description'][:400]}")
+
+    # Append valuation context if provided
+    val = req.valuation
+    if val:
+        shap_lines = []
+        for f in (val.get("shap_factors") or [])[:5]:
+            impact = f.get("impact_sgd", 0)
+            sign = "+" if impact >= 0 else "−"
+            abs_impact = abs(impact)
+            if abs_impact >= 1_000_000:
+                impact_str = f"{sign}S${abs_impact/1_000_000:.1f}M"
+            elif abs_impact >= 1_000:
+                impact_str = f"{sign}S${abs_impact/1000:.0f}K"
+            else:
+                impact_str = f"{sign}S${abs_impact:.0f}"
+            shap_lines.append(f"  • {f.get('label', '?')}: {impact_str}")
+
+        verdict_map = {
+            "overpriced": "Overpriced",
+            "fair_value": "Fair Value",
+            "below_estimate": "Below Estimate"
+        }
+        context_parts += [
+            "",
+            "=== AI Valuation Result ===",
+            f"Estimated value: {_fmt_price(val.get('estimate'))}",
+            f"Range: {_fmt_price(val.get('range_low'))} – {_fmt_price(val.get('range_high'))}",
+            f"Model MAPE: ±{val.get('mape', 0):.1f}%",
+            f"Verdict vs listed price: {verdict_map.get(val.get('verdict', ''), 'N/A')} ({val.get('premium_pct', 0):+.1f}%)",
+            "SHAP price attribution factors:",
+            *shap_lines,
+        ]
+
+    system_prompt = (
+        "You are a knowledgeable Singapore real estate advisor. "
+        "Answer the user's questions about the property below concisely and helpfully. "
+        "Use the valuation data when relevant. Be honest about uncertainty. "
+        "Keep replies under 120 words unless asked for more detail. "
+        "Always cite specific numbers from the data when available. "
+        "IMPORTANT: Reply in plain text only. Do NOT use Markdown formatting — no bold (**text**), "
+        "no bullet points, no headers. Write naturally as if texting a friend.\n\n"
+        "=== Listing Context ===\n"
+        + "\n".join(context_parts)
+    )
+
+    # Build messages for Claude
+    claude_messages = [
+        {"role": m.role, "content": m.content}
+        for m in req.messages
+        if m.role in ("user", "assistant")
+    ]
+
+    import asyncio
+    def _call_claude():
+        return get_client().messages.create(
+            model="claude-haiku-4-5",
+            max_tokens=300,
+            system=system_prompt,
+            messages=claude_messages,
+        )
+
+    response = await asyncio.get_event_loop().run_in_executor(None, _call_claude)
+    reply = response.content[0].text.strip()
+
+    return {"reply": reply}
 
 @router.get("/me/all", response_model=PaginatedResponse[ListingResponse])
 async def get_my_listings(

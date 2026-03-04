@@ -84,6 +84,8 @@ function ListingsContent() {
 
   // Parsed filters returned by semantic search (for display)
   const [parsedFilters, setParsedFilters] = useState<ParsedFilters | null>(null);
+  // Fallback notice when AI search relaxed filters to find results
+  const [fallbackNotice, setFallbackNotice] = useState<string | null>(null);
 
   // Sync state with URL params
   useEffect(() => {
@@ -153,7 +155,7 @@ function ListingsContent() {
   const queryFn = async () => {
     if (isSemanticMode && currentQ) {
       const { data } = await api.get<
-        PaginatedResponse<Listing> & { _parsed_filters?: ParsedFilters }
+        PaginatedResponse<Listing> & { _parsed_filters?: ParsedFilters; _fallback_notice?: string }
       >("/listings/semantic-search", {
         params: {
           q: currentQ,
@@ -163,10 +165,12 @@ function ListingsContent() {
         },
       });
       if (data._parsed_filters) setParsedFilters(data._parsed_filters);
+      setFallbackNotice(data._fallback_notice ?? null);
       return data;
     }
 
     setParsedFilters(null);
+    setFallbackNotice(null);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const params: any = {
       page: Number(searchParams.get("page")) || 1,
@@ -349,9 +353,14 @@ function ListingsContent() {
             if (f.buy_rent) chips.push(String(f.buy_rent) === "property-for-rent" ? "For Rent" : "For Sale");
             // tenure
             if (f.tenure) chips.push(String(f.tenure));
-            // district
-            if (f.district != null) chips.push(`District ${f.district}`);
-            // location keyword
+            // districts array (multi-district "near X" support)
+            if (Array.isArray(f.districts) && (f.districts as number[]).length > 0) {
+              const ds = (f.districts as number[]).map(d => `D${d}`).join("/");
+              chips.push(ds);
+            } else if (f.district != null) {
+              chips.push(`District ${f.district}`);
+            }
+            // free-text location keyword
             if (f.query) chips.push(String(f.query));
             // price range
             const fmt$ = (n: number) => n >= 1_000_000 ? `$${(n/1_000_000).toFixed(1)}M` : `$${(n/1000).toFixed(0)}K`;
@@ -370,6 +379,17 @@ function ListingsContent() {
               </div>
             );
           })()}
+
+          {/* Fallback notice — shown when AI relaxed filters to find results */}
+          {isSemanticMode && fallbackNotice && (
+            <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-50 border border-amber-200 text-sm text-amber-800">
+              <span className="text-lg leading-none">⚠️</span>
+              <span>
+                <span className="font-semibold">No exact matches found.</span>{" "}
+                {fallbackNotice.charAt(0).toUpperCase() + fallbackNotice.slice(1)}.
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Results */}
@@ -402,8 +422,14 @@ function ListingsContent() {
               {/* 在地图范围内搜索 按钮 */}
               <button
                 onClick={() => {
-                  setMapFilterActive((v) => !v);
+                  const next = !mapFilterActive;
+                  setMapFilterActive(next);
                   setPage(1);
+                  // 开启地图筛选时清空关键词，避免 bbox+query AND 导致 0 结果
+                  if (next && q) {
+                    setQ("");
+                    updateFilters({ q: "", page: 1 });
+                  }
                 }}
                 className={`w-full py-2 px-4 rounded-xl text-sm font-semibold border transition-colors ${
                   mapFilterActive
@@ -413,7 +439,9 @@ function ListingsContent() {
               >
                 {mapFilterActive ? (
                     <>✓ 只显示地图范围内的房源{data?.total != null ? <span className="ml-1.5 font-normal opacity-80">· {data.total.toLocaleString()} 个</span> : null}</>
-                  ) : "在地图范围内搜索"}
+                  ) : (
+                    <>在地图范围内搜索{q ? <span className="ml-1.5 font-normal opacity-60">（将清空关键词）</span> : null}</>
+                  )}
               </button>
             </div>
 
@@ -452,6 +480,33 @@ function ListingsContent() {
                   <ListingCard key={listing.id} listing={listing} isHighlighted={activeMapId === listing.id} />
                 ))}
               </div>
+
+              {/* 0 结果提示 */}
+              {!isLoading && data?.total === 0 && (
+                <div className="flex flex-col items-center justify-center py-20 gap-4 text-center">
+                  <div className="text-5xl">🔍</div>
+                  <h3 className="text-lg font-semibold text-foreground">没有找到符合条件的房源</h3>
+                  {currentQ && !isSemanticMode ? (
+                    <>
+                      <p className="text-muted-foreground max-w-sm">
+                        普通搜索需要关键词完整出现在标题或地址中。试试 <span className="font-semibold text-violet-600">AI Search</span>，用自然语言描述你的需求。
+                      </p>
+                      <button
+                        onClick={() => {
+                          setAiMode(true);
+                          updateFilters({ mode: "ai", q, page: 1 });
+                        }}
+                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold transition-colors"
+                      >
+                        <Sparkles className="h-4 w-4" />
+                        用 AI Search 重试
+                      </button>
+                    </>
+                  ) : (
+                    <p className="text-muted-foreground max-w-sm">试试放宽筛选条件，或更换关键词。</p>
+                  )}
+                </div>
+              )}
 
               {/* Pagination — 地图筛选模式下隐藏（结果已由地图范围决定，无需翻页） */}
               {!mapFilterActive && (
