@@ -128,44 +128,79 @@ async def semantic_search_listings(
             detail=f"Failed to parse query: {str(e)}"
         )
 
-    # 2. Query database using existing ListingService
+    # 2. Query database using existing ListingService with progressive fallback
     service = ListingService(db)
     skip = (page - 1) * limit
+
+    # Define fallback stages: progressively relax filters when 0 results
+    # Stage 0: all filters (original)
+    # Stage 1: remove price constraints
+    # Stage 2: remove price + tenure
+    # Stage 3: remove price + tenure + district (keyword/type only)
+    fallback_stages = [
+        # (remove_price, remove_tenure, remove_district, label)
+        (False, False, False, None),
+        (True,  False, False, "price filter removed — showing results in any price range"),
+        (True,  True,  False, "price & tenure filters removed — showing broader results"),
+        (True,  True,  True,  "price, tenure & district filters removed — showing all matching property types"),
+    ]
+
+    active_filters = filters.copy()
+    fallback_label: Optional[str] = None
+
+    for remove_price, remove_tenure, remove_district, label in fallback_stages:
+        query_filters = filters.copy()
+        if remove_price:
+            query_filters.pop("min_price", None)
+            query_filters.pop("max_price", None)
+        if remove_tenure:
+            query_filters.pop("tenure", None)
+        if remove_district:
+            query_filters.pop("district", None)
+
+        total = await service.get_total_count(
+            min_price=query_filters.get("min_price"),
+            max_price=query_filters.get("max_price"),
+            beds=query_filters.get("beds"),
+            property_type=query_filters.get("property_type"),
+            buy_rent=query_filters.get("buy_rent"),
+            district=query_filters.get("district"),
+            tenure=query_filters.get("tenure"),
+            query=query_filters.get("query"),
+        )
+
+        if total > 0:
+            active_filters = query_filters
+            fallback_label = label
+            break
 
     listings = await service.get_listings(
         skip=skip,
         limit=limit,
-        min_price=filters.get("min_price"),
-        max_price=filters.get("max_price"),
-        beds=filters.get("beds"),
-        property_type=filters.get("property_type"),
-        buy_rent=filters.get("buy_rent"),
-        district=filters.get("district"),
-        tenure=filters.get("tenure"),
-        query=filters.get("query"),
+        min_price=active_filters.get("min_price"),
+        max_price=active_filters.get("max_price"),
+        beds=active_filters.get("beds"),
+        property_type=active_filters.get("property_type"),
+        buy_rent=active_filters.get("buy_rent"),
+        district=active_filters.get("district"),
+        tenure=active_filters.get("tenure"),
+        query=active_filters.get("query"),
         sort_by=sort_by
     )
 
-    total = await service.get_total_count(
-        min_price=filters.get("min_price"),
-        max_price=filters.get("max_price"),
-        beds=filters.get("beds"),
-        property_type=filters.get("property_type"),
-        buy_rent=filters.get("buy_rent"),
-        district=filters.get("district"),
-        tenure=filters.get("tenure"),
-        query=filters.get("query"),
-    )
-
-    return {
+    response: dict = {
         "total": total,
         "page": page,
         "limit": limit,
         "data": jsonable_encoder(listings),
         # Include parsed filters in response for frontend to display
-        "_parsed_filters": filters,
+        "_parsed_filters": active_filters,
         "_original_query": q,
     }
+    if fallback_label:
+        response["_fallback_notice"] = fallback_label
+
+    return response
 
 @router.get("/{listing_id}", response_model=ListingResponse)
 async def get_listing(

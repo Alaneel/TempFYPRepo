@@ -1,10 +1,29 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
-from sqlalchemy import or_, func
+from sqlalchemy import or_, and_, func
 from app.models.listing import Listing
 from app.schemas.listing import ListingCreate, ListingUpdate
 from typing import List, Optional
+
+
+def _build_search_clause(query: str):
+    """
+    拆词搜索：每个词必须出现在 title/address/description 之一（AND 多词，OR 多字段）。
+    例：'Bishan condo 3BR' → 每个词各自在三个字段里 OR，再把三个条件 AND 起来。
+    """
+    words = [w.strip() for w in query.split() if w.strip()]
+    if not words:
+        return None
+    per_word = [
+        or_(
+            Listing.title.ilike(f"%{w}%"),
+            Listing.address.ilike(f"%{w}%"),
+            Listing.description.ilike(f"%{w}%"),
+        )
+        for w in words
+    ]
+    return and_(*per_word)
 
 class ListingService:
     def __init__(self, db: AsyncSession):
@@ -58,17 +77,12 @@ class ListingService:
             stmt = stmt.where(Listing.longitude >= min_lng)
         if max_lng is not None:
             stmt = stmt.where(Listing.longitude <= max_lng)
-            
-        # Search
+
+        # Search — 多词拆分，每个词 AND
         if query:
-            search_query = f"%{query}%"
-            stmt = stmt.where(
-                or_(
-                    Listing.title.ilike(search_query),
-                    Listing.address.ilike(search_query),
-                    Listing.description.ilike(search_query)
-                )
-            )
+            clause = _build_search_clause(query)
+            if clause is not None:
+                stmt = stmt.where(clause)
             
         # Sorting
         if sort_by == "price_asc":
@@ -134,17 +148,12 @@ class ListingService:
             stmt = stmt.where(Listing.longitude >= min_lng)
         if max_lng is not None:
             stmt = stmt.where(Listing.longitude <= max_lng)
-            
-        # Search
+
+        # Search — 多词拆分，每个词 AND
         if query:
-            search_query = f"%{query}%"
-            stmt = stmt.where(
-                or_(
-                    Listing.title.ilike(search_query),
-                    Listing.address.ilike(search_query),
-                    Listing.description.ilike(search_query)
-                )
-            )
+            clause = _build_search_clause(query)
+            if clause is not None:
+                stmt = stmt.where(clause)
 
         result = await self.db.execute(stmt)
         return result.scalar()

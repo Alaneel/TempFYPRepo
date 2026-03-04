@@ -87,11 +87,14 @@ const createHomeIcon = (price?: number, display?: string) => {
 
 
 
-// Component to track zoom AND bounds events
+// Component to track zoom AND bounds events — only fires on actual user interaction
 function MapEvents({ onViewChange }: { onViewChange: (zoom: number, bounds: L.LatLngBounds) => void }) {
+    const interactedRef = useRef(false);
     const map = useMapEvents({
-        zoomend: () => onViewChange(map.getZoom(), map.getBounds()),
-        moveend: () => onViewChange(map.getZoom(), map.getBounds()),
+        dragstart: () => { interactedRef.current = true; },
+        zoomstart: () => { interactedRef.current = true; },
+        zoomend: () => { if (interactedRef.current) onViewChange(map.getZoom(), map.getBounds()); },
+        moveend: () => { if (interactedRef.current) onViewChange(map.getZoom(), map.getBounds()); },
     });
     return null;
 }
