@@ -350,7 +350,7 @@ export default function ListingDetailPage() {
 
           {/* Right Column: Price & Agent */}
           <div className="space-y-6">
-            <Card className="sticky top-24">
+            <Card>
               <CardContent className="p-6 space-y-6">
                 <div>
                   <div className="text-sm text-muted-foreground">Price</div>
