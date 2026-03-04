@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import api from "@/lib/api";
-import { Sparkles, TrendingUp, TrendingDown, Minus, AlertCircle, Loader2 } from "lucide-react";
+import { Sparkles, TrendingUp, TrendingDown, Minus, AlertCircle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface ShapFactor {
@@ -33,6 +33,7 @@ interface ValuationPanelProps {
   tenure?:      string;
   actualPrice?: number;
   builtYear?:   number;
+  onResult?:    (result: ValuationResult) => void;
 }
 
 const fmt = (n: number) =>
@@ -68,7 +69,7 @@ const VerdictBadge = ({ verdict, premium }: { verdict: string | null; premium: n
 };
 
 export function ValuationPanel({
-  propertyType, buyRent, beds, sqft, tenure, actualPrice, builtYear,
+  propertyType, buyRent, beds, sqft, tenure, actualPrice, builtYear, onResult,
 }: ValuationPanelProps) {
 
   const enabled = !!(propertyType && buyRent && beds >= 1 && sqft > 50);
@@ -91,6 +92,11 @@ export function ValuationPanel({
     staleTime: 1000 * 60 * 10,
     retry: false,
   });
+
+  // Lift valuation result up to parent (for chat panel context)
+  useEffect(() => {
+    if (data && onResult) onResult(data);
+  }, [data]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!enabled) return null;
 

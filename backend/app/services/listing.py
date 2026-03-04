@@ -39,6 +39,7 @@ class ListingService:
         property_type: Optional[str] = None,
         buy_rent: Optional[str] = None,
         district: Optional[int] = None,
+        districts: Optional[List[int]] = None,
         agent_id: Optional[int] = None,
         query: Optional[str] = None,
         tenure: Optional[str] = None,
@@ -61,7 +62,10 @@ class ListingService:
             stmt = stmt.where(Listing.property_type.ilike(f"%{property_type}%"))
         if buy_rent:
              stmt = stmt.where(Listing.buy_rent.ilike(f"%{buy_rent}%"))
-        if district is not None:
+        # Multi-district (IN) takes priority over single district
+        if districts:
+            stmt = stmt.where(Listing.district.in_(districts))
+        elif district is not None:
             stmt = stmt.where(Listing.district == district)
         if agent_id is not None:
             stmt = stmt.where(Listing.agent_id == agent_id)
@@ -111,6 +115,7 @@ class ListingService:
         property_type: Optional[str] = None,
         buy_rent: Optional[str] = None,
         district: Optional[int] = None,
+        districts: Optional[List[int]] = None,
         agent_id: Optional[int] = None,
         query: Optional[str] = None,
         tenure: Optional[str] = None,
@@ -132,7 +137,10 @@ class ListingService:
             stmt = stmt.where(Listing.property_type.ilike(f"%{property_type}%"))
         if buy_rent:
              stmt = stmt.where(Listing.buy_rent.ilike(f"%{buy_rent}%"))
-        if district is not None:
+        # Multi-district (IN) takes priority over single district
+        if districts:
+            stmt = stmt.where(Listing.district.in_(districts))
+        elif district is not None:
             stmt = stmt.where(Listing.district == district)
         if agent_id is not None:
             stmt = stmt.where(Listing.agent_id == agent_id)

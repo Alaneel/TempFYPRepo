@@ -353,9 +353,14 @@ function ListingsContent() {
             if (f.buy_rent) chips.push(String(f.buy_rent) === "property-for-rent" ? "For Rent" : "For Sale");
             // tenure
             if (f.tenure) chips.push(String(f.tenure));
-            // district
-            if (f.district != null) chips.push(`District ${f.district}`);
-            // location keyword
+            // districts array (multi-district "near X" support)
+            if (Array.isArray(f.districts) && (f.districts as number[]).length > 0) {
+              const ds = (f.districts as number[]).map(d => `D${d}`).join("/");
+              chips.push(ds);
+            } else if (f.district != null) {
+              chips.push(`District ${f.district}`);
+            }
+            // free-text location keyword
             if (f.query) chips.push(String(f.query));
             // price range
             const fmt$ = (n: number) => n >= 1_000_000 ? `$${(n/1_000_000).toFixed(1)}M` : `$${(n/1000).toFixed(0)}K`;
