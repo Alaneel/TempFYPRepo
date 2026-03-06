@@ -1,6 +1,7 @@
 from pydantic import BaseModel, computed_field
 from typing import Optional
 from datetime import datetime
+import re
 from app.schemas.agent import AgentResponse
 from app.schemas.condo import CondoResponse
 
@@ -69,6 +70,54 @@ class ListingResponse(ListingBase):
             return f"/placeholders/landed_{seed % 4}.png"
         else: # Condominiums / Others
             return f"/placeholders/condo_{seed % 2}.png"
+
+    @computed_field
+    def lease_risk_tier(self) -> Optional[dict]:
+        """CPF lease-eligibility risk tier for HDB listings only.
+        
+        Based on CPF Board rules:
+        - >60 yrs remaining: full CPF OA + HDB Concessionary Loan eligible
+        - 30-60 yrs: CPF OA usage restricted; commercial bank loan only
+        - <30 yrs: no CPF OA usage; no HDB mortgage eligible
+        """
+        ptype = str(self.property_type).lower() if self.property_type else ""
+        if 'hdb' not in ptype:
+            return None
+        if not self.built_year:
+            return None
+        try:
+            year_str = re.sub(r'\D', '', str(self.built_year))[:4]
+            built = int(year_str)
+            if built < 1960 or built > 2026:
+                return None
+        except (ValueError, TypeError):
+            return None
+
+        remaining = 99 - (2026 - built)
+        if remaining <= 0:
+            return None
+
+        if remaining > 60:
+            return {
+                "tier": "green",
+                "label": "Full CPF Eligible",
+                "tooltip": f"{remaining} yrs remaining · Full CPF OA usage and HDB Concessionary Loan eligible",
+                "remaining_years": remaining,
+            }
+        elif remaining > 30:
+            return {
+                "tier": "amber",
+                "label": "CPF Restricted",
+                "tooltip": f"{remaining} yrs remaining · CPF OA usage restricted; only commercial bank loans at reduced quantum",
+                "remaining_years": remaining,
+            }
+        else:
+            return {
+                "tier": "red",
+                "label": "CPF Ineligible",
+                "tooltip": f"{remaining} yrs remaining · No CPF Ordinary Account usage; no HDB Concessionary Loan eligible",
+                "remaining_years": remaining,
+            }
     
     class Config:
         from_attributes = True

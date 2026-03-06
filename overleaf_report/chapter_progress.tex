@@ -131,8 +131,9 @@ operate.
 
 For each segment, four model families are trained and the best is selected by lowest
 test-set MAPE: Baseline (median predictor), Ridge Regression, Random Forest, and
-XGBoost. Hyperparameters are fixed across all segments (XGBoost: 400 estimators,
-$\eta=0.05$, max\_depth\,=\,5).
+XGBoost. Hyperparameters are shared across all eight segments (XGBoost: 400 estimators,
+$\eta=0.05$, max\_depth\,=\,5); the selection rationale for each parameter is documented
+in Section~\ref{sec:model_design} of Chapter~3.
 
 \section{Natural Language Search}
 
@@ -152,3 +153,25 @@ Key features include:
     \item A listing detail page showing full property information, agent contact details, and an AI Valuation panel (displayed only for whole-unit listings with beds\,$\geq$\,1).
     \item The AI Valuation panel displays the point estimate, a confidence interval, a verdict badge (overpriced / fair value / below estimate), and a SHAP factor breakdown.
 \end{itemize}
+
+\subsection{HDB Lease Risk Classification}
+\label{sec:lease_badge_impl}
+
+A key finding from the model ablation study (Section~\ref{sec:policy_signal}) was the
+identification of a latent CPF lease-eligibility policy signal encoded in the asking prices
+of older HDB flats. To operationalise this finding, a \textit{Lease Risk Badge} component
+was added to the listing detail page for all HDB properties.
+
+The feature is implemented in two parts:
+\begin{enumerate}
+    \item \textbf{Backend derived attribute.} The \texttt{ListingResponse} schema computes
+    $\texttt{remaining\_lease} = 99 - (\text{CURRENT\_YEAR} - \texttt{built\_year})$ on
+    the fly. It classifies the listing into one of three tiers based on CPF Board rules:
+    Green ($>$60 years, full eligibility), Amber (30--60 years, restricted CPF usage
+    and no HDB loan), or Red ($<$30 years, complete CPF and HDB loan ineligibility).
+    \item \textbf{Frontend UI component.} The Next.js frontend renders a colour-coded
+    badge alongside the property's tenure. Instead of requiring users to look up the
+    remaining lease implications themselves, the badge explicitly surfaces the policy
+    constraint via a dedicated tooltip, directly translating the model's implicit
+    learning into an actionable decision-support feature.
+\end{enumerate}

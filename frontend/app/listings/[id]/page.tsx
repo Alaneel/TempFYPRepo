@@ -130,6 +130,24 @@ export default function ListingDetailPage() {
                 {listing.tenure && (
                   <Badge variant="secondary">{listing.tenure}</Badge>
                 )}
+                {listing.lease_risk_tier && (() => {
+                  const { tier, label, tooltip, remaining_years } = listing.lease_risk_tier;
+                  const colourClass =
+                    tier === "green"
+                      ? "bg-green-100 text-green-800 border-green-300 hover:bg-green-100"
+                      : tier === "amber"
+                      ? "bg-amber-100 text-amber-800 border-amber-300 hover:bg-amber-100"
+                      : "bg-red-100 text-red-800 border-red-300 hover:bg-red-100";
+                  return (
+                    <Badge
+                      variant="outline"
+                      className={`cursor-help ${colourClass}`}
+                      title={tooltip}
+                    >
+                      🏠 {label} · {remaining_years} yrs
+                    </Badge>
+                  );
+                })()}
               </div>
               <h1 className="text-3xl md:text-4xl font-bold mb-2">
                 {listing.title}
