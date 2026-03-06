@@ -1,7 +1,7 @@
 \chapter*{Abstract}
 \addcontentsline{toc}{chapter}{Abstract}
 
-This report details the development of an end-to-end AI-driven real estate analysis system tailored for the Singapore housing market. Addressing the industry-wide challenges of data fragmentation and the complex interplay between the public (HDB) and private residential sectors, this project establishes a unified market intelligence platform.
+Singapore's property market is split between a tightly regulated HDB public sector and a free-market private sector, yet the data sits fragmented across four competing portals with no shared structure. This report covers the design and implementation of a system that pulls those sources together---scraping, deduplicating, valuing, and searching across all four---into a single platform.
 
 Developed as part of a team effort, the system features robust web scraping pipelines aggregating live data from major property portals (PropertyGuru, 99.co, EdgeProp, and SRX). The author personally designed and implemented the PropertyGuru scraper—the largest data source comprising over 53,000 listings—as well as the centralized aggregation and deduplication pipeline. A composite-key deduplication algorithm with a title-fallback strategy achieved 95.5\% address-field coverage, successfully harmonizing disparate data structures and eliminating cross-platform duplicates.
 

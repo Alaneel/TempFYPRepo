@@ -2,7 +2,7 @@
 
 \section{System Architecture}
 
-The proposed system adopts a modular architecture consisting of five main stages: Data Acquisition, Data Processing, Data Storage, Analysis Engine, and Application Layer. The implementation focuses on building a robust data pipeline that aggregates property information from multiple sources into a unified repository.
+Five stages make up the overall pipeline: Data Acquisition, Data Processing, Data Storage, Analysis Engine, and Application Layer. The central design decision was to treat the data pipeline as the foundation---everything else (valuation models, NL search, chat assistant) sits on top of a single unified listing repository rather than querying each portal separately.
 
 \begin{figure}[!ht]
     \centering
@@ -303,10 +303,10 @@ The LLM is instructed to produce a JSON object conforming to the following schem
 }
 \end{verbatim}
 
-The \texttt{districts} array field (vs.\ the scalar \texttt{district}) is the key
-extension that enables multi-district geographic resolution (see below). The backend
-translates a non-null \texttt{districts} into an SQL \texttt{IN} predicate; a non-null
-scalar \texttt{district} is treated as a single equality constraint.
+Using a \texttt{districts} array rather than a scalar \texttt{district} field is what
+makes multi-district geographic resolution possible (see below): the backend turns a
+non-null \texttt{districts} list into an SQL \texttt{IN} predicate, whereas a non-null
+scalar \texttt{district} is handled as a single equality constraint.
 
 \subsection{System Prompt Design}
 
