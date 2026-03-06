@@ -87,10 +87,10 @@ mean baseline on the Condominium Sale segment.
 
 Oust and Hansen~\cite{oust2023machine} explored the combination of repeat-sales index models
 with machine learning predictors, finding that ensemble combinations outperform either
-approach alone on out-of-sample price index accuracy. While transaction-price data for such
-combinations is not used in the present project (a limitation acknowledged in
-Section~\ref{sec:limitations}), this strand of literature motivates the future integration of
-URA REALIS transacted price data~\cite{ura2024realis} as a complementary training signal.
+approach alone on out-of-sample price index accuracy. Transaction-price data for such
+combinations is not available in this project (noted in Section~\ref{sec:limitations}),
+though adding URA REALIS transacted prices~\cite{ura2024realis} as a complementary training
+signal is a fairly natural next step if access can be arranged.
 
 Jaouhari et al.~\cite{jaouhari2024mapping} conducted a systematic review of 89 AVM studies
 published between 2010 and 2022, identifying that (i) gradient-boosted trees dominate recent
@@ -122,20 +122,21 @@ non-technical end users.
 \subsection{LLMs as Few-Shot Structured Decoders}
 
 Brown et al.~\cite{brown2020language} established that large autoregressive language models
-achieve strong performance on novel tasks via \textit{few-shot in-context learning}—without
-any gradient updates—by conditioning on a small number of labelled examples in the prompt.
+achieve strong performance on novel tasks via \textit{few-shot in-context learning}---without
+any gradient updates---by conditioning on a small number of labelled examples in the prompt.
 This capability underpins the natural language search pipeline in this project, where Claude
 is prompted with eight few-shot query--filter pairs to parse free-text property queries into
-structured JSON filters. The zero-shot alternative (no examples) was tested informally and
-produced notably higher district hallucination rates, confirming that few-shot prompting is
-necessary for the Singapore-specific grounding required.
+structured JSON filters. A zero-shot version (no examples) was tested informally early on and
+produced noticeably more district hallucinations, which is why the final prompt includes
+the in-context examples.
 
 Han et al.~\cite{han2023llm} demonstrated that GPT-class LLMs can extract structured property
 attributes (price, bedrooms, floor area) from free-text listing descriptions with high field-level
 F1, outperforming rule-based extractors on edge cases such as abbreviated or informal phrasing.
-While their task is attribute extraction from descriptions (input → attributes) rather than
-query-to-filter parsing (query → filter), the methodological parallel is direct: both tasks
-leverage LLMs as neural transducers from unstructured text to structured schemas.
+Their task differs from ours---they go from description text to attributes, whereas here the
+input is a user query and the output is a structured filter---but the underlying mechanism
+is the same in both cases: an LLM maps unstructured text to a structured schema without
+any task-specific fine-tuning.
 
 \subsection{Retrieval-Augmented Generation}
 
@@ -201,9 +202,9 @@ web scraping, arguing that automated data collection is appropriate when no publ
 licensed data source covers the target population and the scraped data is publicly accessible.
 This directly applies to the present project: PropertyGuru does not offer a public API, and all
 scraped attributes (price, floor area, tenure, district) are visible to any anonymous visitor.
-The 1-second inter-request delay and incremental crawl strategy implemented in the PropertyGuru
-scraper are consistent with the ``rate-limiting and minimal-footprint'' best practices advocated
-by Landers et al.\ for ethical scraping.
+The PropertyGuru scraper uses a 1-second inter-request delay and an incremental crawl design,
+roughly in line with what Landers et al.\ describe as a minimal-footprint approach to
+ethical scraping.
 
 % ─────────────────────────────────────────────────────────────────────────────
 \section{Research Gaps and Positioning}
