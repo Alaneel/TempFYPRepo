@@ -42,6 +42,13 @@ export interface Listing {
   match_score?: number;
   latitude?: number;
   longitude?: number;
+  source?: string;
+  lease_risk_tier?: {
+    tier: "green" | "amber" | "red";
+    label: string;
+    tooltip: string;
+    remaining_years: number;
+  };
 }
 
 export interface Agent {
@@ -95,7 +102,7 @@ export interface UserResponse {
   id: number;
   email: string;
   full_name: string;
-  role: 'customer' | 'agent' | 'admin';
+  role: "customer" | "agent" | "admin";
   is_active: boolean;
   created_at: string;
 }

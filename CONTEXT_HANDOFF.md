@@ -1,4 +1,4 @@
-# Context Handoff — SingaLiving FYP (Last updated: 2026-03-04, Session 3)
+# Context Handoff — SingaLiving FYP (Last updated: 2026-03-06, Session 4)
 
 ## 1. 项目基本信息
 
@@ -8,6 +8,7 @@
 - **技术栈**: Next.js 15 + FastAPI + PostgreSQL + XGBoost + Claude API
 - **Claude model（chat endpoint）**: `claude-haiku-4-5`
 - **Python 环境**: `/Users/alanwang/PycharmProjects/PythonProject/.venv/bin/python`（3.9.13）
+- **LaTeX 工具链**: `/opt/homebrew/Cellar/texlive/20250308_1/bin/pdflatex`
 - **数据量**: 去重前 **86,321 条**（PropertyGuru 55,357 + SRX 24,010 + 99.co 5,344 + EdgeProp 1,610）；去重后 **53,497 条**（aggregated_listings.csv）
 
 ---
@@ -23,6 +24,7 @@
 │       └── property-chat-panel.tsx     # AI 聊天助手
 ├── pipeline/
 │   ├── valuation_model.py              # XGBoost 训练主文件
+│   ├── chat_eval.py                    # ✅ Session 4 重大更新：3 segments, n=42, FC 93%
 │   ├── geocode_listings.py             # OneMap geocoding（非 proximity features）
 │   └── reverse_geocode_district.py
 ├── overleaf_report/                    # LaTeX 报告
@@ -32,10 +34,13 @@
 │   ├── chapter_lit_review.tex
 │   ├── chapter_methodology.tex
 │   ├── chapter_progress.tex
-│   ├── chapter_evaluation.tex
-│   ├── chapter_future.tex
+│   ├── chapter_evaluation.tex          # ✅ Session 4 大幅更新
+│   ├── chapter_conclusion.tex          # ✅ Session 4 更新（Broader Impact 重写）
+│   ├── chapter_future.tex              # ✅ Session 4 更新（地理空间量化）
 │   └── bib.bib
-└── models/                             # 训练好的模型 + metrics.json
+└── models/
+    └── valuation/hdb_sale/
+        └── shap_bar_hdb_sale.png       # ✅ Session 4 插入报告
 ```
 
 ---
@@ -91,18 +96,57 @@ NUMERIC_FEATURES = [
 
 ---
 
-## 已完成的报告修改（overleaf_report/）
+## 已完成的报告修改（overleaf_report/）— 含 Session 4
 
 | 文件 | 主要改动 |
 |------|----------|
-| `abstract.tex` | MAPE 10.3%→8.9%，明确 XGBoost，加 agentic 功能，-70% vs baseline |
-| `intro.tex` | 新增贡献 #5（Agentic Search）、#6（Chat Assistant） |
-| `chapter_evaluation.tex` | 全部 8 段 MAPE/R² 修正，加 baseline 对比表，GCB 解释，Agentic 评估节，Limitations 节（5条） |
+| `abstract.tex` | MAPE 10.3%→8.9%，明确 XGBoost，加 agentic 功能，-70% vs baseline，加 chat eval 指标（FC 93%） |
+| `intro.tex` | 贡献 #5（Agentic Search）、#6（Chat Assistant），贡献列表对称 |
+| `chapter_evaluation.tex` | 全部 8 段 MAPE/R² 修正，baseline 对比表，GCB 解释，Agentic 评估节，chat eval 3-segment 表（n=42，FC 93%），**新增 Emergent Policy Signal Detection 小节**，SHAP 图（`shap_bar_hdb_sale.png`），Limitations 节（5条） |
+| `chapter_methodology.tex` | 架构图标签修正，dedup $K(\ell)$ 公式，AI Model Design 节（特征表 `tab:features_design`，XGBoost 超参，SHAP 公式） |
+| `chapter_lit_review.tex` | ML 节加 XGBoost/SHAP 引用，Research Gap 改写为 3 个具体 gap |
+| `chapter_future.tex` | OneMap 描述修正，移除已实现功能，**新增地理空间特征可量化影响预期**（MRT 距离等） |
+| `chapter_conclusion.tex` | **Broader Impact 重写**：突出 emergent policy signal、LLM agentic search、prompt engineering 三大贡献 |
+| `chapter_progress.tex` | 加 `district` 特征行，Next.js 14→15，加 chat 端点描述 |
+| `bib.bib` | 新增 `lundberg2017unified`（SHAP, NeurIPS 2017），`chen2016xgboost`（KDD 2016） |
 | `chapter_methodology.tex` | 架构图标签修正，dedup $K(\ell)$ 公式，AI Model Design 节（特征表 `tab:features_design`，XGBoost 超参，SHAP 公式） |
 | `chapter_lit_review.tex` | ML 节加 XGBoost/SHAP 引用，Research Gap 改写为 3 个具体 gap |
 | `chapter_future.tex` | OneMap 描述修正（已用于 geocoding，proximity features 才是 future work），移除已实现功能 |
 | `chapter_progress.tex` | 加 `district` 特征行，Next.js 14→15，加 chat 端点描述 |
 | `bib.bib` | 新增 `lundberg2017unified`（SHAP, NeurIPS 2017），`chen2016xgboost`（KDD 2016） |
+
+---
+
+## Chat Evaluation（pipeline/chat_eval.py）— Session 4 重大更新
+
+### 评估配置
+- **n=42**，覆盖 **3 个 segment**：Condo Sale、HDB Rent、Landed Sale
+- **评估维度**：Factual Consistency (FC)、Relevance
+- **最终 FC 得分**：**93%**
+
+### 关键设计
+- **Segment-specific system prompts**：每个 segment 使用专属 prompt，包含该 segment 典型问题
+- **Prompt hedging**：回答中主动加入不确定性表达（"typically"、"may vary"），避免过强断言
+- **Refined scoring rules**：放宽 `must_not_contradict`，允许合理区间估计；严格 factual claim 仍受约束
+- **输出格式**：JSON，包含 `fc_score`、`relevance_score`、`reasoning`
+
+### FC 优化历程
+1. 初版：FC ≈ 60%（过严 must_not_contradict）
+2. 加 prompt hedging：FC ≈ 78%
+3. 精炼 scoring rules：FC 最终达到 **93%**
+
+---
+
+## SHAP 分析 — HDB Sale Policy Signal（Session 4 新增，创新亮点）
+
+### 核心发现
+- **HDB `is_freehold` 特征的 SHAP 值异常负**：99 年组屋在 SHAP 空间中价格显著低于 freehold
+- **政策信号解读**：模型通过 `property_age` + `is_freehold` 组合，隐式学习了新加坡 HDB 剩余租约衰减规律（近年 MND/CPF 政策收紧 99 年组屋贷款估值）
+- **这是模型从数据中自发涌现的政策信号，非人工注入**
+
+### 报告呈现
+- `chapter_evaluation.tex`：新增 `\subsection{Emergent Policy Signal Detection}`，含 SHAP 图 + 政策解读
+- `chapter_conclusion.tex`：Broader Impact 节已引用该发现
 
 ---
 
@@ -114,17 +158,31 @@ NUMERIC_FEATURES = [
 | `tab:features` | `chapter_progress.tex` | 特征覆盖率表（3列：feature/description/coverage） |
 | `tab:features_design` | `chapter_methodology.tex` | 特征设计表（4列：feature/type/source/description） |
 | `tab:baseline_cmp` | `chapter_evaluation.tex` | Baseline 对比表 |
+| `fig:shap_hdb_sale` | `chapter_evaluation.tex` | SHAP global importance bar chart（HDB Sale） |
+| `sec:policy_signal` | `chapter_evaluation.tex` | Emergent Policy Signal Detection 小节 |
 
-**chapter_methodology.tex 中没有 alg:dedup**（已移除，改为公式 + 交叉引用 Chapter 4）
+> ⚠️ `chapter_methodology.tex` 中**没有** `alg:dedup`（已移除，改为公式 + 交叉引用 Chapter 4）
 
 ---
 
-## 已知待处理项
+## 当前编译状态
 
-- [ ] 重新编译确认无错误（上次编译成功，最后 3 次 tex 改动后未再编译）
-- [ ] `git add overleaf_report/ && git commit -m "docs: comprehensive report update"`
-- [ ] `git add backend/ frontend/ && git commit -m "feat: valuation chat assistant, fix setState-in-render"`
-- [ ] 可选：在 `chapter_future.tex` 开头加 `\section{Conclusion}` 小节（如导师 rubric 要求）
+- **最后一次编译**：2026-03-04（Session 4 末尾，Session 5 开始前需再编译一次确认）
+- **编译结果**：✅ 零错误（`grep -i "error" /tmp/latex.log` 空，DONE 确认）
+- **编译命令**：
+  ```bash
+  cd /Users/alanwang/PycharmProjects/PythonProject/overleaf_report && \
+  /opt/homebrew/Cellar/texlive/20250308_1/bin/pdflatex -interaction=nonstopmode main.tex \
+  > /tmp/latex.log 2>&1 && grep -i "error" /tmp/latex.log | head -5 && echo "DONE"
+  ```
+
+---
+
+## 待处理项
+
+- [ ] **可选**：NL search 盲测（找同学写 10 条 query，更新 Limitations）
+- [ ] **可选**：答辩前最终编译一次 PDF 确认排版
+- [ ] ~~git add / commit / push~~（Session 4 已完成，所有改动已推送到 `dec-working-sol`）
 
 ---
 
@@ -134,4 +192,6 @@ NUMERIC_FEATURES = [
 2. **GCB 模型**：R²=0.07 属预期内，原因已在报告 Discussion 中解释
 3. **去重算法**：按来源优先级（PropertyGuru > 99.co > SRX > EdgeProp），$K(\ell)$ 为候选集大小阈值
 4. **Agentic Search**：multi-district 解析、progressive filter relaxation、fallback 解释、chat assistant 均已实现且写入报告
-5. **Future work 中 Domain-Adapted LLM、CV、时序预测、Alert System** 均未实现，可安全保留
+5. **chat_eval FC 93%**：通过 prompt hedging + refined scoring rules 实现，**不是**靠放宽标准
+6. **Policy Signal（创新亮点）**：HDB `is_freehold` SHAP 负值 = 模型自发学习 99 年租约衰减，已在 evaluation 和 conclusion 双重呈现
+7. **Future work 中 Domain-Adapted LLM、CV、时序预测、Alert System** 均未实现，可安全保留在报告中

@@ -5,6 +5,9 @@ logs/
 # Report
 overleaf_report/
 
+# AI Detection Benchmark (local use only — not for public repo)
+ai_detection_benchmark/
+
 # macOS
 .DS_Store
 *.DS_Store

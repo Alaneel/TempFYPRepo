@@ -40,3 +40,50 @@ The current gradient-boosted models predict point-in-time valuations based on ac
 
 \subsection{Automated Listing Freshness and Alert System}
 The current system scrapes listings on an ad-hoc basis. A future enhancement would implement a scheduled crawler with change detection, alerting registered users when listings matching their saved searches are updated in price, withdrawn, or newly added. This moves the platform from a passive search tool to a proactive market monitoring service.
+
+\section{Evaluation and Validation Improvements}
+
+\subsection{Blind Evaluation of Natural Language Search}
+\label{sec:future_blind_eval}
+
+As discussed in Section~\ref{sec:limitations}, the 47-query ground-truth set used to
+evaluate the NL search system (F1 96.4\%) was constructed by the author. The next
+validation milestone is a formal blind evaluation proceeding in three steps:
+
+\begin{enumerate}
+    \item A second annotator with knowledge of Singapore real estate terminology but no
+    exposure to the system's prompt design constructs an independent test set of
+    $N \geq 50$ natural-language queries, each paired with their own expected JSON
+    filter adjudicated by a third party.
+
+    \item The production system processes each blind query without any prompt modification.
+    Predicted filters are compared against the independent ground truth using the same
+    field-level F1 metric described in Section~\ref{sec:eval_nlsearch}.
+
+    \item The resulting blind F1 is compared to the author-constructed F1 of 96.4\% and
+    the partial-blind F1 of 92.0\% reported in Section~\ref{sec:limitations}. A gap of
+    $\leq 5$\,pp would validate the current result as an externally generalisable
+    estimate; a larger gap would identify specific query patterns requiring prompt
+    refinement or few-shot example augmentation.
+\end{enumerate}
+
+This protocol would elevate the NL search evaluation from a self-validated estimate to a
+more credible externally validated benchmark, significantly strengthening the system's
+academic standing.
+
+\subsection{HDB Lease Risk Badge}
+\label{sec:future_lease_badge}
+
+The feature ablation study (Section~\ref{sec:policy_signal}) confirmed that the HDB Sale
+XGBoost model implicitly learnt Singapore's CPF lease-eligibility discontinuity: removing
+\texttt{property\_age} causes a 130.1\,pp MAPE increase, and SHAP analysis assigns
+\texttt{property\_age} the second-largest mean absolute feature contribution after
+\texttt{district}. This policy signal has been operationalised into a user-facing
+\textit{lease risk badge} displayed on every HDB listing detail page (see
+Section~\ref{sec:lease_badge_impl} of the Implementation chapter for full details).
+The badge classifies each HDB listing into one of three CPF eligibility tiers based on
+remaining lease duration, making the implicit model insight explicitly actionable for buyers.
+Future work could extend this to a proactive alert system that flags listings approaching
+a tier boundary within the next three years.
+
+

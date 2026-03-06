@@ -323,16 +323,16 @@ Natural language property queries powered by Claude AI.
 
 Per-property-type price estimation using LightGBM/XGBoost/RF models trained on 50K+ listings, with district-level location features derived from OneMap reverse geocoding.
 
-| Model       | Accuracy (MAPE) | R²   |
-| ----------- | --------------- | ---- |
-| Condo Sale  | 11.2%           | 0.945 |
-| Condo Rent  | 9.8%            | 0.933 |
-| HDB Sale    | 7.2%            | 0.897 |
-| HDB Rent    | 9.3%            | 0.798 |
-| Landed Sale | 24.8%           | 0.627 |
-| Landed Rent | 25.2%           | 0.786 |
-| GCB Sale    | 22.0%           | 0.376 |
-| GCB Rent    | 21.8%           | 0.513 |
+| Model       | Accuracy (MAPE) | R²    |
+| ----------- | --------------- | ----- |
+| Condo Sale  | 13.4%           | 0.923 |
+| Condo Rent  | 14.2%           | 0.914 |
+| HDB Sale    | 9.0%            | 0.888 |
+| HDB Rent    | 8.9%            | 0.784 |
+| Landed Sale | 26.3%           | 0.654 |
+| Landed Rent | 26.2%           | 0.864 |
+| GCB Sale    | 25.3%           | 0.072 |
+| GCB Rent    | 19.8%           | 0.615 |
 
 **Two usage points:**
 

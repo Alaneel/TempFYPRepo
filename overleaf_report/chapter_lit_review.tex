@@ -1,35 +1,238 @@
 \chapter{Literature Review}
 
 \section{Introduction}
-Real estate valuation and market analysis have long been subjects of academic and practical interest. This chapter surveys the evolution of methodologies in this domain, ranging from traditional econometric approaches to modern artificial intelligence applications. It also examines the specific literature regarding the Singapore housing market to contextualize the unique challenges addressed by this project.
 
-\section{Traditional Real Estate Valuation Models}
-The foundational framework for property valuation is the \textbf{Hedonic Pricing Model}, popularized by Rosen \cite{rosen1974hedonic}. This theory posits that a heterogeneous good, such as a house, can be valued as the sum of its constituent attributes (e.g., location, size, number of bedrooms).
+Real estate valuation and market analysis sit at the intersection of economics, data science,
+and artificial intelligence. This chapter surveys the evolution of methodologies in this domain,
+ranging from classical econometric approaches to modern gradient-boosted machine learning and
+large language model (LLM) applications. It also examines prior work on the Singapore housing
+market—a uniquely dual-tier system—to contextualise the specific challenges and research gaps
+addressed by this project.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Traditional Real Estate Valuation: Hedonic Pricing Models}
+
+The foundational framework for property valuation is the \textbf{Hedonic Pricing Model (HPM)},
+introduced by Rosen~\cite{rosen1974hedonic}. This theory posits that a heterogeneous good such
+as a house can be valued as the sum of its constituent attributes (e.g., location, size, number
+of bedrooms), each commanding an implicit marginal price determined by equilibrium in the
+product market.
+
 \begin{itemize}
-    \item \textbf{Strengths:} These models provide interpretability, allowing analysts to quantify the marginal value of specific features (e.g., the premium for an extra bathroom).
-    \item \textbf{Limitations:} They often rely on strict assumptions of linearity and independence among variables. Furthermore, they struggle to incorporate high-dimensional or unstructured data, such as textual property descriptions or complex spatial relationships.
+    \item \textbf{Theoretical strengths.} HPMs provide interpretability and allow analysts to
+    isolate the marginal contribution of individual features to price. The model directly
+    motivates the feature engineering choices in this project—specifically, the use of
+    \texttt{district}, \texttt{property\_age}, \texttt{sqft}, and \texttt{is\_freehold} as
+    primary attributes.
+
+    \item \textbf{Limitations.} Classical HPMs assume linearity and additive independence
+    among regressors. Singapore's HDB resale market, where price discontinuities arise at
+    \emph{lease eligibility thresholds} (60-year CPF rule, 30-year mortgage eligibility),
+    cannot be adequately modelled under these assumptions~\cite{fan2006determinants}.
+    Furthermore, HPMs cannot incorporate high-dimensional or non-linear spatial interactions
+    without explicit feature construction.
+
+    \item \textbf{Spatial extensions.} Can~\cite{can1992specification} extended the HPM
+    framework to account for spatial autocorrelation—the observation that geographically
+    proximate properties have correlated residuals. Can and Megbolugbe~\cite{can1997spatial}
+    further demonstrated that ignoring spatial dependence produces biased hedonic coefficient
+    estimates. This motivates the district-level geocoding pipeline in the present work:
+    although a full spatial weights matrix is not implemented, the \texttt{district} feature
+    serves as a proxy for first-order spatial stratification.
 \end{itemize}
 
-\section{Machine Learning in Real Estate}
-In recent years, the limitations of traditional models have led researchers to explore Machine Learning (ML) techniques.
-\begin{itemize}
-    \item \textbf{Automated Valuation Models (AVMs):} Advanced regression techniques (e.g., Random Forests, Gradient Boosting) have been shown to outperform linear regression in price prediction accuracy by capturing non-linear relationships \cite{park2015using}. Pow et al.\ \cite{pow2019machine} specifically demonstrated that gradient-boosted tree ensembles achieve lower MAPE than hedonic regression across multiple property segments in a UK context, a finding this project corroborates for Singapore.
-    \item \textbf{Gradient Boosting (XGBoost):} Chen and Guestrin \cite{chen2016xgboost} introduced XGBoost as a scalable, regularised gradient boosting framework that has since become a standard benchmark in tabular data competitions and applied ML. Its use of second-order gradient statistics, column subsampling, and L1/L2 regularisation makes it particularly robust to overfitting on moderate-sized datasets such as the per-segment training sets (n\,=\,277--16,728) used in this project.
-    \item \textbf{Model Interpretability (SHAP):} Lundberg and Lee \cite{lundberg2017unified} introduced SHAP (SHapley Additive exPlanations), which provides theoretically grounded, additive feature attributions for any model. Unlike earlier importance measures (e.g., Gini impurity), SHAP values satisfy consistency and local accuracy axioms, making them suitable for communicating property-specific valuation drivers to non-technical end users.
-    \item \textbf{Natural Language Processing (NLP):} Recent studies, such as Baur et al.\ \cite{baur2022automated}, utilise NLP to extract sentiment and semantic features from listing descriptions, demonstrating that ``soft'' factors significantly influence pricing. The present project extends this direction by using an LLM (Claude) not for feature extraction but for \textit{query understanding}: translating free-text search intent into structured database filters.
-    \item \textbf{Neural Networks:} Deep learning architectures allow for the integration of multi-modal data (text and images), providing a more holistic view of property value \cite{bian2020comparing}. This project prioritises interpretability and data efficiency over raw predictive power, hence gradient-boosted models are preferred over neural networks for the valuation task.
-\end{itemize}
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Machine Learning for Automated Valuation}
 
-\section{The Singapore Context: A Dual-Tier Market}
-Research on the Singapore market highlights its unique dual structure. Tu \cite{tu2004dynamics} analyzed the dynamics of the Singapore private housing market, finding significant relationships between private housing prices and the resale public housing sector. Sing et al. \cite{sing2006price} further demonstrated price dynamics between public and private housing, where rising private prices can pull up HDB resale prices due to the substitution effect and inter-market mobility.
+\subsection{From Regression to Ensemble Methods}
 
-\section{Research Gap}
-While existing literature covers individual components—valuation algorithms, market segmentation, or NLP feature extraction—three gaps remain unaddressed in the Singapore context.
+The limitations of linear HPMs precipitated adoption of non-linear machine learning
+techniques~\cite{park2015using}. Park and Bae~\cite{park2015using} demonstrated, on a
+Fairfax County, Virginia housing dataset, that Random Forests and Neural Networks outperform
+conventional OLS regression on held-out MAPE, particularly when feature interactions are
+significant. Their work established the benchmark practice of reporting MAPE alongside
+$R^2$, which this project adopts.
 
-First, no prior published system aggregates and deduplicates property listings \textit{across all four major Singapore portals} (PropertyGuru, 99.co, EdgeProp, SRX) into a single unified dataset. Most local studies, including Bian et al.\ \cite{bian2020comparing}, rely on a single structured transaction dataset (e.g., URA REALIS), which lacks the breadth and recency of live listing data.
+Fan, Ong, and Koh~\cite{fan2006determinants} applied CART-based decision trees to Singapore
+private housing data, identifying location and project type as the dominant pricing splits.
+While their dataset predates the post-2010 cooling measures and the use of more powerful
+ensemble models, the variable importance findings directly corroborate this project's SHAP
+analysis, in which \texttt{district} consistently ranks as the highest-magnitude feature
+across all segments.
 
-Second, existing ML valuation work on Singapore property \cite{bian2020comparing} does not provide per-prediction SHAP explanations accessible to end users. The opacity of black-box models limits their practical utility for buyers and agents who need to understand \textit{why} a valuation estimate is high or low.
+\subsection{Gradient Boosted Trees: XGBoost and LightGBM}
 
-Third, no prior work applies LLM-based natural language interfaces to Singapore property search. Users of existing portals are constrained to rigid filter menus that cannot express nuanced requirements such as ``expat family, near international school, under S\$8,000/month.'' This project bridges all three gaps by building an integrated platform that unifies multi-portal data, surfaces SHAP-grounded valuations, and enables conversational search with agentic fallback behaviours.
+Chen and Guestrin~\cite{chen2016xgboost} introduced \textbf{XGBoost}, a scalable,
+regularised gradient boosting framework that has since become the de facto benchmark on
+tabular data tasks. Its use of second-order gradient statistics, column and row subsampling,
+and combined L1/L2 regularisation makes it particularly robust to overfitting on the
+moderate-sized per-segment datasets in this project ($n = 277$--$16{,}728$).
 
-To the best of the author's knowledge, no prior published system simultaneously addresses all three gaps: multi-portal Singapore property aggregation with composite-key deduplication, per-prediction SHAP-grounded valuation explanations, and an LLM-backed agentic search pipeline with progressive filter relaxation and a grounded valuation chat assistant---within a single end-to-end deployable platform.
+Ke et al.~\cite{ke2017lightgbm} subsequently proposed \textbf{LightGBM}, which improves
+upon XGBoost through a leaf-wise (rather than level-wise) tree growth strategy and
+Gradient-based One-Side Sampling (GOSS), achieving substantially higher throughput on
+large datasets. In the present pipeline, both XGBoost and LightGBM are trained per segment;
+XGBoost is ultimately preferred due to its marginally superior MAPE on the held-out test
+sets across all eight segments, consistent with findings by Pow et al.~\cite{pow2019machine}
+for UK property data and by Bian et al.~\cite{bian2020comparing} for Singapore private
+properties.
+
+\subsection{Automated Valuation Models at Scale}
+
+Pow et al.~\cite{pow2019machine} evaluated gradient-boosted ensemble models for Automated
+Valuation Model (AVM) construction on a UK residential dataset, demonstrating lower MAPE
+than hedonic regression across multiple property types. This project corroborates their
+finding for the Singapore context, with XGBoost reducing MAPE by 70.3\% relative to the
+mean baseline on the Condominium Sale segment.
+
+Oust and Hansen~\cite{oust2023machine} explored the combination of repeat-sales index models
+with machine learning predictors, finding that ensemble combinations outperform either
+approach alone on out-of-sample price index accuracy. While transaction-price data for such
+combinations is not used in the present project (a limitation acknowledged in
+Section~\ref{sec:limitations}), this strand of literature motivates the future integration of
+URA REALIS transacted price data~\cite{ura2024realis} as a complementary training signal.
+
+Jaouhari et al.~\cite{jaouhari2024mapping} conducted a systematic review of 89 AVM studies
+published between 2010 and 2022, identifying that (i) gradient-boosted trees dominate recent
+accuracy benchmarks, (ii) SHAP has become the leading tool for AVM interpretability, and
+(iii) multi-source data integration is an emerging research frontier. This project contributes
+to all three trends simultaneously: an XGBoost AVM with per-prediction SHAP explanations
+trained on a unified multi-portal dataset.
+
+\subsection{Model Interpretability: SHAP}
+
+Lundberg and Lee~\cite{lundberg2017unified} introduced \textbf{SHAP (SHapley Additive
+exPlanations)}, providing theoretically grounded, additive feature attributions derived from
+cooperative game theory. SHAP values satisfy the axioms of local accuracy, missingness, and
+consistency, making them more principled than earlier importance metrics (e.g., Gini impurity
+or permutation importance). TreeExplainer—the exact SHAP algorithm for tree-based models—runs
+in polynomial time and is applied in this project to produce the top-5 per-prediction SHAP
+factors displayed in the user interface.
+
+From a practical standpoint, Baur, Rosenfelder, and Lutz~\cite{baur2022automated} demonstrated
+that NLP-extracted sentiment features from listing descriptions, combined with SHAP explanations,
+can provide stakeholders with a richer understanding of valuation drivers than price alone.
+This motivates the chat assistant component of the present project: by grounding the assistant's
+responses in SHAP attribution data, the system makes the model's reasoning accessible to
+non-technical end users.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Large Language Models in Real Estate and Search}
+
+\subsection{LLMs as Few-Shot Structured Decoders}
+
+Brown et al.~\cite{brown2020language} established that large autoregressive language models
+achieve strong performance on novel tasks via \textit{few-shot in-context learning}—without
+any gradient updates—by conditioning on a small number of labelled examples in the prompt.
+This capability underpins the natural language search pipeline in this project, where Claude
+is prompted with eight few-shot query--filter pairs to parse free-text property queries into
+structured JSON filters. The zero-shot alternative (no examples) was tested informally and
+produced notably higher district hallucination rates, confirming that few-shot prompting is
+necessary for the Singapore-specific grounding required.
+
+Han et al.~\cite{han2023llm} demonstrated that GPT-class LLMs can extract structured property
+attributes (price, bedrooms, floor area) from free-text listing descriptions with high field-level
+F1, outperforming rule-based extractors on edge cases such as abbreviated or informal phrasing.
+While their task is attribute extraction from descriptions (input → attributes) rather than
+query-to-filter parsing (query → filter), the methodological parallel is direct: both tasks
+leverage LLMs as neural transducers from unstructured text to structured schemas.
+
+\subsection{Retrieval-Augmented Generation}
+
+Lewis et al.~\cite{lewis2020retrieval} introduced \textbf{Retrieval-Augmented Generation
+(RAG)}, a framework in which a retrieval component surfaces relevant documents from an
+external corpus, which are then prepended to the LLM's context before generation. The
+valuation chat assistant in this project is architecturally a RAG-adjacent system: a
+\textit{deterministic} retrieval step (database query → listing + valuation context) provides
+the grounding context, and the LLM generates a conversational response conditioned on this
+context. Unlike standard RAG, the retrieval here is exact (primary key lookup) rather than
+approximate, which eliminates the hallucination risk associated with fuzzy document retrieval.
+
+\subsection{Agentic LLM Pipelines}
+
+Yao et al.~\cite{yao2022react} proposed \textbf{ReAct}, a prompting paradigm that interleaves
+reasoning traces (\textit{Thought}) with environment actions (\textit{Act}) to solve multi-step
+tasks. The progressive filter relaxation behaviour implemented in this project is structurally
+analogous to a single-step ReAct loop: the LLM parses a query (Act), the system executes a
+database query (Observe), and if no results are returned, a subsequent relaxation step is
+triggered (Act again). This design choice—explicit agentic fallback rather than passive
+zero-result deadends—is motivated by the user-facing recall failures documented in the
+literature for conventional web search filters.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{The Singapore Housing Market}
+
+\subsection{Dual-Tier Market Structure}
+
+Singapore's residential market is uniquely bifurcated. The public sector, under the Housing and
+Development Board (HDB), houses approximately 80\% of the resident population in a
+government-subsidised leasehold system \cite{hdb2024annual}. Properties are sold on 99-year
+leases, and resale eligibility is regulated by the Minimum Occupation Period (MOP) and CPF Board
+rules tying loan eligibility to remaining lease duration. Tu~\cite{tu2004dynamics} analysed the
+dynamics of the private housing market and identified significant mean-reverting behaviour in
+price indices, while also documenting the regulatory constraint imposed by HDB policy on private
+sector demand.
+
+Sing, Tsai, and Chen~\cite{sing2006price} provided empirical evidence of price transmission
+between the HDB resale and private condominium markets, demonstrating that rising private prices
+pull up HDB resale prices through the ``asset progression'' mechanism. This inter-market
+dependence motivates the present project's decision to train \textit{separate} models per
+property type rather than a single cross-type model: the pricing dynamics of a two-room HDB
+flat (government-regulated, narrow price band) are structurally incomparable to those of a
+Good Class Bungalow (privately negotiated, $\geq$ S\$10M).
+
+\subsection{Machine Learning on Singapore Property Data}
+
+Bian et al.~\cite{bian2020comparing} applied both econometric and ML methods to Singapore
+private property transaction data from URA REALIS, finding that Random Forest and XGBoost
+outperform OLS hedonic regression on held-out MAPE. However, their work has three limitations
+that the present project addresses: (i) they use a single-source dataset (URA REALIS private
+transactions only), excluding HDB and cross-portal duplicates; (ii) they do not provide
+per-prediction explanations accessible to end users; and (iii) they do not implement a
+natural language interface. The URA REALIS transacted price dataset~\cite{ura2024realis} used
+by Bian et al.\ is a public resource that could extend the present model to transaction-price
+training in future work.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Web Scraping as a Data Collection Methodology}
+
+Landers et al.~\cite{landers2016inconvenient} provide a methodological primer on theory-driven
+web scraping, arguing that automated data collection is appropriate when no public API or
+licensed data source covers the target population and the scraped data is publicly accessible.
+This directly applies to the present project: PropertyGuru does not offer a public API, and all
+scraped attributes (price, floor area, tenure, district) are visible to any anonymous visitor.
+The 1-second inter-request delay and incremental crawl strategy implemented in the PropertyGuru
+scraper are consistent with the ``rate-limiting and minimal-footprint'' best practices advocated
+by Landers et al.\ for ethical scraping.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Research Gaps and Positioning}
+
+Prior work addresses individual components of the present problem in isolation. Three specific
+gaps remain unaddressed in the Singapore context.
+
+\textbf{Gap 1: Multi-portal data integration.}
+No prior published system aggregates and deduplicates property listings \textit{across all four
+major Singapore portals} (PropertyGuru, 99.co, EdgeProp, SRX) into a single unified dataset.
+Bian et al.~\cite{bian2020comparing} and Fan et al.~\cite{fan2006determinants} each rely on a
+single structured data source (URA REALIS or agency records), which lacks the breadth and
+recency of live multi-portal listing data.
+
+\textbf{Gap 2: Per-prediction SHAP explanations for end users.}
+While Lundberg and Lee~\cite{lundberg2017unified} provide the theoretical foundation and
+Jaouhari et al.~\cite{jaouhari2024mapping} identify SHAP as an emerging AVM standard, no prior
+work specifically surfaces per-prediction SHAP factors to non-technical real estate consumers
+through a production web interface in the Singapore context.
+
+\textbf{Gap 3: LLM-based natural language search for Singapore property.}
+Han et al.~\cite{han2023llm} demonstrate LLM-based information extraction from listing text,
+and Brown et al.~\cite{brown2020language} establish the few-shot capability that enables it.
+However, no prior work applies LLM-based query-to-filter parsing to Singapore property search,
+nor implements agentic fallback behaviours (multi-district resolution, progressive relaxation,
+grounded chat) on top of such a pipeline.
+
+To the best of the author's knowledge, no prior published system simultaneously addresses all
+three gaps within a single end-to-end deployable platform. This project bridges all three by
+building an integrated system that unifies multi-portal data, surfaces SHAP-grounded per-property
+valuations, and enables conversational search with agentic fallback and a property-specific
+chat assistant.

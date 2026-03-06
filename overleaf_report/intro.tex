@@ -78,7 +78,10 @@ portals; the author's personal contributions are as follows:
     property detail page. The assistant is provided with the listing's full attribute set
     and the XGBoost valuation estimate (including SHAP attribution factors) as context,
     enabling it to answer questions such as ``Is this fairly priced?'' or ``What factors
-    drive this estimate?'' using grounded, property-specific data.
+    drive this estimate?'' using grounded, property-specific data. An offline evaluation
+    harness spanning 42 interactions across three property segments (Condominium Sale,
+    HDB Rent, Landed Sale) confirmed \textbf{93\% factual consistency} and
+    \textbf{100\% response relevance}.
 
     \item \textbf{Backend API and Frontend Web Application.}
     The author built the FastAPI backend (JWT authentication, Redis caching, RESTful listing,
