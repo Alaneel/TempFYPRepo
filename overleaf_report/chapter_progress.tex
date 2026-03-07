@@ -157,10 +157,11 @@ Key features include:
 \subsection{HDB Lease Risk Classification}
 \label{sec:lease_badge_impl}
 
-A key finding from the model ablation study (Section~\ref{sec:policy_signal}) was the
-identification of a latent CPF lease-eligibility policy signal encoded in the asking prices
-of older HDB flats. To operationalise this finding, a \textit{Lease Risk Badge} component
-was added to the listing detail page for all HDB properties.
+A key observation from the model ablation study (Section~\ref{sec:policy_signal}) was
+that \texttt{property\_age} carries the second-largest SHAP contribution in the HDB Sale
+model---a sensitivity consistent with Singapore's CPF lease-eligibility policy creating a
+demand-side price discontinuity for ageing stock. To make this actionable for users, a
+\textit{Lease Risk Badge} component was added to the listing detail page for all HDB properties.
 
 The feature is implemented in two parts:
 \begin{enumerate}
@@ -172,6 +173,6 @@ The feature is implemented in two parts:
     \item \textbf{Frontend UI component.} The Next.js frontend renders a colour-coded
     badge alongside the property's tenure. Instead of requiring users to look up the
     remaining lease implications themselves, the badge explicitly surfaces the policy
-    constraint via a dedicated tooltip, directly translating the model's implicit
-    learning into an actionable decision-support feature.
+    constraint via a dedicated tooltip, directly surfacing the CPF eligibility
+    tier as an actionable decision-support feature for buyers.
 \end{enumerate}
