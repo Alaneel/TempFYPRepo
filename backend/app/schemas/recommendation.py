@@ -16,7 +16,8 @@ class FavouriteResponse(BaseModel):
 
 class RecommendationResponse(BaseModel):
     listing: ListingResponse
-    score: float          # 0.0 – 1.0 weighted similarity
-    match_reasons: list[str]  # e.g. ["Same district", "Similar price range"]
+    score: float                        # 0.0 – 1.0 weighted similarity
+    match_reasons: list[str]            # e.g. ["Same district", "Similar price range"]
+    valuation_estimate: Optional[int] = None  # XGBoost estimate in SGD, None if unavailable
 
     model_config = {"from_attributes": True}

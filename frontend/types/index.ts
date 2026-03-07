@@ -109,6 +109,7 @@ export interface UserResponse {
 
 export interface RecommendationItem {
   listing: Listing;
-  score: number;          // 0.0 – 1.0
+  score: number;               // 0.0 – 1.0
   match_reasons: string[];
+  valuation_estimate?: number; // XGBoost estimate in SGD
 }
