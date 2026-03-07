@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Building2, Menu, User, LogOut, LayoutDashboard } from "lucide-react";
+import { Building2, Menu, User, LogOut, LayoutDashboard, Heart, Sparkles } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -123,6 +123,18 @@ export function Navbar() {
                       </Link>
                    </DropdownMenuItem>
                 )}
+                <DropdownMenuItem asChild>
+                    <Link href="/favourites">
+                        <Heart className="mr-2 h-4 w-4 text-red-500" />
+                        Saved Listings
+                    </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                    <Link href="/recommendations">
+                        <Sparkles className="mr-2 h-4 w-4 text-primary" />
+                        For You
+                    </Link>
+                </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                     <Link href="/profile">
                         <User className="mr-2 h-4 w-4" />

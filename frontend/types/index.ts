@@ -106,3 +106,9 @@ export interface UserResponse {
   is_active: boolean;
   created_at: string;
 }
+
+export interface RecommendationItem {
+  listing: Listing;
+  score: number;          // 0.0 – 1.0
+  match_reasons: string[];
+}

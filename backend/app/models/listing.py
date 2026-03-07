@@ -70,6 +70,7 @@ class Listing(Base):
     # Relationships
     agent = relationship("Agent", back_populates="listings")
     condo = relationship("CondoBasic", back_populates="listings")
+    favourited_by = relationship("UserFavourite", back_populates="listing", cascade="all, delete-orphan")
     
     # Match metadata
     match_score = Column(Float)

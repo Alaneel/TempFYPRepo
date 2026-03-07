@@ -5,6 +5,7 @@ from app.models.user import User
 from app.models.agent import Agent
 from app.models.listing import Listing
 from app.models.condo import CondoBasic
+from app.models.favourite import UserFavourite
 
 async def init_db():
     async with engine.begin() as conn:

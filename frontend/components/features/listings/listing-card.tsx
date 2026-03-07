@@ -11,6 +11,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { BedDouble, Bath, Ruler, MapPin, Star } from "lucide-react";
+import { FavouriteButton } from "./favourite-button";
 
 interface ListingCardProps {
   listing: Listing;
@@ -84,6 +85,14 @@ export function ListingCard({ listing, isHighlighted = false }: ListingCardProps
           <Badge variant="secondary" className="absolute top-2 right-2">
             {listing.buy_rent === "Rent" ? "For Rent" : "For Sale"}
           </Badge>
+          {/* Favourite toggle — sits over the image, does not trigger Link */}
+          <div className="absolute bottom-2 right-2" onClick={(e) => e.preventDefault()}>
+            <FavouriteButton
+              listingId={listing.id}
+              variant="compact"
+              className="bg-white/80 hover:bg-white rounded-full shadow"
+            />
+          </div>
         </div>
 
         <CardHeader className="p-4 pb-2">
