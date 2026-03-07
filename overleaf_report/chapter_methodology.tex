@@ -216,7 +216,7 @@ Room-for-rent listings (\texttt{beds} = 0, average S\$993--S\$1,544/month) are e
 
 \subsection{Model Selection and Hyperparameters}
 
-Four candidate models are trained per segment: a mean baseline (DummyRegressor), Ridge Regression, Random Forest, and XGBoost. The best model is selected by test-set MAPE, with XGBoost preferred when MAPE differences are negligible ($< 0.5$\,pp). XGBoost consistently achieves the best or near-best MAPE across all eight segments (see Section~\ref{sec:eval_valuation}), consistent with findings in the AVM literature~\cite{pow2019machine, bian2020comparing}.
+Four candidate models are trained per segment: a mean baseline (DummyRegressor), Ridge Regression, Random Forest, and XGBoost. The best model is selected by test-set MAPE, with XGBoost preferred when MAPE differences are negligible ($< 0.5$\,pp). XGBoost consistently achieves the best or near-best MAPE across all eight segments (see Section~\ref{sec:eval_valuation}), consistent with findings in the AVM literature~\cite{park2015using, bian2020comparing}.
 
 The XGBoost hyperparameters were selected through a principled combination of learning
 curve analysis and theoretical guidance from the gradient boosting literature~\cite{chen2016xgboost}.
@@ -246,7 +246,7 @@ The rationale for each hyperparameter group is as follows.
     Row and column subsampling inject variance into the boosting process, reducing
     correlation between successive trees and improving generalisation~\cite{chen2016xgboost}.
     Values of 0.8 for both parameters follow empirically validated defaults in the gradient
-    boosting literature for tabular regression tasks~\cite{pow2019machine} and were confirmed
+    boosting literature for tabular regression tasks~\cite{chen2016xgboost} and were confirmed
     on the Condominium Sale segment by comparing $0.6$ / $0.7$ / $0.8$ / $1.0$ on held-out
     MAPE: the $0.8$ setting consistently produced the lowest or tied-lowest test MAPE across
     all four values.
