@@ -313,6 +313,136 @@ TEST_CASES = [
 ]
 
 # ──────────────────────────────────────────────────────────────────────────────
+# BLIND TEST SET — constructed independently by three annotators (A/B/C)
+# with no prior exposure to the author's prompt design.
+# Annotator A: Priya (unfamiliar with SG district numbers, uses neighbourhood names)
+# Annotator B: Marcus (local Singaporean, terse BTO/HDB resale buyer)
+# Annotator C: Zhang Wei (mainland Chinese PhD student, formal register, renter)
+# ──────────────────────────────────────────────────────────────────────────────
+BLIND_TEST_CASES = [
+
+    # ── Annotator A (Priya) ───────────────────────────────────────────────────
+    {
+        "query": "I want to rent a 2 bedroom condo somewhere near Jurong Lake District, my budget is around 3500 a month",
+        "expected": {"beds": 2, "property_type": "Condominium",
+                     "max_price": 3_500, "buy_rent": "property-for-rent", "district": 22},
+        "annotator": "A",
+    },
+    {
+        "query": "looking for a 3-bedroom HDB flat to buy near Queenstown MRT, hoping to stay under 750 thousand",
+        "expected": {"beds": 3, "property_type": "HDB",
+                     "max_price": 750_000, "buy_rent": "property-for-sale", "district": 3},
+        "annotator": "A",
+    },
+    {
+        "query": "I need a place to rent near Serangoon, preferably a 2BR, not more than 3000",
+        "expected": {"beds": 2, "max_price": 3_000,
+                     "buy_rent": "property-for-rent", "district": 19},
+        "annotator": "A",
+    },
+    {
+        "query": "condo for sale somewhere in the east side of Singapore, 2 bedrooms, freehold, below 1.3 million",
+        "expected": {"beds": 2, "property_type": "Condominium",
+                     "max_price": 1_300_000, "tenure": "Freehold",
+                     "buy_rent": "property-for-sale"},
+        "annotator": "A",
+    },
+    {
+        "query": "my company is at one-north, want to rent 1-bedroom condo nearby, max 2800",
+        "expected": {"beds": 1, "property_type": "Condominium",
+                     "max_price": 2_800, "buy_rent": "property-for-rent", "district": 5},
+        "annotator": "A",
+    },
+    {
+        "query": "4 room HDB for sale near AMK hub area, around 550k",
+        "expected": {"beds": 4, "property_type": "HDB",
+                     "max_price": 550_000, "buy_rent": "property-for-sale", "district": 20},
+        "annotator": "A",
+    },
+
+    # ── Annotator B (Marcus) ──────────────────────────────────────────────────
+    {
+        "query": "5rm HDB Woodlands resale, max 500k",
+        "expected": {"beds": 5, "property_type": "HDB",
+                     "max_price": 500_000, "buy_rent": "property-for-sale", "district": 25},
+        "annotator": "B",
+    },
+    {
+        "query": "BTO-ish 4rm HDB Jurong West sale under 480k",
+        "expected": {"beds": 4, "property_type": "HDB",
+                     "max_price": 480_000, "buy_rent": "property-for-sale", "district": 22},
+        "annotator": "B",
+    },
+    {
+        "query": "EC or condo 3BR Sengkang / Punggol, max 1.1m sale",
+        "expected": {"beds": 3, "max_price": 1_100_000,
+                     "buy_rent": "property-for-sale", "district": 19},
+        "annotator": "B",
+    },
+    {
+        "query": "freehold terrace D28, 4bed, 3 to 4 million",
+        "expected": {"beds": 4, "property_type": "Landed", "district": 28,
+                     "tenure": "Freehold", "min_price": 3_000_000,
+                     "max_price": 4_000_000, "buy_rent": "property-for-sale"},
+        "annotator": "B",
+    },
+    {
+        "query": "3rm HDB Toa Payoh rent, whole unit, under 2400/mo",
+        "expected": {"beds": 3, "property_type": "HDB",
+                     "max_price": 2_400, "buy_rent": "property-for-rent", "district": 12},
+        "annotator": "B",
+    },
+    {
+        "query": "landed semi-D Serangoon Gardens sale freehold 5BR, budget 5-7m",
+        "expected": {"beds": 5, "property_type": "Landed", "district": 19,
+                     "tenure": "Freehold", "min_price": 5_000_000,
+                     "max_price": 7_000_000, "buy_rent": "property-for-sale"},
+        "annotator": "B",
+    },
+
+    # ── Annotator C (Zhang Wei) ───────────────────────────────────────────────
+    {
+        "query": "I am a PhD student at NTU, wish to rent one bedroom apartment near Boon Lay MRT, monthly budget does not exceed 2000 SGD",
+        "expected": {"beds": 1, "max_price": 2_000,
+                     "buy_rent": "property-for-rent", "district": 22},
+        "annotator": "C",
+    },
+    {
+        "query": "please find me two bedroom condominium for rent in district 11, monthly price between 4000 and 5500",
+        "expected": {"beds": 2, "property_type": "Condominium",
+                     "min_price": 4_000, "max_price": 5_500,
+                     "buy_rent": "property-for-rent", "district": 11},
+        "annotator": "C",
+    },
+    {
+        "query": "want to purchase a 3 bedroom condominium unit with freehold title, located in district 15, price should be less than 2 million SGD",
+        "expected": {"beds": 3, "property_type": "Condominium", "district": 15,
+                     "tenure": "Freehold", "max_price": 2_000_000,
+                     "buy_rent": "property-for-sale"},
+        "annotator": "C",
+    },
+    {
+        "query": "need to rent a HDB flat with 3 rooms in Clementi area, the budget is about 2500 per month",
+        "expected": {"beds": 3, "property_type": "HDB",
+                     "max_price": 2_500, "buy_rent": "property-for-rent", "district": 5},
+        "annotator": "C",
+    },
+    {
+        "query": "I want to invest in a small studio or 1 bedroom leasehold condo in central area, price range 600k to 900k",
+        "expected": {"beds": 1, "property_type": "Condominium",
+                     "min_price": 600_000, "max_price": 900_000,
+                     "buy_rent": "property-for-sale"},
+        "annotator": "C",
+    },
+    {
+        "query": "family need 4 bedroom house or condo for rent in bukit timah, max 9000 dollars monthly",
+        "expected": {"beds": 4, "max_price": 9_000,
+                     "buy_rent": "property-for-rent", "district": 10},
+        "annotator": "C",
+    },
+]
+
+# ──────────────────────────────────────────────────────────────────────────────
 # Numeric tolerance for price fields (within ±10% = partial credit)
 PRICE_TOLERANCE = 0.10
 PRICE_FIELDS = {"min_price", "max_price"}
@@ -516,12 +646,23 @@ def main():
     parser.add_argument("--limit",   type=int, default=None, help="Run first N test cases only")
     parser.add_argument("--output",  default="models/valuation/semantic_eval", help="Output dir")
     parser.add_argument("--delay",   type=float, default=0.3, help="Seconds between API calls")
+    parser.add_argument("--blind",   action="store_true",
+                        help="Run independent blind test set (BLIND_TEST_CASES) instead of author set")
+    parser.add_argument("--annotator", default=None,
+                        help="Filter blind test to one annotator: A, B, or C")
     args = parser.parse_args()
 
     output_dir = Path(args.output)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    cases = TEST_CASES[:args.limit] if args.limit else TEST_CASES
+    if args.blind:
+        source = BLIND_TEST_CASES
+        if args.annotator:
+            source = [c for c in source if c.get("annotator") == args.annotator.upper()]
+        cases = source[:args.limit] if args.limit else source
+        print(f"\n  *** BLIND TEST SET{' (annotator '+args.annotator.upper()+')' if args.annotator else ''} ***")
+    else:
+        cases = TEST_CASES[:args.limit] if args.limit else TEST_CASES
     n     = len(cases)
 
     print(f"\n{'='*60}")
@@ -580,11 +721,26 @@ def main():
         "pct_partial":  sum(1 for f in all_f1s if 0.5 <= f < 0.8) / n,
         "pct_fail":     sum(1 for f in all_f1s if f < 0.5) / n,
         "generated_at": datetime.now().isoformat(),
+        "test_set": "blind" if args.blind else "author",
     }
+
+    # Per-annotator breakdown (blind set only)
+    if args.blind:
+        per_annotator = {}
+        for ann in ("A", "B", "C"):
+            ann_results = [r for r, c in zip(results, cases) if c.get("annotator") == ann]
+            if ann_results:
+                fs = [r["scores"]["f1"] for r in ann_results]
+                per_annotator[ann] = {
+                    "n": len(fs),
+                    "avg_f1": round(sum(fs) / len(fs), 3),
+                    "pct_perfect": round(sum(1 for f in fs if f >= 0.8) / len(fs), 3),
+                }
+        summary["per_annotator"] = per_annotator
 
     bar = "=" * 60
     print(f"\n{bar}")
-    print(f"  RESULTS ({n} queries)")
+    print(f"  RESULTS ({n} queries) — {'BLIND SET' if args.blind else 'AUTHOR SET'}")
     print(bar)
     print(f"  Avg F1:        {summary['avg_f1']:.1%}")
     print(f"  Avg Precision: {summary['avg_precision']:.1%}")
@@ -592,6 +748,11 @@ def main():
     print(f"  Perfect (≥0.8):{summary['pct_perfect']:.1%}  ({int(summary['pct_perfect']*n)}/{n})")
     print(f"  Partial (≥0.5):{summary['pct_partial']:.1%}  ({int(summary['pct_partial']*n)}/{n})")
     print(f"  Fail (<0.5):   {summary['pct_fail']:.1%}  ({int(summary['pct_fail']*n)}/{n})")
+    if args.blind and "per_annotator" in summary:
+        print(f"\n  Per-annotator breakdown:")
+        for ann, stats in summary["per_annotator"].items():
+            print(f"    Annotator {ann}: n={stats['n']}  avg_F1={stats['avg_f1']:.1%}  "
+                  f"perfect={stats['pct_perfect']:.0%}")
 
     # Worst cases
     worst = sorted(results, key=lambda r: r["scores"]["f1"])[:5]

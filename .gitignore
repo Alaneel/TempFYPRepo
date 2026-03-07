@@ -5,6 +5,9 @@ logs/
 # Report
 overleaf_report/
 
+# POC experiments (isolated, not for commit)
+poc_hdb_transacted/
+
 # AI Detection Benchmark (local use only — not for public repo)
 ai_detection_benchmark/
 
