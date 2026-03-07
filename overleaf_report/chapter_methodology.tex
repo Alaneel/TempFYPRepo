@@ -393,3 +393,117 @@ This grounded context is prepended to the conversation history before each API c
 ensuring that every response is anchored to quantitative data rather than general
 market knowledge. The assistant is explicitly instructed to respond in plain prose
 under 120 words and to avoid Markdown formatting.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Personalised Recommendation Engine Design}
+\label{sec:rec_design}
+
+\subsection{Overview and Motivation}
+
+The recommendation objective requires the system to surface listings that are both
+\emph{preference-consistent} (matching the user's stated or inferred tastes) and
+\emph{value-rational} (fairly priced relative to market estimates). Standalone
+collaborative filtering is infeasible at system launch due to the cold-start
+problem: the user base is small and interaction history is sparse. A pure
+content-based approach, while viable, ignores the valuation signal already
+computed by the XGBoost models. The design therefore adopts a
+\textbf{hybrid content-based and valuation-grounded} ranking model that
+combines both information sources into a single score.
+
+\subsection{User Preference Profile}
+
+When a user saves a listing to their favourites (stored in the
+\texttt{user\_favourites} table), the system incrementally updates an in-memory
+preference profile. The profile aggregates the following signals across all
+saved listings:
+
+\begin{itemize}
+    \item \textbf{Property type distribution} — frequency map over saved property
+    types (e.g., \{Condominium: 3, HDB: 1\}).
+    \item \textbf{District distribution} — frequency map over saved districts.
+    \item \textbf{Average price} — arithmetic mean of saved listing prices,
+    used as the centre of a price band filter.
+    \item \textbf{Average bedroom count} — arithmetic mean of saved bedroom
+    counts, rounded for scoring.
+    \item \textbf{Transaction mode} — dominant buy/rent mode; mismatched
+    candidates receive a 0.1$\times$ score penalty.
+\end{itemize}
+
+\subsection{Hybrid Scoring Function}
+
+Each candidate listing $c$ is scored against the user preference profile $\mathcal{P}$
+using a weighted sum of five dimensions:
+
+\begin{equation}
+\text{score}(c, \mathcal{P}) =
+  0.25\,s_{\text{type}} +
+  0.20\,s_{\text{district}} +
+  0.20\,s_{\text{price}} +
+  0.15\,s_{\text{beds}} +
+  0.20\,s_{\text{bargain}}
+\label{eq:rec_score}
+\end{equation}
+
+\noindent where each component is defined as follows:
+
+\begin{itemize}
+    \item $s_{\text{type}}$: frequency-weighted indicator; equals
+    $f_{\text{type}} / \sum f$ if $c$'s type matches the most-saved type,
+    else 0.
+
+    \item $s_{\text{district}}$: frequency-weighted indicator for exact district
+    match; partial credit (0.08$\times$frequency share) for any previously saved
+    district.
+
+    \item $s_{\text{price}}$: exponential decay similarity
+    $(\min(p_c, \bar{p}) / \max(p_c, \bar{p}))^{1.5}$, where $\bar{p}$ is
+    the profile average price. This yields 1.0 for an exact match and
+    approximately 0.5 at a 30\% price difference.
+
+    \item $s_{\text{beds}}$: bedroom similarity
+    $\max(0,\,1 - 0.25 \cdot |b_c - \bar{b}|)$, where $\bar{b}$ is the
+    rounded average bedroom count.
+
+    \item $s_{\text{bargain}}$: \textbf{valuation-grounded score} — the key
+    differentiator of this hybrid approach. The per-segment XGBoost model
+    (Chapter~4) is called in-process to produce an estimate $\hat{v}$ for
+    listing $c$. The raw bargain signal is:
+    \[
+        r = \frac{\hat{v} - p_c}{\hat{v}}, \quad
+        s_{\text{bargain}} = \frac{\text{clamp}(r,\,-0.5,\,+0.5) + 0.5}{1}
+    \]
+    This maps $r \in [-0.5, +0.5]$ to $[0, 1]$: a score of 1.0 indicates
+    the listing is 50\% below the model estimate (strong bargain); 0.5
+    indicates fair value; 0.0 indicates 50\% above estimate.
+\end{itemize}
+
+The $s_{\text{bargain}}$ component directly links the recommendation layer to
+the valuation layer: the same XGBoost models trained in Chapter~4 serve as a
+real-time pricing oracle within the ranking function. Listings that are both
+preference-consistent \emph{and} underpriced relative to the model estimate are
+ranked highest, surfacing actionable opportunities rather than merely familiar ones.
+
+\subsection{Candidate Pre-filtering}
+
+To bound inference latency, candidates are pre-filtered before scoring:
+(i) only active listings matching the profile's dominant transaction mode are
+considered, and (ii) price is restricted to $[\bar{p} \times 0.4,\; \bar{p} \times 1.6]$.
+XGBoost inference for the bargain score is called once per candidate; model
+loading is cached at server startup via \texttt{joblib}, so per-request latency
+is dominated by the database fetch, not inference.
+
+\subsection{Evaluation Protocol}
+
+The recommendation engine is evaluated offline using ten synthetic user profiles,
+each constructed by seeding the favourites table with 3--5 listings sharing a
+consistent preference signature. Ground-truth relevance labels are assigned
+hierarchically: a candidate receives label 2 if it matches both the preferred
+property type \emph{and} district, label 1 for type-only match, and label 0
+otherwise. NDCG@$K$ is computed over these graded labels using the standard
+formulation:
+\[
+    \text{NDCG}@K = \frac{\text{DCG}@K}{\text{IDCG}@K}, \quad
+    \text{DCG}@K = \sum_{i=1}^{K} \frac{2^{\text{rel}_i} - 1}{\log_2(i+1)}
+\]
+Results are reported in Section~\ref{sec:eval_recommendation}.
+

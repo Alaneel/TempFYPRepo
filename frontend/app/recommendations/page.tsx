@@ -72,23 +72,41 @@ export default function RecommendationsPage() {
       </div>
       <p className="text-sm text-muted-foreground mb-8">
         Personalised picks based on your saved listings — ranked by property type,
-        district, price range, and bedroom count.
+        district, price range, bedroom count, and estimated price fairness.
       </p>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {items.map(({ listing, score, match_reasons }) => (
-          <div key={listing.id} className="relative">
-            <ListingCard listing={listing} />
-            <div className="absolute top-2 left-2 z-10">
-              <Badge
-                className="bg-primary/90 text-primary-foreground text-xs cursor-default"
-                title={match_reasons.join(" · ")}
-              >
-                {Math.round(score * 100)}% match
-              </Badge>
+        {items.map(({ listing, score, match_reasons, valuation_estimate }) => {
+          const bargainPct = valuation_estimate && listing.price
+            ? Math.round((valuation_estimate - listing.price) / valuation_estimate * 100)
+            : null;
+
+          return (
+            <div key={listing.id} className="relative">
+              <ListingCard listing={listing} />
+
+              {/* Match score badge */}
+              <div className="absolute top-2 left-2 z-10 flex flex-col gap-1">
+                <Badge
+                  className="bg-primary/90 text-primary-foreground text-xs cursor-default"
+                  title={match_reasons.join(" · ")}
+                >
+                  {Math.round(score * 100)}% match
+                </Badge>
+
+                {/* Bargain badge — only show when ≥5% below estimate */}
+                {bargainPct !== null && bargainPct >= 5 && (
+                  <Badge
+                    className="bg-emerald-600 text-white text-xs cursor-default"
+                    title={`Model estimate: S$${valuation_estimate!.toLocaleString()}`}
+                  >
+                    {bargainPct}% below est.
+                  </Badge>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
