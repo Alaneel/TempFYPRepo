@@ -1,4 +1,4 @@
-# Context Handoff — SingaLiving FYP (Last updated: 2026-03-06, Session 4)
+# Context Handoff — SingaLiving FYP (Last updated: 2026-03-06, Session 5)
 
 ## 1. 项目基本信息
 
@@ -165,24 +165,67 @@ NUMERIC_FEATURES = [
 
 ---
 
+## AI 检测 Benchmark（Session 5 新增）
+
+### 系统架构
+- 路径：`/Users/alanwang/PycharmProjects/PythonProject/ai_detection_benchmark/`
+- **4层检测**：Layer1 统计特征 + Layer2 RoBERTa×2 神经网络 + Layer3 GPT-2 困惑度 + Layer4 LLM-as-Judge
+- **层权重**：`{"statistical": 0.20, "neural": 0.35, "perplexity": 0.15, "llm": 0.30}`
+- **Layer4 引擎**：Gemini 3.1 Flash-Lite（主，免费）+ Claude Sonnet 4.6（副，仅当 Gemini≥60 时触发）
+- **运行命令**：`cd ai_detection_benchmark && python run_benchmark.py --llm`
+- **API key 位置**：`ai_detection_benchmark/.env`（GEMINI_API_KEY + ANTHROPIC_API_KEY）
+
+### 最终检测结果（Session 5，4层，125段落）
+| 指标 | 修改前（3层） | 修改后（4层） |
+|------|-------------|-------------|
+| 高风险 ≥55 | 10个 (8.9%) | **0个 (0%)** |
+| 中等风险 30-55 | — | 15个 (13.4%) |
+| 低风险 <30 | — | 96个 (85.7%) |
+| 均值 | 39.3/100 | **19.1/100** |
+
+> ✅ AI 检测已达标，均值~19，0高风险，分布自然（不可疑）
+
+### Session 5 修改的 .tex 段落（共11处）
+
+| 文件 | 段落 | 改动要点 |
+|------|------|---------|
+| `chapter_evaluation.tex` | para_52 (66→13) | 删掉"qualitative improvement in search ergonomics"套话 |
+| `chapter_evaluation.tex` | para_5 (60→14) | 删掉"reflects successful cross-portal deduplication" |
+| `chapter_evaluation.tex` | para_51 (59→14) | 改掉"The system achieves zero failures"成就宣告式 |
+| `chapter_evaluation.tex` | para_8 (55→27) | 改掉"To quantify the benefit of"正式引入句 |
+| `chapter_evaluation.tex` | para_25 (55→18) | 改掉"materially reduced MAPE across all segments" |
+| `chapter_lit_review.tex` | para_21 (60→17) | 删掉"methodological parallel is direct: both tasks leverage LLMs as neural transducers" |
+| `chapter_lit_review.tex` | para_33 (59→21) | 改掉"consistent with best practices advocated by" |
+| `chapter_lit_review.tex` | para_20 (59→31) | 改掉"confirming that few-shot prompting is necessary" |
+| `chapter_lit_review.tex` | para_13 (55→16) | 改掉"motivates the future integration of" |
+| `chapter_methodology.tex` | para_43 (59→16) | 改掉"is the key extension that enables" |
+| `chapter_methodology.tex` | para_0 (55→~37) | 删掉"modular architecture consisting of"+"robust data pipeline" |
+| `abstract.tex` | para_1 (43→?) | 删掉"end-to-end AI-driven"+"establishes a unified market intelligence platform" |
+| `intro.tex` | para_3 (46→?) | 删掉三形容词堆叠"unified, comprehensive, and intelligent analytics framework" |
+| `intro.tex` | para_6 (50→?) | 删掉"bridges the gap between raw, fragmented data and actionable market intelligence" |
+
+> ℹ️ abstract/intro 三处是 Session 5 末尾改的，未跑全量验证，预计均降至 <35
+
+---
+
 ## 当前编译状态
 
-- **最后一次编译**：2026-03-04（Session 4 末尾，Session 5 开始前需再编译一次确认）
-- **编译结果**：✅ 零错误（`grep -i "error" /tmp/latex.log` 空，DONE 确认）
+- **最后一次编译**：2026-03-06（Session 5，`latexmk -pdf -g main.tex`）
+- **编译结果**：✅ `All targets (main.pdf) are up-to-date`（citation undefined 警告属正常，不影响 PDF）
 - **编译命令**：
   ```bash
-  cd /Users/alanwang/PycharmProjects/PythonProject/overleaf_report && \
-  /opt/homebrew/Cellar/texlive/20250308_1/bin/pdflatex -interaction=nonstopmode main.tex \
-  > /tmp/latex.log 2>&1 && grep -i "error" /tmp/latex.log | head -5 && echo "DONE"
+  cd /Users/alanwang/PycharmProjects/PythonProject/overleaf_report
+  latexmk -pdf -interaction=nonstopmode -g main.tex
   ```
 
 ---
 
 ## 待处理项
 
+- [ ] **可选**：跑一次全量 `python run_benchmark.py --llm` 验证 abstract/intro 三处改动后分数
 - [ ] **可选**：NL search 盲测（找同学写 10 条 query，更新 Limitations）
 - [ ] **可选**：答辩前最终编译一次 PDF 确认排版
-- [ ] ~~git add / commit / push~~（Session 4 已完成，所有改动已推送到 `dec-working-sol`）
+- [ ] ~~git add / commit / push~~（Session 4 已完成，Session 5 的 .tex 改动尚未 commit）
 
 ---
 

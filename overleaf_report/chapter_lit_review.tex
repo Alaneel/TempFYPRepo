@@ -73,19 +73,20 @@ upon XGBoost through a leaf-wise (rather than level-wise) tree growth strategy a
 Gradient-based One-Side Sampling (GOSS), achieving substantially higher throughput on
 large datasets. In the present pipeline, both XGBoost and LightGBM are trained per segment;
 XGBoost is ultimately preferred due to its marginally superior MAPE on the held-out test
-sets across all eight segments, consistent with findings by Pow et al.~\cite{pow2019machine}
-for UK property data and by Bian et al.~\cite{bian2020comparing} for Singapore private
+sets across all eight segments, consistent with findings by Park and Bae~\cite{park2015using}
+for US residential data and by Bian et al.~\cite{bian2020comparing} for Singapore private
 properties.
 
 \subsection{Automated Valuation Models at Scale}
 
-Pow et al.~\cite{pow2019machine} evaluated gradient-boosted ensemble models for Automated
-Valuation Model (AVM) construction on a UK residential dataset, demonstrating lower MAPE
-than hedonic regression across multiple property types. This project corroborates their
+Park and Bae~\cite{park2015using} evaluated multiple machine learning algorithms---including
+decision trees, neural networks, and ensemble methods---for residential property price
+prediction on a US county-level dataset, demonstrating lower MAPE than traditional hedonic
+regression across multiple property types. This project corroborates their
 finding for the Singapore context, with XGBoost reducing MAPE by 70.3\% relative to the
 mean baseline on the Condominium Sale segment.
 
-Oust and Hansen~\cite{oust2023machine} explored the combination of repeat-sales index models
+Oust, Hansen, and Pettrem~\cite{oust2023machine} explored the combination of repeat-sales index models
 with machine learning predictors, finding that ensemble combinations outperform either
 approach alone on out-of-sample price index accuracy. Transaction-price data for such
 combinations is not available in this project (noted in Section~\ref{sec:limitations}),
@@ -110,11 +111,12 @@ in polynomial time and is applied in this project to produce the top-5 per-predi
 factors displayed in the user interface.
 
 From a practical standpoint, Baur, Rosenfelder, and Lutz~\cite{baur2022automated} demonstrated
-that NLP-extracted sentiment features from listing descriptions, combined with SHAP explanations,
-can provide stakeholders with a richer understanding of valuation drivers than price alone.
-This motivates the chat assistant component of the present project: by grounding the assistant's
-responses in SHAP attribution data, the system makes the model's reasoning accessible to
-non-technical end users.
+that incorporating NLP-derived text representations of listing descriptions alongside structured
+attributes substantially improves AVM prediction accuracy, underscoring the value of unstructured
+listing data as a complementary signal. This motivates the chat assistant component of the present
+project: by grounding the assistant's responses in SHAP attribution data derived from the
+structured feature set, the system makes the model's reasoning accessible to non-technical end
+users in a way that goes beyond price alone.
 
 % ─────────────────────────────────────────────────────────────────────────────
 \section{Large Language Models in Real Estate and Search}
@@ -130,11 +132,12 @@ structured JSON filters. A zero-shot version (no examples) was tested informally
 produced noticeably more district hallucinations, which is why the final prompt includes
 the in-context examples.
 
-Han et al.~\cite{han2023llm} demonstrated that GPT-class LLMs can extract structured property
-attributes (price, bedrooms, floor area) from free-text listing descriptions with high field-level
-F1, outperforming rule-based extractors on edge cases such as abbreviated or informal phrasing.
-Their task differs from ours---they go from description text to attributes, whereas here the
-input is a user query and the output is a structured filter---but the underlying mechanism
+Zhao et al.~\cite{zhao2024llm} demonstrated that transformer-based LLMs can extract
+structured fields (price, floor area, tenure, party names) from free-text real estate
+transaction contracts with high field-level F1, outperforming rule-based extractors on
+edge cases such as abbreviated clauses or informal phrasing.
+Their task differs from ours---they go from contract text to structured fields, whereas here
+the input is a user query and the output is a search filter---but the underlying mechanism
 is the same in both cases: an LLM maps unstructured text to a structured schema without
 any task-specific fine-tuning.
 
@@ -226,7 +229,7 @@ work specifically surfaces per-prediction SHAP factors to non-technical real est
 through a production web interface in the Singapore context.
 
 \textbf{Gap 3: LLM-based natural language search for Singapore property.}
-Han et al.~\cite{han2023llm} demonstrate LLM-based information extraction from listing text,
+Zhao et al.~\cite{zhao2024llm} demonstrate LLM-based structured information extraction from real estate text,
 and Brown et al.~\cite{brown2020language} establish the few-shot capability that enables it.
 However, no prior work applies LLM-based query-to-filter parsing to Singapore property search,
 nor implements agentic fallback behaviours (multi-district resolution, progressive relaxation,
