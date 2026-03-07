@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.routers import auth, listings, admin, agents, valuation
+from app.routers import recommendations
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -25,6 +26,7 @@ app.include_router(listings.router, prefix=f"{settings.API_V1_STR}/listings", ta
 app.include_router(agents.router, prefix=f"{settings.API_V1_STR}/agents", tags=["agents"])
 app.include_router(admin.router, prefix=f"{settings.API_V1_STR}/admin", tags=["admin"])
 app.include_router(valuation.router, prefix=f"{settings.API_V1_STR}/valuation", tags=["valuation"])
+app.include_router(recommendations.router, prefix=f"{settings.API_V1_STR}/recommendations", tags=["recommendations"])
 
 from fastapi import Request
 from fastapi.responses import JSONResponse

@@ -22,4 +22,4 @@ class User(Base):
     
     # Relationships
     agent_profile = relationship("Agent", back_populates="user", uselist=False)
-    # favorites = relationship("Listing", secondary="user_favorites")
+    favourites = relationship("UserFavourite", back_populates="user", cascade="all, delete-orphan")
