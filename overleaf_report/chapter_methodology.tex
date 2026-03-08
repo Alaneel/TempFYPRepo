@@ -303,10 +303,14 @@ The LLM is instructed to produce a JSON object conforming to the following schem
 }
 \end{verbatim}
 
-Using a \texttt{districts} array rather than a scalar \texttt{district} field is what
-makes multi-district geographic resolution possible (see below): the backend turns a
-non-null \texttt{districts} list into an SQL \texttt{IN} predicate, whereas a non-null
-scalar \texttt{district} is handled as a single equality constraint.
+The choice to use a \texttt{districts} \emph{array} rather than a scalar
+\texttt{district} field was deliberate. When the backend receives a non-null
+\texttt{districts} list, it generates an SQL \texttt{IN} predicate covering all
+listed districts in a single query; a non-null scalar \texttt{district} by contrast
+produces a single equality constraint. This distinction is what makes multi-district
+geographic resolution work in practice---without the array field, a query like
+``near Orchard MRT'' would have to be broken into separate per-district requests,
+which adds latency and complicates result merging.
 
 \subsection{System Prompt Design}
 
