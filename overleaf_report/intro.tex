@@ -86,18 +86,29 @@ portals; the author's personal contributions are as follows:
 
     \item \textbf{Backend API and Frontend Web Application.}
     The author built the FastAPI backend (JWT authentication, Redis caching, RESTful listing,
-    valuation, and chat endpoints) and the Next.js frontend (listing portal, detail page with
-    AI valuation panel, NL search bar, and chat assistant panel).
+    valuation, chat, and recommendation endpoints) and the Next.js frontend (listing portal,
+    detail page with AI valuation panel, NL search bar, chat assistant panel, Saved Listings
+    page, and personalised \emph{For You} recommendations page).
+
+    \item \textbf{Personalised Recommendation Engine.}
+    The author designed and implemented a hybrid content-based and valuation-grounded
+    recommendation system. A five-component weighted scoring function combines property-type
+    affinity, district affinity, price-band similarity, bedroom-count proximity, and a
+    \emph{bargain score}---computed in-process from the XGBoost valuation models trained in
+    contribution~3---to rank active listings against each user's saved-listing preference
+    profile. An offline NDCG evaluation across ten synthetic profiles yielded
+    \textbf{NDCG@5 = 0.811} and \textbf{Precision@5 = 0.800}, with 100\% type-match and
+    100\% district-match at rank~1.
 \end{enumerate}
 
 \section{Report Organisation}
 
 The remainder of this report is organised as follows:
 \begin{itemize}
-    \item \textbf{Chapter 2 (Literature Review)} surveys existing research on real estate valuation models, machine learning applications in property markets, and the specific characteristics of the Singapore housing context.
-    \item \textbf{Chapter 3 (Methodology and System Design)} details the system architecture, data acquisition pipelines, deduplication algorithm, AI model design, and the semantic search pipeline.
-    \item \textbf{Chapter 4 (Implementation)} documents the deployed data pipeline, trained valuation models, backend API, and frontend web application.
-    \item \textbf{Chapter 5 (Evaluation and Results)} presents quantitative evaluation of the deduplication algorithm, valuation models, natural language search system, and agentic enhancements.
+    \item \textbf{Chapter 2 (Literature Review)} surveys existing research on real estate valuation models, machine learning applications in property markets, recommender systems (content-based, collaborative filtering, hybrid designs, and NDCG evaluation), and the specific characteristics of the Singapore housing context.
+    \item \textbf{Chapter 3 (Methodology and System Design)} details the system architecture, data acquisition pipelines, deduplication algorithm, AI model design, semantic search pipeline, and personalised recommendation engine design.
+    \item \textbf{Chapter 4 (Implementation)} documents the deployed data pipeline, trained valuation models, backend API, frontend web application, and recommendation system implementation.
+    \item \textbf{Chapter 5 (Evaluation and Results)} presents quantitative evaluation of the deduplication algorithm, valuation models, natural language search system, agentic enhancements, and the hybrid recommendation engine (NDCG@5, Precision@5).
     \item \textbf{Chapter 6 (Conclusion)} summarises the contributions, evaluates achievement of project objectives, and reflects on broader impact.
     \item \textbf{Chapter 7 (Future Work)} outlines the roadmap for further improvement, including proximity feature enrichment, domain-adapted LLMs, and computer vision for condition assessment.
 \end{itemize}

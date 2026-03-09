@@ -72,4 +72,43 @@ remaining lease duration, making the model's age-sensitivity explicitly actionab
 Future work could extend this to a proactive alert system that flags listings approaching
 a tier boundary within the next three years.
 
+\section{Recommendation Engine Extensions}
 
+\subsection{Collaborative Filtering at Scale}
+
+The current recommendation engine is a hybrid content-based and valuation-grounded ranker,
+chosen because the platform is at the cold-start stage: fewer than ten registered users with
+sparse interaction histories make collaborative filtering (CF) unreliable. As the user base
+grows beyond a few hundred active users with at least 5--10 saves each, matrix factorisation
+approaches---such as the implicit-feedback ALS model of Hu, Koren, and
+Volinsky~\cite{hu2008collaborative} or Neural Collaborative Filtering~\cite{he2017neural}---become
+viable as a second-stage re-ranker. The latent user and item embeddings learnt by CF would
+capture cross-user preference patterns that are invisible to the current single-user
+profile approach: for example, users who save the same Condo D9 listings are likely to
+share a broader preference cluster that the content-based component cannot infer from
+attributes alone.
+
+A practical migration path is a \textit{cascade hybrid}~\cite{burke2002hybrid}: the existing
+content-based + bargain-score engine generates a top-200 candidate set (as it does today),
+and a CF model re-ranks the top-200 using learned user--item affinities. This preserves
+the cold-start resilience of the content-based layer while layering CF's generalisation
+capability on top once sufficient interaction data exists.
+
+\subsection{Implicit Feedback Signals}
+
+The current system records only \textit{explicit} positive feedback (saves). Implicit
+signals available in the frontend---listing click-throughs, map viewport dwells, detail
+page scroll depth, and chat assistant queries on a specific listing---constitute a much
+richer and more frequent interaction stream. Incorporating these as pseudo-positive
+feedback (with lower confidence weight than saves) would enable the preference profile
+to update in near real-time during a browsing session, and would allow the engine to
+bootstrap recommendations for users who have not yet saved any listings.
+
+\subsection{Contextual and Online Learning}
+
+Both the content weights ($w_{\text{type}}, w_{\text{district}}, \ldots$) and the
+bargain-score threshold are currently fixed constants tuned by offline evaluation.
+A contextual bandit formulation~\cite{li2010contextual} would allow the system to
+adaptively tune these weights per user based on observed click-through rates on
+recommended listings, converging towards a personalised weight vector for each user
+over time. This is a natural extension once A/B testing infrastructure is in place.

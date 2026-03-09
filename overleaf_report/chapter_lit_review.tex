@@ -86,12 +86,13 @@ regression across multiple property types. This project corroborates their
 finding for the Singapore context, with XGBoost reducing MAPE by 70.3\% relative to the
 mean baseline on the Condominium Sale segment.
 
-Oust, Hansen, and Pettrem~\cite{oust2023machine} explored the combination of repeat-sales index models
-with machine learning predictors, finding that ensemble combinations outperform either
-approach alone on out-of-sample price index accuracy. Transaction-price data for such
-combinations is not available in this project (noted in Section~\ref{sec:limitations}),
-though adding URA REALIS transacted prices~\cite{ura2024realis} as a complementary training
-signal is a fairly natural next step if access can be arranged.
+Oust, Hansen, and Pettrem~\cite{oust2023machine} took a different tack: instead of
+choosing between repeat-sales indices and ML predictors, they stacked both, and the
+hybrid beat either component alone on out-of-sample price index accuracy.
+This project cannot replicate that approach---URA REALIS transacted prices are not
+available to us (see Section~\ref{sec:limitations})---but the finding is relevant future
+direction: if transaction data can be obtained, augmenting the current XGBoost models
+with a repeat-sales index component is a well-motivated next step.
 
 Jaouhari et al.~\cite{jaouhari2024mapping} conducted a systematic review of 89 AVM studies
 published between 2010 and 2022, identifying that (i) gradient-boosted trees dominate recent
@@ -210,9 +211,70 @@ roughly in line with what Landers et al.\ describe as a minimal-footprint approa
 ethical scraping.
 
 % ─────────────────────────────────────────────────────────────────────────────
+\section{Recommender Systems}
+
+\subsection{Content-Based and Collaborative Filtering}
+
+The recommender systems literature broadly partitions approaches into three families.
+\textbf{Content-based filtering} builds a user profile from attributes of items the user
+has positively interacted with, then ranks unseen items by similarity to that
+profile~\cite{ricci2011introduction}. It is fully cold-startable for new items and
+requires no cross-user data, making it the natural baseline for platforms with a small
+but growing user base. Its main limitation is the \textit{filter bubble}: users are
+unlikely to be recommended items that differ from their interaction history in any
+dimension.
+
+\textbf{Collaborative filtering (CF)} instead exploits the co-interaction matrix: users
+who liked the same items in the past are expected to share preferences for unseen
+items. Koren, Bell, and Volinsky~\cite{koren2009matrix} demonstrated that matrix
+factorisation (MF) approaches dominate neighbourhood-based CF on the Netflix Prize
+benchmark, learning low-dimensional latent representations of users and items that
+generalise well to unseen pairs. He et al.~\cite{he2017neural} extended MF with a
+Neural Collaborative Filtering (NCF) framework that replaces the inner-product
+interaction function with a multi-layer perceptron, improving accuracy on implicit
+feedback tasks where only positive interactions are observed (clicks, purchases,
+saves). Pure CF suffers from \textit{cold start}: new users or items with no
+interaction history cannot be represented in the latent space.
+
+\subsection{Hybrid Recommender Systems}
+
+Burke~\cite{burke2002hybrid} provided a taxonomy of hybrid RS designs, identifying seven
+combination strategies ranging from \textit{weighted} (linear combination of component
+scores) to \textit{cascade} (one model filters, another re-ranks). The most common
+production design is weighted hybridisation, where a content-based score and a CF score
+are combined via learnable weights. A key finding from Burke's survey is that hybrid
+systems consistently outperform either component in isolation, particularly at the cold-start
+boundary where CF degrades but content-based methods remain stable.
+
+The present system adopts the weighted hybrid design because the dataset is at the
+cold-start stage for CF: fewer than ten registered users with sparse interaction histories
+make latent-factor estimation unreliable. The content-based component is therefore the
+primary ranker, while the \textit{bargain score}---derived from the XGBoost valuation
+models---acts as a valuation-grounded auxiliary signal that encodes market-efficiency
+information unavailable to a pure content-based approach.
+
+\subsection{Evaluation Metrics: NDCG}
+
+Järvelin and Kekäläinen~\cite{jarvelin2002cumulated} introduced \textbf{Normalised
+Discounted Cumulative Gain (NDCG)}, which extends binary relevance to graded relevance
+labels and discounts gains logarithmically by rank position. Formally, for a ranking of
+$K$ items:
+\[
+\text{NDCG}@K = \frac{\text{DCG}@K}{\text{IDCG}@K}, \quad
+\text{DCG}@K = \sum_{i=1}^{K} \frac{2^{r_i} - 1}{\log_2(i+1)}
+\]
+where $r_i$ is the relevance label of the item at rank $i$ and IDCG is the DCG of the
+ideal (oracle) ranking. NDCG has become the standard ranking metric in information
+retrieval and recommender systems evaluation~\cite{ricci2011introduction}, replacing
+binary Precision@K in settings where partial relevance is meaningful---precisely the
+case here, where a listing matching the user's preferred property type but not district
+(label~1) is a more useful result than a completely irrelevant listing (label~0), but
+less useful than a full type-and-district match (label~2).
+
+% ─────────────────────────────────────────────────────────────────────────────
 \section{Research Gaps and Positioning}
 
-Prior work addresses individual components of the present problem in isolation. Three specific
+Prior work addresses individual components of the present problem in isolation. Four specific
 gaps remain unaddressed in the Singapore context.
 
 \textbf{Gap 1: Multi-portal data integration.}
@@ -235,8 +297,17 @@ However, no prior work applies LLM-based query-to-filter parsing to Singapore pr
 nor implements agentic fallback behaviours (multi-district resolution, progressive relaxation,
 grounded chat) on top of such a pipeline.
 
+\textbf{Gap 4: Valuation-grounded hybrid recommendation for Singapore property.}
+Prior recommender systems in real estate adopt purely content-based or basic CF
+approaches~\cite{ricci2011introduction} and do not integrate a machine-learned valuation
+signal into the ranking function. No prior published work applies a hybrid ranking model
+in which a per-segment AVM---trained on live multi-portal listing data---contributes a
+\textit{bargain score} dimension that simultaneously ranks candidates by preference
+alignment \emph{and} market-relative pricing efficiency within the Singapore context.
+
 To the best of the author's knowledge, no prior published system simultaneously addresses all
-three gaps within a single end-to-end deployable platform. This project bridges all three by
+four gaps within a single end-to-end deployable platform. This project bridges all four by
 building an integrated system that unifies multi-portal data, surfaces SHAP-grounded per-property
-valuations, and enables conversational search with agentic fallback and a property-specific
-chat assistant.
+valuations, enables conversational search with agentic fallback and a property-specific
+chat assistant, and delivers valuation-grounded personalised recommendations evaluated
+with NDCG on graded relevance labels.
