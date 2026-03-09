@@ -5,28 +5,96 @@
 Five stages make up the overall pipeline: Data Acquisition, Data Processing, Data Storage, Analysis Engine, and Application Layer. The central design decision was to treat the data pipeline as the foundation---everything else (valuation models, NL search, chat assistant) sits on top of a single unified listing repository rather than querying each portal separately.
 
 \begin{figure}[!ht]
-    \centering
-    \centering
-    \resizebox{0.9\textwidth}{!}{
-    \begin{tikzpicture}[node distance=3cm]
-        \tikzstyle{process} = [rectangle, minimum width=2.5cm, minimum height=1cm, text centered, draw=black, fill=orange!30]
-        \tikzstyle{storage} = [cylinder, shape border rotate=90, draw, minimum height=2cm, minimum width=1.5cm, shape aspect=.25, fill=blue!20, text centered]
-        \tikzstyle{arrow} = [thick,->,>=stealth]
+\centering
+\begin{tikzpicture}[
+    font=\sffamily\small,
+    % All nodes share same width/height for visual consistency
+    node/.style={draw=black!50, rounded corners=4pt,
+                 minimum width=2.8cm, minimum height=0.72cm,
+                 align=center, font=\sffamily\small},
+    % Colour variants
+    srcnode/.style={node, fill=blue!8},
+    pipenode/.style={node, fill=white},
+    storenode/.style={node, fill=green!12, draw=green!50!black!60},
+    svcnode/.style={node, fill=orange!8},
+    appnode/.style={node, fill=blue!8, minimum width=3.8cm},
+    % Layer background band
+    band/.style={draw=black!20, fill=gray!5, rounded corners=6pt,
+                 minimum width=12.6cm, minimum height=1.05cm},
+    % Layer label
+    lbl/.style={font=\sffamily\small\bfseries, anchor=east,
+                text width=2.8cm, align=right},
+    % Arrows
+    arr/.style={->, >=stealth, line width=0.85pt, draw=black!55},
+    darr/.style={->, >=stealth, line width=0.7pt, draw=black!45, dashed},
+]
 
-        \node (scrape) [process] {Web Scrapers};
-        \node (process) [process, right of=scrape, xshift=1cm] {Data Processing};
-        \node (db) [storage, right of=process, xshift=1cm] {Unified DB};
-        \node (frontend) [process, below of=db, yshift=-0.5cm] {Web Application (Next.js)};
-        \node (admin) [process, below of=process, yshift=-0.5cm] {FastAPI REST API};
+% Band centre x = 8.0, band width = 12.6cm => left edge x=1.7, right edge x=14.3
+% label anchor=east at x=1.5
+% 4 nodes width=2.8cm, step=3.2cm: centres 3.2, 6.4, 9.6, 12.8
+% 3 nodes width=2.8cm, step=4.0cm: centres 3.2, 7.2, 11.2  (or 4.0,8.0,12.0)
+% 2 nodes width=3.8cm, step=5.6cm: centres 5.2, 10.8
 
-        \draw [arrow] (scrape) -- node[anchor=south] {Raw} (process);
-        \draw [arrow] (process) -- node[anchor=south] {Clean} (db);
-        \draw [arrow] (db) -- (frontend);
-        \draw [arrow] (db) -- (admin);
-    \end{tikzpicture}
-    }
-    \caption{High-Level System Architecture Diagram}
-    \label{fig:system_arch}
+%% ── Row 1: Data Sources  y = 0 ──
+\node[band]               (b1) at (8.0,  0.0) {};
+\node[lbl]                     at (1.5,  0.0) {Data Sources};
+\node[srcnode]  (pg)  at (3.2,  0.0) {PropertyGuru};
+\node[srcnode]  (co)  at (6.4,  0.0) {99.co};
+\node[srcnode]  (ep)  at (9.6,  0.0) {EdgeProp};
+\node[srcnode]  (srx) at (12.8, 0.0) {SRX};
+
+%% ── Row 2: Data Pipeline  y = -2.0 ──
+\node[band]               (b2) at (8.0, -2.0) {};
+\node[lbl]                     at (1.5, -2.0) {Data Pipeline};
+\node[pipenode] (scr) at (3.2, -2.0) {Scrapers};
+\node[pipenode] (nor) at (6.4, -2.0) {Normalisation};
+\node[pipenode] (ded) at (9.6, -2.0) {Dedup \& Link};
+\node[pipenode] (geo) at (12.8,-2.0) {Geocoding};
+
+%% ── Row 3: Unified Storage  y = -4.0 ──
+\node[band]               (b3) at (8.0, -4.0) {};
+\node[lbl]                     at (1.5, -4.0) {Unified Storage};
+\node[storenode](ul)  at (4.0, -4.0) {Listings Table};
+\node[storenode](mst) at (8.0, -4.0) {Master Tables};
+\node[storenode](rds) at (12.0,-4.0) {Redis Cache};
+
+%% ── Row 4: AI \& Services  y = -6.0 ──
+\node[band]               (b4) at (8.0, -6.0) {};
+\node[lbl]                     at (1.5, -6.0) {AI \& Services};
+\node[svcnode]  (api) at (3.2, -6.0) {FastAPI};
+\node[svcnode]  (val) at (6.4, -6.0) {Valuation};
+\node[svcnode]  (nlq) at (9.6, -6.0) {NL Search};
+\node[svcnode]  (cht) at (12.8,-6.0) {Chat Agent};
+
+%% ── Row 5: Application Layer  y = -8.0 ──
+\node[band]               (b5) at (8.0, -8.0) {};
+\node[lbl]                     at (1.5, -8.0) {Application\\Layer};
+\node[appnode]  (web) at (5.2, -8.0) {Next.js Web App};
+\node[appnode]  (usr) at (10.8,-8.0) {Users / Agents};
+
+%% ── Vertical data-flow arrows ──
+\draw[arr] (b1.south) -- (b2.north);
+\draw[arr] (b2.south) -- (b3.north);
+\draw[arr] (b3.south) -- (b4.north);
+\draw[arr] (b4.south) -- (b5.north);
+
+%% ── Pipeline horizontal chain ──
+\draw[arr] (scr.east) -- (nor.west);
+\draw[arr] (nor.east) -- (ded.west);
+\draw[arr] (ded.east) -- (geo.west);
+
+%% ── Services dashed chain ──
+\draw[darr] (api.east) -- (val.west);
+\draw[darr] (val.east) -- (nlq.west);
+\draw[darr] (nlq.east) -- (cht.west);
+
+%% ── App layer ──
+\draw[arr] (web.east) -- (usr.west);
+
+\end{tikzpicture}
+\vspace{2pt}
+\caption[Layered system architecture of the SingaLiving platform.]{Layered system architecture of the SingaLiving platform. Data flows top-down through five layers: multi-source acquisition, processing pipeline, unified storage, AI and application services, and the user-facing web application. Solid vertical arrows denote the primary data flow between layers; dashed horizontal arrows indicate internal service coordination.}
+\label{fig:system_arch}
 \end{figure}
 
 \subsection{Data Acquisition}
@@ -112,42 +180,156 @@ The data storage layer is built upon a PostgreSQL relational database, designed 
 \subsubsection{Entity-Relationship Design}
 The database schema is centered around the separation of transient listing data from persistent property master data. Figure \ref{fig:er_diagram} illustrates the core entities and their relationships.
 
+% ─── Figure 3.2: ER Diagram ───────────────────────────────────────────────────
+% Requires: \usepackage{tikz}
+%           \usetikzlibrary{positioning, calc, arrows.meta}
+
 \begin{figure}[!ht]
-    \centering
-    \centering
-    \resizebox{1.0\textwidth}{!}{
-    \begin{tikzpicture}[node distance=2.5cm, entity/.style={rectangle,draw,fill=blue!20}, attribute/.style={ellipse,draw,fill=yellow!20}, relationship/.style={diamond,draw,fill=orange!20}, line/.style={-,thick}]
-        % Entities
-        \node[entity] (listing) {Listing};
-        \node[entity] (unit) [right of=listing, xshift=2.5cm] {Unit};
-        \node[entity] (master) [right of=unit, xshift=2.5cm] {Master};
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[
+    font=\sffamily\small,
+    >=Stealth,
+    %
+    % ── row styles ──
+    hdr/.style={
+        draw=black!60, fill=blue!18, rounded corners=2pt,
+        minimum width=4.4cm, minimum height=0.58cm,
+        font=\sffamily\small\bfseries, align=center},
+    pk/.style={
+        draw=black!40, fill=yellow!30,
+        minimum width=4.4cm, minimum height=0.52cm, align=center},
+    fk/.style={
+        draw=black!40, fill=orange!20,
+        minimum width=4.4cm, minimum height=0.52cm, align=center},
+    row/.style={
+        draw=black!35, fill=gray!6,
+        minimum width=4.4cm, minimum height=0.52cm, align=center},
+    %
+    % ── wide variant for unified_listings ──
+    whdr/.style={hdr, minimum width=5.0cm},
+    wpk/.style ={pk,  minimum width=5.0cm},
+    wfk/.style ={fk,  minimum width=5.0cm},
+    wrow/.style={row, minimum width=5.0cm},
+    %
+    % ── arrow & label ──
+    link/.style={->, line width=0.85pt, draw=black!55},
+    rlab/.style={font=\sffamily\scriptsize\itshape, fill=white, inner sep=1.5pt},
+    %
+    % ── note box ──
+    note/.style={draw=black!30, dashed, rounded corners=3pt,
+                 fill=white, font=\sffamily\scriptsize\itshape,
+                 inner sep=5pt, text width=4.4cm, align=center},
+]
 
-        % Relationships
-        \node[relationship] (MappedTo) [right of=listing, xshift=0.5cm] {Link};
-        \node[relationship] (BelongsTo) [right of=unit, xshift=0.5cm] {In};
+% ══════════════════════════════════════════════════════════════════════════════
+%  unified_listings — one cohesive block, left side
+% ══════════════════════════════════════════════════════════════════════════════
+\node[whdr]                          (ul-hdr) {unified\_listings};
+\node[wpk,  below=0pt of ul-hdr]    (ul-pk)  {\textsc{pk}\enspace listing\_id};
+\node[wrow, below=0pt of ul-pk]     (ul-r1)  {source, listing\_url};
+\node[wrow, below=0pt of ul-r1]     (ul-r2)  {price, beds, baths, sqft};
+\node[wrow, below=0pt of ul-r2]     (ul-r3)  {district, tenure};
+\node[wfk,  below=0pt of ul-r3]     (ul-fk1) {\textsc{fk}\enspace hdb\_unit\_id};
+\node[wfk,  below=0pt of ul-fk1]    (ul-fk2) {\textsc{fk}\enspace condo\_unit\_id};
 
-        % Attributes for Listing
-        \node[attribute] (price) [above of=listing, yshift=-1cm] {Price};
-        \node[attribute] (url) [below of=listing, yshift=1cm] {URL};
+\node[note, below=10pt of ul-fk2]   (ul-note)
+    {Soft-link: FK columns may be\\
+     \textsc{null} until address is verified.};
 
-        % Attributes for Master
-        \node[attribute] (address) [above of=master, yshift=-1cm] {Addr};
-        \node[attribute] (geo) [below of=master, yshift=1cm] {Geo};
+% ══════════════════════════════════════════════════════════════════════════════
+%  hdb_unit — upper right, header vertically centred with ul-fk1
+% ══════════════════════════════════════════════════════════════════════════════
+\node[hdr, right=6.0cm of ul-hdr,
+      yshift=-1.2cm]                 (hu-hdr) {hdb\_unit};
+\node[pk,  below=0pt of hu-hdr]     (hu-pk)  {\textsc{pk}\enspace hdb\_unit\_id};
+\node[fk,  below=0pt of hu-pk]      (hu-fk)  {\textsc{fk}\enspace hdb\_basic\_id};
+\node[row, below=0pt of hu-fk]      (hu-r1)  {block, unit\_level};
+\node[row, below=0pt of hu-r1]      (hu-r2)  {flat\_type};
+\node[row, below=0pt of hu-r2]      (hu-r3)  {floor\_area\_sqm};
 
-        % Lines
-        \draw[line] (listing) -- (MappedTo);
-        \draw[line] (MappedTo) -- (unit);
-        \draw[line] (unit) -- (BelongsTo);
-        \draw[line] (BelongsTo) -- (master);
-        
-        \draw[line] (listing) -- (price);
-        \draw[line] (listing) -- (url);
-        \draw[line] (master) -- (address);
-        \draw[line] (master) -- (geo);
-    \end{tikzpicture}
-    }
-    \caption{Entity-Relationship Diagram illustrating the linkage between scraped Listings and persistent Master records.}
-    \label{fig:er_diagram}
+% ══════════════════════════════════════════════════════════════════════════════
+%  hdb_basic — right of hdb_unit
+% ══════════════════════════════════════════════════════════════════════════════
+\node[hdr, right=3.4cm of hu-hdr]   (hb-hdr) {hdb\_basic};
+\node[pk,  below=0pt of hb-hdr]     (hb-pk)  {\textsc{pk}\enspace hdb\_basic\_id};
+\node[row, below=0pt of hb-pk]      (hb-r1)  {block, street};
+\node[row, below=0pt of hb-r1]      (hb-r2)  {town};
+\node[row, below=0pt of hb-r2]      (hb-r3)  {lease\_start};
+\node[row, below=0pt of hb-r3]      (hb-r4)  {built\_year};
+
+% ══════════════════════════════════════════════════════════════════════════════
+%  condo_unit — lower right
+% ══════════════════════════════════════════════════════════════════════════════
+\node[hdr, below=2.0cm of hu-r3]    (cu-hdr) {condo\_unit};
+\node[pk,  below=0pt of cu-hdr]     (cu-pk)  {\textsc{pk}\enspace condo\_unit\_id};
+\node[fk,  below=0pt of cu-pk]      (cu-fk)  {\textsc{fk}\enspace condo\_basic\_id};
+\node[row, below=0pt of cu-fk]      (cu-r1)  {stack, unit\_label};
+\node[row, below=0pt of cu-r1]      (cu-r2)  {beds, baths};
+\node[row, below=0pt of cu-r2]      (cu-r3)  {floor\_area\_sqft};
+
+% ══════════════════════════════════════════════════════════════════════════════
+%  condo_basic — right of condo_unit, same column as hdb_basic
+% ══════════════════════════════════════════════════════════════════════════════
+\node[hdr, right=3.4cm of cu-hdr]   (cb-hdr) {condo\_basic};
+\node[pk,  below=0pt of cb-hdr]     (cb-pk)  {\textsc{pk}\enspace condo\_basic\_id};
+\node[row, below=0pt of cb-pk]      (cb-r1)  {project\_name};
+\node[row, below=0pt of cb-r1]      (cb-r2)  {address};
+\node[row, below=0pt of cb-r2]      (cb-r3)  {tenure};
+\node[row, below=0pt of cb-r3]      (cb-r4)  {latitude, longitude};
+
+% ══════════════════════════════════════════════════════════════════════════════
+%  ARROWS — all orthogonal, all with centred labels above horizontal segment
+% ══════════════════════════════════════════════════════════════════════════════
+
+% ── Left pair: ul → hdb_unit, ul → condo_unit ──
+% Use explicit turning coordinates to guarantee correct arrow direction.
+% The turning x is 1.5cm right of unified_listings' right edge.
+
+% ul → hdb_unit
+\path (ul-fk1.east) ++(1.5,0) coordinate (bend1);
+\draw[link]
+    (ul-fk1.east) -- (bend1)          % horizontal right
+    -- (bend1 |- hu-hdr.west)         % vertical up
+    -- (hu-hdr.west)                  % horizontal right → arrowhead here
+    node[rlab, midway, above=2pt] {many-to-one};
+
+% ul → condo_unit
+\path (ul-fk2.east) ++(1.5,0) coordinate (bend2);
+\draw[link]
+    (ul-fk2.east) -- (bend2)          % horizontal right
+    -- (bend2 |- cu-hdr.west)         % vertical down
+    -- (cu-hdr.west)                  % horizontal right → arrowhead here
+    node[rlab, midway, above=2pt] {many-to-one};
+
+% ── Right pair: hdb_unit → hdb_basic, condo_unit → condo_basic ──
+% Turning x is 1.2cm right of the middle table's right edge.
+
+% hdb_unit → hdb_basic
+\path (hu-fk.east) ++(1.2,0) coordinate (bend3);
+\draw[link]
+    (hu-fk.east) -- (bend3)
+    -- (bend3 |- hb-pk.west)
+    -- (hb-pk.west)
+    node[rlab, midway, above=2pt] {many-to-one};
+
+% condo_unit → condo_basic
+\path (cu-fk.east) ++(1.2,0) coordinate (bend4);
+\draw[link]
+    (cu-fk.east) -- (bend4)
+    -- (bend4 |- cb-pk.west)
+    -- (cb-pk.west)
+    node[rlab, midway, above=2pt] {many-to-one};
+
+\end{tikzpicture}%
+} % end resizebox
+\caption[Relational schema of the core database tables.]{Relational schema of the core database tables.
+Highlighted rows indicate primary keys (\colorbox{yellow!30}{yellow})
+and foreign keys (\colorbox{orange!20}{orange}).
+Active listings are ingested into \texttt{unified\_listings} and
+optionally linked to persistent HDB or condominium master records
+when sufficient address evidence is available.}
+\label{fig:er_diagram}
 \end{figure}
 
 The \texttt{aggregated\_listings} table serves as the primary repository for raw data, receiving inputs from all scrapers.
@@ -379,9 +561,9 @@ Figure~\ref{fig:agentic_pipeline} summarises the full pipeline as a flowchart.
 \draw[arrow] (check)  -- node[left,font=\small]{Yes} (return);
 \draw[arrow] (check)  -- node[above,font=\small]{No} (relax);
 \draw[arrow] (relax)  -- (llm2);
-\draw[arrow] (llm2)   |- (db);
+\draw[arrow] (llm2.east) -- ++(0.8,0) |- (db.east);
 \end{tikzpicture}
-\caption{Agentic search pipeline: base LLM parse, geographic resolution, zero-result
+\caption[Agentic search pipeline.]{Agentic search pipeline: base LLM parse, geographic resolution, zero-result
 relaxation loop, and fallback explanation generation.}
 \label{fig:agentic_pipeline}
 \end{figure}
@@ -486,6 +668,21 @@ the valuation layer: the same XGBoost models trained in Chapter~4 serve as a
 real-time pricing oracle within the ranking function. Listings that are both
 preference-consistent \emph{and} underpriced relative to the model estimate are
 ranked highest, surfacing actionable opportunities rather than merely familiar ones.
+
+\begin{figure}[!ht]
+    \centering
+    \includegraphics[width=\textwidth]{fig/rec_scoring_function.pdf}
+    \caption[Hybrid scoring function for the recommendation engine.]{Hybrid scoring function for the recommendation engine.
+             \textbf{Left:} component weights $w_i$ used in the final score
+             $S(c,u)$; the bargain component ($w=0.20$) and location match
+             ($w=0.30$) together account for half of the total score.
+             \textbf{Right:} $s_{\text{bargain}}$ as a function of the
+             relative price deviation $r = (p_c - \hat{p}_c)/\hat{p}_c$,
+             clamped to $[-0.5,+0.5]$ and linearly rescaled to $[0,1]$.
+             A listing priced 50\% below the model estimate receives the
+             maximum bargain score of~1.0.}
+    \label{fig:rec_scoring_function}
+\end{figure}
 
 \subsection{Candidate Pre-filtering}
 
