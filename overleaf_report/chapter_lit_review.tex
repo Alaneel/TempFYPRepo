@@ -101,6 +101,88 @@ accuracy benchmarks, (ii) SHAP has become the leading tool for AVM interpretabil
 to all three trends simultaneously: an XGBoost AVM with per-prediction SHAP explanations
 trained on a unified multi-portal dataset.
 
+Figure~\ref{fig:model_comparison} summarises the four candidate model families across three
+dimensions relevant to this project, motivating the adoption of XGBoost as the primary
+valuation model while retaining Ridge as an interpretable baseline.
+
+\begin{figure}[!ht]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[
+    font=\sffamily\small,
+    chdr/.style={draw=black!40, fill=blue!12, rounded corners=3pt,
+                 minimum width=3.2cm, minimum height=0.80cm,
+                 text width=2.9cm, align=center,
+                 font=\sffamily\small\bfseries},
+    rhdr/.style={draw=black!40, fill=gray!10, rounded corners=3pt,
+                 minimum width=3.6cm, minimum height=0.80cm,
+                 text width=3.3cm, align=center,
+                 font=\sffamily\small\bfseries},
+    chigh/.style={draw=black!30, fill=green!22, rounded corners=2pt,
+                  minimum width=3.2cm, minimum height=0.80cm,
+                  text width=2.9cm, align=center},
+    cmed/.style ={draw=black!30, fill=yellow!28, rounded corners=2pt,
+                  minimum width=3.2cm, minimum height=0.80cm,
+                  text width=2.9cm, align=center},
+    clow/.style ={draw=black!30, fill=red!18, rounded corners=2pt,
+                  minimum width=3.2cm, minimum height=0.80cm,
+                  text width=2.9cm, align=center},
+]
+
+% Column headers
+\node[chdr] at (4.8,  0) {OLS Hedonic};
+\node[chdr] at (8.4,  0) {Ridge};
+\node[chdr] at (12.0, 0) {Random Forest};
+\node[chdr] at (15.6, 0) {XGBoost};
+
+% Row: Predictive accuracy
+\node[rhdr] at (0.8, -1.2) {Predictive accuracy};
+\node[clow]  at (4.8, -1.2) {Low};
+\node[cmed]  at (8.4, -1.2) {Moderate};
+\node[chigh] at (12.0,-1.2) {High};
+\node[chigh] at (15.6,-1.2) {\textbf{Highest}};
+
+% Row: Interpretability
+\node[rhdr] at (0.8, -2.4) {Interpretability};
+\node[chigh] at (4.8, -2.4) {High (HPM)};
+\node[chigh] at (8.4, -2.4) {High};
+\node[cmed]  at (12.0,-2.4) {Moderate};
+\node[cmed]  at (15.6,-2.4) {Mod.\ + SHAP};
+
+% Row: Non-linear interactions
+\node[rhdr] at (0.8, -3.6) {Non-linear interactions};
+\node[clow]  at (4.8, -3.6) {No};
+\node[clow]  at (8.4, -3.6) {No};
+\node[chigh] at (12.0,-3.6) {Yes};
+\node[chigh] at (15.6,-3.6) {Yes};
+
+% Row: Small-segment robustness
+\node[rhdr] at (0.8, -4.8) {Small-segment robustness};
+\node[cmed]  at (4.8, -4.8) {Moderate};
+\node[chigh] at (8.4, -4.8) {High};
+\node[cmed]  at (12.0,-4.8) {Moderate};
+\node[chigh] at (15.6,-4.8) {High (L1 reg.)};
+
+% Row: Role in this project
+\node[rhdr, fill=blue!8]     at (0.8, -6.0) {Role in this project};
+\node[clow,  fill=gray!10]   at (4.8, -6.0) {---};
+\node[cmed,  fill=yellow!12] at (8.4, -6.0) {Baseline};
+\node[clow,  fill=gray!10]   at (12.0,-6.0) {Candidate};
+\node[chigh, fill=green!30]  at (15.6,-6.0) {\textbf{Primary}};
+
+\end{tikzpicture}%
+}
+\caption[Comparative summary of candidate valuation model families.]{Comparative summary of
+         the four candidate model families evaluated in this project.
+         Cells are colour-coded: \colorbox{green!22}{green} = strong,
+         \colorbox{yellow!28}{yellow} = moderate,
+         \colorbox{red!18}{red/pink} = weak.
+         XGBoost is selected as the primary model for its combination of
+         highest predictive accuracy, built-in regularisation for small segments,
+         and post-hoc interpretability via SHAP (Section~\ref{sec:model_design}).}
+\label{fig:model_comparison}
+\end{figure}
+
 \subsection{Model Interpretability: SHAP}
 
 Lundberg and Lee~\cite{lundberg2017unified} introduced \textbf{SHAP (SHapley Additive
