@@ -24,6 +24,7 @@ Recommendation algorithm (v2 – Hybrid Content-Based + Valuation-Grounded):
 """
 
 import re
+import asyncio
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -108,14 +109,12 @@ def _get_bargain_score(candidate: Listing) -> tuple[float, Optional[float]]:
         return 0.5, None  # neutral on any error
 
 
-def _score_candidate(
+def _score_content_only(
     candidate: Listing, profile: dict
-) -> tuple[float, list[str], Optional[float]]:
+) -> tuple[float, list[str]]:
     """
-    Hybrid content-based + valuation-grounded scoring.
-
-    Weights: type 0.25 | district 0.20 | price_sim 0.20 | beds 0.15 | bargain 0.20
-    Returns: (total_score, match_reasons, valuation_estimate)
+    Fast content-based pre-score (no XGBoost).
+    Weights: type 0.25 | district 0.20 | price_sim 0.20 | beds 0.15  (max 0.80)
     """
     score = 0.0
     reasons: list[str] = []
@@ -154,7 +153,25 @@ def _score_candidate(
         if sim >= 0.75:
             reasons.append(f"Matches your preferred bedroom count ({candidate.beds} BR)")
 
-    # bargain_score (0.20) — valuation-grounded
+    # buy_rent hard penalty
+    if profile["buy_rent"] and candidate.buy_rent != profile["buy_rent"]:
+        score *= 0.1
+
+    return round(score, 4), reasons
+
+
+def _score_candidate(
+    candidate: Listing, profile: dict
+) -> tuple[float, list[str], Optional[float]]:
+    """
+    Hybrid content-based + valuation-grounded scoring.
+
+    Weights: type 0.25 | district 0.20 | price_sim 0.20 | beds 0.15 | bargain 0.20
+    Returns: (total_score, match_reasons, valuation_estimate)
+    """
+    score, reasons = _score_content_only(candidate, profile)
+
+    # bargain_score (0.20) — valuation-grounded (XGBoost, only called for shortlisted)
     bargain_norm, valuation_estimate = _get_bargain_score(candidate)
     score += 0.20 * bargain_norm
     if valuation_estimate and candidate.price:
@@ -163,10 +180,6 @@ def _score_candidate(
             reasons.append(f"Estimated {pct}% below market valuation")
         elif pct <= -10.0:
             reasons.append(f"Listed {abs(pct)}% above model estimate")
-
-    # buy_rent must match (hard penalty)
-    if profile["buy_rent"] and candidate.buy_rent != profile["buy_rent"]:
-        score *= 0.1
 
     return round(score, 4), reasons, valuation_estimate
 
@@ -320,7 +333,7 @@ async def get_recommendations(
     profile = _build_preference_profile(favourites)
     favourited_ids = profile.get("favourited_ids", set())
 
-    # Pre-filter candidates
+    # Pre-filter candidates — narrow down BEFORE scoring to keep XGBoost calls fast
     query = select(Listing).options(
         selectinload(Listing.agent),
         selectinload(Listing.condo),
@@ -329,23 +342,59 @@ async def get_recommendations(
     if profile.get("buy_rent"):
         query = query.where(Listing.buy_rent == profile["buy_rent"])
     if profile.get("avg_price"):
-        low = profile["avg_price"] * 0.4
-        high = profile["avg_price"] * 1.6
+        low = profile["avg_price"] * 0.5   # tighter: ±50% instead of ±60%
+        high = profile["avg_price"] * 1.5
         query = query.where(Listing.price.between(low, high))
+    # Prefer same districts first (IN filter), fall back to full pool if < limit*3
+    preferred_districts = list(profile.get("districts", {}).keys())
+    if preferred_districts:
+        district_query = query.where(Listing.district.in_(preferred_districts))
+        district_result = await db.execute(district_query.limit(limit * 6))
+        candidates = district_result.scalars().all()
+        if len(candidates) < limit * 3:
+            # Not enough in-district listings — expand to full pool
+            fallback_result = await db.execute(query.limit(300))
+            candidates = fallback_result.scalars().all()
+    else:
+        fallback_result = await db.execute(query.limit(300))
+        candidates = fallback_result.scalars().all()
 
-    candidates_result = await db.execute(query.limit(2000))
-    candidates = candidates_result.scalars().all()
+    # Filter out already-favourited listings
+    pool = [c for c in candidates if c.id not in favourited_ids]
 
-    # Score and rank
-    scored = []
-    for c in candidates:
-        if c.id in favourited_ids:
-            continue
-        score, reasons, valuation_estimate = _score_candidate(c, profile)
-        if score > 0:
-            scored.append((score, reasons, valuation_estimate, c))
+    # Score and rank — two-phase to minimise XGBoost calls
+    # Phase 1: fast content-only pre-score on all candidates (no XGBoost)
+    # Phase 2: full score with bargain (XGBoost) on top-60 only
+    def _score_all(pool: list) -> list:
+        SHORTLIST = max(limit * 4, 60)  # e.g. limit=24 → 96 candidates for XGBoost
 
-    scored.sort(key=lambda x: x[0], reverse=True)
+        # Phase 1 — content only, very fast
+        pre_scored = []
+        for c in pool:
+            s, r = _score_content_only(c, profile)
+            if s > 0:
+                pre_scored.append((s, r, c))
+        pre_scored.sort(key=lambda x: x[0], reverse=True)
+        shortlist = pre_scored[:SHORTLIST]
+
+        # Phase 2 — add bargain score (XGBoost) to shortlist only
+        scored = []
+        for pre_s, pre_r, c in shortlist:
+            bargain_norm, valuation_estimate = _get_bargain_score(c)
+            reasons = list(pre_r)
+            score = pre_s + 0.20 * bargain_norm
+            if valuation_estimate and c.price:
+                pct = round((valuation_estimate - c.price) / valuation_estimate * 100, 1)
+                if pct >= 5.0:
+                    reasons.append(f"Estimated {pct}% below market valuation")
+                elif pct <= -10.0:
+                    reasons.append(f"Listed {abs(pct)}% above model estimate")
+            scored.append((round(score, 4), reasons, valuation_estimate, c))
+
+        scored.sort(key=lambda x: x[0], reverse=True)
+        return scored[:limit]
+
+    scored = await asyncio.to_thread(_score_all, pool)
 
     return [
         RecommendationResponse(
@@ -354,5 +403,5 @@ async def get_recommendations(
             match_reasons=reasons,
             valuation_estimate=int(ve) if ve else None,
         )
-        for score, reasons, ve, c in scored[:limit]
+        for score, reasons, ve, c in scored
     ]
