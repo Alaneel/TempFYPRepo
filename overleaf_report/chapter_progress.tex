@@ -165,11 +165,11 @@ demand-side price discontinuity for ageing stock. To make this actionable for us
 
 The feature is implemented in two parts:
 \begin{enumerate}
-    \item \textbf{Backend derived attribute.} The \texttt{ListingResponse} schema computes
-    $\texttt{remaining\_lease} = 99 - (\text{CURRENT\_YEAR} - \texttt{built\_year})$ on
+    \item \begin{sloppypar}\textbf{Backend derived attribute.} The \texttt{ListingResponse} schema computes
+    $\texttt{remaining\_lease} =$ \\ $99 - (\text{CURRENT\_YEAR} - \texttt{built\_year})$ on
     the fly. It classifies the listing into one of three tiers based on CPF Board rules:
     Green ($>$60 years, full eligibility), Amber (30--60 years, restricted CPF usage
-    and no HDB loan), or Red ($<$30 years, complete CPF and HDB loan ineligibility).
+    and no HDB loan), or Red ($<$30 years, complete CPF and HDB loan ineligibility).\end{sloppypar}
     \item \textbf{Frontend UI component.} The Next.js frontend renders a colour-coded
     badge alongside the property's tenure. Instead of requiring users to look up the
     remaining lease implications themselves, the badge explicitly surfaces the policy

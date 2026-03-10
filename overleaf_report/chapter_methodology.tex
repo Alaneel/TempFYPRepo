@@ -6,6 +6,7 @@ Five stages make up the overall pipeline: Data Acquisition, Data Processing, Dat
 
 \begin{figure}[!ht]
 \centering
+\resizebox{\textwidth}{!}{%
 \begin{tikzpicture}[
     font=\sffamily\small,
     % All nodes share same width/height for visual consistency
@@ -91,7 +92,8 @@ Five stages make up the overall pipeline: Data Acquisition, Data Processing, Dat
 %% ── App layer ──
 \draw[arr] (web.east) -- (usr.west);
 
-\end{tikzpicture}
+\end{tikzpicture}%
+}
 \vspace{2pt}
 \caption[Layered system architecture of the SingaLiving platform.]{Layered system architecture of the SingaLiving platform. Data flows top-down through five layers: multi-source acquisition, processing pipeline, unified storage, AI and application services, and the user-facing web application. Solid vertical arrows denote the primary data flow between layers; dashed horizontal arrows indicate internal service coordination.}
 \label{fig:system_arch}
@@ -168,11 +170,11 @@ The deduplication key $K$ for a listing $\ell$ is constructed as:
 \[
 K(\ell) =
 \begin{cases}
-\texttt{normalise}(\ell.\textit{address}) \;\|\; \ell.\textit{beds} \;\|\; \ell.\textit{baths} \;\|\; \ell.\textit{sqft} & \text{if } \ell.\textit{address} \neq \varnothing \\[4pt]
-\texttt{normalise}(\ell.\textit{title}) \;\|\; \ell.\textit{beds} \;\|\; \ell.\textit{baths} \;\|\; \ell.\textit{sqft} & \text{otherwise}
+\text{norm}(\ell.\textit{addr}) \| \ell.\textit{beds} \| \ell.\textit{baths} \| \ell.\textit{sqft} & \text{if } \ell.\textit{addr} \neq \varnothing \\[4pt]
+\text{norm}(\ell.\textit{title}) \| \ell.\textit{beds} \| \ell.\textit{baths} \| \ell.\textit{sqft} & \text{otherwise}
 \end{cases}
 \]
-where $\|$ denotes string concatenation and \texttt{normalise} strips punctuation and lowercases the string. The address component achieves \textbf{95.5\%} field coverage; the title fallback ensures 100\% key availability across all 53,497 listings.
+where $\|$ denotes string concatenation and \text{norm} strips punctuation and lowercases the string. The address component achieves \textbf{95.5\%} field coverage; the title fallback ensures 100\% key availability across all 53,497 listings.
 
 \subsection{Data Storage}
 The data storage layer is built upon a PostgreSQL relational database, designed to maintain data integrity while supporting complex analytical queries.
@@ -406,8 +408,8 @@ The rationale for each hyperparameter group is as follows.
 
 \begin{itemize}
 
-    \item \textbf{Number of estimators and learning rate (\texttt{n\_estimators=400},
-    \texttt{learning\_rate=0.05}).}
+    \item \textbf{Number of estimators and learning rate}\\
+    (\texttt{n\_estimators=400}, \texttt{learning\_rate=0.05}).
     Gradient boosting minimises a residual function iteratively; smaller learning rates require
     more trees to converge but generalise better by taking smaller gradient steps~\cite{chen2016xgboost}.
     The Condominium Sale training validation loss curve (plotted against tree count) was inspected
@@ -536,6 +538,7 @@ Figure~\ref{fig:agentic_pipeline} summarises the full pipeline as a flowchart.
 
 \begin{figure}[!ht]
 \centering
+\resizebox{\textwidth}{!}{%
 \begin{tikzpicture}[
     node distance=1.4cm,
     box/.style={rectangle, draw, rounded corners, minimum width=5.5cm,
@@ -562,7 +565,8 @@ Figure~\ref{fig:agentic_pipeline} summarises the full pipeline as a flowchart.
 \draw[arrow] (check)  -- node[above,font=\small]{No} (relax);
 \draw[arrow] (relax)  -- (llm2);
 \draw[arrow] (llm2.east) -- ++(0.8,0) |- (db.east);
-\end{tikzpicture}
+\end{tikzpicture}%
+}
 \caption[Agentic search pipeline.]{Agentic search pipeline: base LLM parse, geographic resolution, zero-result
 relaxation loop, and fallback explanation generation.}
 \label{fig:agentic_pipeline}
