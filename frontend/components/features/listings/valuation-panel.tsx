@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import api from "@/lib/api";
-import { Sparkles, TrendingUp, TrendingDown, Minus, AlertCircle } from "lucide-react";
+import { Sparkles, TrendingUp, TrendingDown, Minus, AlertCircle, AlertTriangle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface ShapFactor {
@@ -19,6 +19,7 @@ interface ValuationResult {
   range_high:   number;
   mode:         string;
   mape:         number;
+  r2:           number | null;
   premium_pct:  number | null;
   verdict:      "overpriced" | "fair_value" | "below_estimate" | null;
   shap_factors: ShapFactor[];
@@ -127,6 +128,18 @@ export function ValuationPanel({
 
       {data && (
         <div className="space-y-4">
+          {/* Low-reliability warning for segments with R² < 0.3 (e.g. GCB Sale) */}
+          {data.r2 !== null && data.r2 !== undefined && data.r2 < 0.3 && (
+            <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs text-amber-800">
+              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-500" />
+              <span>
+                <span className="font-semibold">Low model confidence</span> — this segment has
+                limited training data (R²&nbsp;=&nbsp;{data.r2.toFixed(2)}).
+                The estimate below is indicative only and carries high uncertainty.
+              </span>
+            </div>
+          )}
+
           {/* Estimate */}
           <div>
             <div className="text-xs text-muted-foreground mb-0.5">Market Estimate</div>

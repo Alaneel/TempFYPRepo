@@ -138,6 +138,12 @@ def _get_mape(seg: str) -> float:
     return m.get("MAPE_pct", _DEFAULT_MAPE * 100) / 100   # stored as 22.1 → return 0.221
 
 
+def _get_r2(seg: str) -> Optional[float]:
+    m = _metrics.get(seg, {})
+    v = m.get("R2")
+    return float(v) if v is not None else None
+
+
 # ─── feature engineering ──────────────────────────────────────────────────────
 def _build_features(
     beds: float, sqft: float, tenure: Optional[str], mode: str,
@@ -238,6 +244,7 @@ def estimate(
     seg   = _seg_key(property_type, buy_rent)
     model = _load_model(seg)
     mape  = _get_mape(seg)
+    r2    = _get_r2(seg)
 
     # Resolve district: direct override > postal code lookup > None (model default)
     resolved_district = district if district else postal_to_district(postal_code)
@@ -267,6 +274,7 @@ def estimate(
         "mode":          mode,
         "segment":       seg,
         "mape":          mape,
+        "r2":            r2,
         "premium_pct":   premium_pct,
         "verdict":       verdict,
         "shap_factors":  shap_factors,
