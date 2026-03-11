@@ -41,6 +41,8 @@ class ListingService:
         district: Optional[int] = None,
         districts: Optional[List[int]] = None,
         agent_id: Optional[int] = None,
+        condo_id: Optional[int] = None,
+        hdb_id: Optional[int] = None,
         query: Optional[str] = None,
         tenure: Optional[str] = None,
         min_lat: Optional[float] = None,
@@ -69,6 +71,10 @@ class ListingService:
             stmt = stmt.where(Listing.district == district)
         if agent_id is not None:
             stmt = stmt.where(Listing.agent_id == agent_id)
+        if condo_id is not None:
+            stmt = stmt.where(Listing.condo_id == condo_id)
+        if hdb_id is not None:
+            stmt = stmt.where(Listing.hdb_id == hdb_id)
         if tenure:
             stmt = stmt.where(Listing.tenure.ilike(f"%{tenure}%"))
             
@@ -117,6 +123,8 @@ class ListingService:
         district: Optional[int] = None,
         districts: Optional[List[int]] = None,
         agent_id: Optional[int] = None,
+        condo_id: Optional[int] = None,
+        hdb_id: Optional[int] = None,
         query: Optional[str] = None,
         tenure: Optional[str] = None,
         min_lat: Optional[float] = None,
@@ -144,6 +152,10 @@ class ListingService:
             stmt = stmt.where(Listing.district == district)
         if agent_id is not None:
             stmt = stmt.where(Listing.agent_id == agent_id)
+        if condo_id is not None:
+            stmt = stmt.where(Listing.condo_id == condo_id)
+        if hdb_id is not None:
+            stmt = stmt.where(Listing.hdb_id == hdb_id)
         if tenure:
             stmt = stmt.where(Listing.tenure.ilike(f"%{tenure}%"))
             

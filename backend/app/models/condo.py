@@ -6,7 +6,7 @@ from app.database import Base
 class CondoBasic(Base):
     __tablename__ = 'condo_basic'
     
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column('condo_id', Integer, primary_key=True, autoincrement=True)
     condo_name = Column(String(500), index=True)
     developer_name = Column(String(255))
     street_name = Column(String(255))

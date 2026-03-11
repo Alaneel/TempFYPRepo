@@ -65,12 +65,14 @@ class Listing(Base):
     
     # Foreign Keys
     agent_id = Column(Integer, ForeignKey('agents.id'))
-    condo_id = Column(Integer, ForeignKey('condo_basic.id'), nullable=True)
+    condo_id = Column(Integer, ForeignKey('condo_basic.condo_id'), nullable=True)
+    hdb_id = Column(Integer, ForeignKey('hdb_basic.hdb_id'), nullable=True)
     
     # Relationships
     agent = relationship("Agent", back_populates="listings")
     condo = relationship("CondoBasic", back_populates="listings")
-    favourited_by = relationship("UserFavourite", back_populates="listing", cascade="all, delete-orphan")
+    hdb = relationship("HdbBasic", back_populates="listings")
+    # favourited_by = relationship("UserFavourite", back_populates="listing", cascade="all, delete-orphan")
     
     # Match metadata
     match_score = Column(Float)

@@ -82,7 +82,7 @@ class CondoBasic(Base):
     """Condo/HDB basic information from new data source."""
     __tablename__ = 'condo_basic'
     
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column('condo_id', Integer, primary_key=True, autoincrement=True)
     condo_name = Column(String(500), index=True)
     developer_name = Column(String(255))
     street_name = Column(String(255))
@@ -109,6 +109,33 @@ class CondoBasic(Base):
     
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+
+
+class HdbBasic(Base):
+    """HDB block Directory Information."""
+    __tablename__ = 'hdb_basic'
+    
+    hdb_id = Column(Integer, primary_key=True, autoincrement=True)
+    block_number = Column(String(10), nullable=False)
+    street_name = Column(Text, nullable=False)
+    town = Column(Text, nullable=False)
+    postal_code = Column(String(6))
+    latitude = Column(Float)
+    longitude = Column(Float)
+    total_floors = Column(Integer)
+    year_completed = Column(Integer)
+    has_residential = Column(Boolean)
+    has_commercial = Column(Boolean)
+    has_market_hawker = Column(Boolean)
+    has_multistorey_carpark = Column(Boolean)
+    has_void_deck = Column(Boolean)
+    total_dwelling_units = Column(Integer)
+    one_room_qty = Column(Integer)
+    two_room_qty = Column(Integer)
+    three_room_qty = Column(Integer)
+    four_room_qty = Column(Integer)
+    five_room_qty = Column(Integer)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
 
 class Listing(Base):
@@ -171,8 +198,11 @@ class Listing(Base):
     agent_id = Column(Integer, ForeignKey('agents.id'))
     agent = relationship("Agent", backref="listings")
     
-    condo_id = Column(Integer, ForeignKey('condo_basic.id'), nullable=True)
+    condo_id = Column(Integer, ForeignKey('condo_basic.condo_id'), nullable=True)
     condo = relationship("CondoBasic", backref="listings")
+    
+    hdb_id = Column(Integer, ForeignKey('hdb_basic.hdb_id'), nullable=True)
+    hdb = relationship("HdbBasic", backref="listings")
     
     # Match metadata (for tracking enrichment)
     match_score = Column(Float)
@@ -429,9 +459,10 @@ def ingest_all_data(df, engine):
         conn.commit()
     for tbl in [User.__table__, Agent.__table__, Listing.__table__]:
         tbl.create(engine)
-    # Ensure condo_basic table exists (created if missing, left alone if present)
+    # Ensure condo_basic and hdb_basic tables exist
     CondoBasic.__table__.create(engine, checkfirst=True)
-    print("Recreated agents/listings tables; condo_basic preserved.")
+    HdbBasic.__table__.create(engine, checkfirst=True)
+    print("Recreated agents/listings tables; condo_basic & hdb_basic preserved.")
     
     # Load condo_basic for matching (keyed by lowercase condo_name)
     condo_data = {}
@@ -444,6 +475,18 @@ def ingest_all_data(df, engine):
         print(f"Loaded {len(condo_data)} condo records for matching.")
     except Exception as e:
         print(f"No condo_basic data available: {e}")
+        
+    hdb_data = {}
+    try:
+        hdbs = session.query(HdbBasic).all()
+        for h in hdbs:
+            # Create a match key like "123 ang mo kio"
+            key = strip_title(f"{h.block_number} {h.street_name}")
+            if key:
+                hdb_data[key] = h
+        print(f"Loaded {len(hdb_data)} HDB records for matching.")
+    except Exception as e:
+        print(f"No hdb_basic data available: {e}")
     
     # Process data
     agents_cache = {}  # Cache to avoid duplicate agent lookups
@@ -554,6 +597,32 @@ def ingest_all_data(df, engine):
             
             if condo:
                 matched_with_condo += 1
+                
+            hdb = None
+            if not condo and hdb_data:
+                # 2.5 Match with hdb_basic
+                # HDB addresses usually look like "123 Ang Mo Kio Ave 4"
+                title_address_key = strip_title(f"{safe_str(row.get('title'))} {safe_str(row.get('address'))}")
+                
+                # Check if property is marked as HDB
+                is_hdb = 'hdb' in str(row.get('property_type', '')).lower() or 'hdb' in title_address_key
+                
+                if is_hdb:
+                    # Look for block + street patterns or just direct matches
+                    for hdb_key, h in hdb_data.items():
+                        if not hdb_key:
+                            continue
+                        
+                        pattern = r'\b' + re.escape(hdb_key) + r'\b'
+                        if re.search(pattern, title_address_key):
+                            hdb = h
+                            match_score = 90
+                            match_method = 'hdb_block_street'
+                            break
+            
+            if hdb:
+                # Add to a counter if needed
+                pass
             
             # 3. Create Listing
             listing = Listing(
@@ -566,7 +635,6 @@ def ingest_all_data(df, engine):
                 beds=get_int(row.get('beds')),
                 baths=get_int(row.get('baths')),
                 sqft=get_int(row.get('sqft')),
-                built_year=safe_str(row.get('built_year')),
                 property_type=safe_str(row.get('property_type')),
                 tenure=safe_str(row.get('tenure')),
                 nearby_text=safe_str(row.get('nearby_text')),
@@ -579,24 +647,29 @@ def ingest_all_data(df, engine):
                 
                 # Enriched from condo_basic if matched
                 condo_id=condo.id if condo else None,
-                postal_code=condo.postal_code if condo else None,
+                
+                # Enriched from condo OR hdb
+                postal_code=condo.postal_code if condo else (hdb.postal_code if hdb else None),
                 district=condo.district if condo else None,
-                neighbourhood=condo.neighbourhood if condo else None,
-                latitude=condo.latitude if condo else None,
-                longitude=condo.longitude if condo else None,
-                street_name=condo.street_name if condo else None,
+                neighbourhood=condo.neighbourhood if condo else (hdb.town if hdb else None),
+                latitude=condo.latitude if condo else (hdb.latitude if hdb else None),
+                longitude=condo.longitude if condo else (hdb.longitude if hdb else None),
+                street_name=condo.street_name if condo else (f"Blk {hdb.block_number} {hdb.street_name}" if hdb else None),
                 mrt_nearby=condo.mrt_nearby if condo else None,
-                developer_name=condo.developer_name if condo else None,
-                total_units=condo.total_units if condo else None,
-                num_floors=condo.num_floors if condo else None,
+                developer_name=condo.developer_name if condo else ('HDB' if hdb else None),
+                total_units=condo.total_units if condo else (hdb.total_dwelling_units if hdb else None),
+                num_floors=condo.num_floors if condo else (hdb.total_floors if hdb else None),
                 num_blocks=condo.num_blocks if condo else None,
                 has_swimming_pool=condo.has_swimming_pool if condo else False,
                 has_gym=condo.has_gym if condo else False,
                 has_tennis_court=condo.has_tennis_court if condo else False,
                 has_security=condo.has_security if condo else False,
-                has_parking=condo.has_parking if condo else False,
+                has_parking=condo.has_parking if condo else (hdb.has_multistorey_carpark if hdb else False),
                 amenities_json=condo.amenities_json if condo else None,
                 facilities_json=condo.facilities_json if condo else None,
+                
+                hdb_id=hdb.hdb_id if hdb else None,
+                built_year=safe_str(row.get('built_year')) or (str(hdb.year_completed) if hdb and hdb.year_completed else None),
                 
                 match_score=match_score,
                 match_method=match_method,
@@ -607,6 +680,7 @@ def ingest_all_data(df, engine):
 
         except Exception as e:
             print(f"Error processing row {idx}: {e}")
+            session.rollback()
             continue
         
         if (idx + 1) % 1000 == 0:
@@ -620,7 +694,8 @@ def ingest_all_data(df, engine):
     print(f"{'='*50}")
     print(f"Agents created: {agents_created}")
     print(f"Listings created: {listings_created}")
-    print(f"Matched with condo_basic: {matched_with_condo} ({matched_with_condo/listings_created*100:.1f}%)")
+    percent_matched = (matched_with_condo/listings_created*100) if listings_created > 0 else 0
+    print(f"Matched with condo_basic: {matched_with_condo} ({percent_matched:.1f}%)")
     
     return listings_created
 

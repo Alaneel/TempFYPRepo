@@ -327,23 +327,40 @@ def main():
     df_pg = normalize_propertyguru(df_pg)
     print("DEBUG: PG Columns after norm:", df_pg.columns.tolist())
     
+    all_dfs = [df_pg]
+    
     # 2. 99.co
     co_file = os.path.join(base_dir, '99co', 'sale_listings.csv')
-    print(f"Loading 99.co: {co_file}")
-    df_99 = pd.read_csv(co_file)
-    df_99 = normalize_99co(df_99)
+    if os.path.exists(co_file):
+        print(f"Loading 99.co: {co_file}")
+        df_99 = pd.read_csv(co_file)
+        df_99 = normalize_99co(df_99)
+        all_dfs.append(df_99)
+    else:
+        print(f"Skipping 99.co: {co_file} not found")
+        df_99 = pd.DataFrame()
     
     # 3. EdgeProp
     ep_file = os.path.join(base_dir, 'edgeprop', 'edgeprop_sale_condo.csv')
-    print(f"Loading EdgeProp: {ep_file}")
-    df_ep = pd.read_csv(ep_file)
-    df_ep = normalize_edgeprop(df_ep)
+    if os.path.exists(ep_file):
+        print(f"Loading EdgeProp: {ep_file}")
+        df_ep = pd.read_csv(ep_file)
+        df_ep = normalize_edgeprop(df_ep)
+        all_dfs.append(df_ep)
+    else:
+        print(f"Skipping EdgeProp: {ep_file} not found")
+        df_ep = pd.DataFrame()
     
     # 4. SRX
     srx_file = os.path.join(base_dir, 'srx', 'rent_sale_all_towns.csv')
-    print(f"Loading SRX: {srx_file}")
-    df_srx = pd.read_csv(srx_file)
-    df_srx = normalize_srx(df_srx)
+    if os.path.exists(srx_file):
+        print(f"Loading SRX: {srx_file}")
+        df_srx = pd.read_csv(srx_file)
+        df_srx = normalize_srx(df_srx)
+        all_dfs.append(df_srx)
+    else:
+        print(f"Skipping SRX: {srx_file} not found")
+        df_srx = pd.DataFrame()
     
     # Concatenate
     # Use headers from PropertyGuru (now updated)
@@ -352,7 +369,7 @@ def main():
     if 'source' not in target_columns:
         target_columns.append('source')
     
-    all_dfs = [df_pg, df_99, df_ep, df_srx]
+    # all_dfs is already populated with the dataframes that exist
     
     normalized_dfs = []
     for df in all_dfs:

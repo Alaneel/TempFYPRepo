@@ -13,9 +13,9 @@ class Settings(BaseSettings):
     # Database
     DB_HOST: str = "localhost"
     DB_PORT: str = "5432"
-    DB_USER: str = "alanwang"
+    DB_USER: str = "postgres"
     DB_PASS: str = ""
-    DB_NAME: str = "real_estate_app"
+    DB_NAME: str = "real_estate_fyp"
     
     # JWT
     SECRET_KEY: str = "YOUR_SECRET_KEY_HERE_CHANGE_IN_PRODUCTION"

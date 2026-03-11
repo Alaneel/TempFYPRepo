@@ -3,6 +3,9 @@ loguru>=0.7.0
 func-timeout>=4.3.5
 urllib3>=2.0.0
 pandas>=2.0.0
+numpy<2.0.0
+numexpr
+bottleneck
 beautifulsoup4
 playwright
 openpyxl

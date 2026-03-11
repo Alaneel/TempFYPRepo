@@ -13,27 +13,36 @@ class CacheService:
         self.default_ttl = 300  # 5 minutes
 
     async def get(self, key: str) -> Optional[Any]:
-        val = await self.redis.get(key)
-        if val:
-            return json.loads(val)
+        try:
+            val = await self.redis.get(key)
+            if val:
+                return json.loads(val)
+        except Exception as e:
+            print(f"Redis cache GET error: {e}")
         return None
 
     async def set(self, key: str, value: Any, ttl: int = None):
         if ttl is None:
             ttl = self.default_ttl
-        await self.redis.set(key, json.dumps(value), ex=ttl)
+        try:
+            await self.redis.set(key, json.dumps(value), ex=ttl)
+        except Exception as e:
+            print(f"Redis cache SET error: {e}")
 
     async def delete(self, key: str):
-        await self.redis.delete(key)
+        try:
+            await self.redis.delete(key)
+        except Exception as e:
+            print(f"Redis cache DELETE error: {e}")
         
     async def clear_listings_cache(self):
-        # Scan for keys starting with 'listings:' and delete them
-        # Note: In production with huge keyspace, SCAN is better but slower. 
-        # For this scale, it's acceptable or use better key strategies (e.g. key versioning).
-        keys = []
-        async for key in self.redis.scan_iter(match="listings:*"):
-            keys.append(key)
-        if keys:
-            await self.redis.delete(*keys)
+        try:
+            keys = []
+            async for key in self.redis.scan_iter(match="listings:*"):
+                keys.append(key)
+            if keys:
+                await self.redis.delete(*keys)
+        except Exception as e:
+            print(f"Redis cache CLEAR error: {e}")
 
 cache = CacheService()

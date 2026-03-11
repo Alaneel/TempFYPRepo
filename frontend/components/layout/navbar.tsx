@@ -3,13 +3,13 @@
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuLabel, 
-  DropdownMenuSeparator, 
-  DropdownMenuTrigger 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Building2, Menu, User, LogOut, LayoutDashboard, Heart, Sparkles } from "lucide-react";
@@ -18,26 +18,29 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 const NavLinks = () => (
-    <>
-      <Link href="/listings?buy_rent=Sale" className="text-sm font-medium transition-colors hover:text-primary">
-        Buy
-      </Link>
-      <Link href="/listings?buy_rent=Rent" className="text-sm font-medium transition-colors hover:text-primary">
-        Rent
-      </Link>
-      <Link href="/listings?property_type=Condo" className="text-sm font-medium transition-colors hover:text-primary">
-        Condos
-      </Link>
-      <Link href="/listings?property_type=Landed" className="text-sm font-medium transition-colors hover:text-primary">
-        Landed
-      </Link>
-      <Link href="/listings?property_type=HDB" className="text-sm font-medium transition-colors hover:text-primary">
-        HDB
-      </Link>
-      <Link href="/valuate" className="text-sm font-medium transition-colors hover:text-primary">
-        Valuate
-      </Link>
-    </>
+  <>
+    <Link href="/listings?buy_rent=Sale" className="text-sm font-medium transition-colors hover:text-primary">
+      Buy
+    </Link>
+    <Link href="/listings?buy_rent=Rent" className="text-sm font-medium transition-colors hover:text-primary">
+      Rent
+    </Link>
+    <Link href="/listings?property_type=Condo" className="text-sm font-medium transition-colors hover:text-primary">
+      Condos
+    </Link>
+    <Link href="/listings?property_type=Landed" className="text-sm font-medium transition-colors hover:text-primary">
+      Landed
+    </Link>
+    <Link href="/listings?property_type=HDB" className="text-sm font-medium transition-colors hover:text-primary">
+      HDB
+    </Link>
+    <Link href="/valuate" className="text-sm font-medium transition-colors hover:text-primary">
+      Valuate
+    </Link>
+    <Link href="/directory" className="text-sm font-medium transition-colors hover:text-primary">
+      Directory
+    </Link>
+  </>
 );
 
 export function Navbar() {
@@ -66,25 +69,26 @@ export function Navbar() {
               <span>SgEstate</span>
             </Link>
             <nav className="flex flex-col gap-4">
-               <Link href="/listings?buy_rent=Sale" onClick={() => setIsOpen(false)} className="text-lg font-medium">Buy</Link>
-               <Link href="/listings?buy_rent=Rent" onClick={() => setIsOpen(false)} className="text-lg font-medium">Rent</Link>
-               <Link href="/agents" onClick={() => setIsOpen(false)} className="text-lg font-medium">Find Agent</Link>
-               <Link href="/valuate" onClick={() => setIsOpen(false)} className="text-lg font-medium">Valuate</Link>
+              <Link href="/listings?buy_rent=Sale" onClick={() => setIsOpen(false)} className="text-lg font-medium">Buy</Link>
+              <Link href="/listings?buy_rent=Rent" onClick={() => setIsOpen(false)} className="text-lg font-medium">Rent</Link>
+              <Link href="/agents" onClick={() => setIsOpen(false)} className="text-lg font-medium">Find Agent</Link>
+              <Link href="/valuate" onClick={() => setIsOpen(false)} className="text-lg font-medium">Valuate</Link>
+              <Link href="/directory" onClick={() => setIsOpen(false)} className="text-lg font-medium">Directory</Link>
             </nav>
           </SheetContent>
         </Sheet>
-        
+
         <Link href="/" className="mr-6 flex items-center space-x-2">
           <Building2 className="h-6 w-6 text-primary" />
           <span className="hidden font-bold sm:inline-block text-xl">
             SgEstate
           </span>
         </Link>
-        
+
         <nav className="flex items-center space-x-6 text-sm font-medium hidden md:flex">
           <NavLinks />
         </nav>
-        
+
         <div className="flex flex-1 items-center justify-end space-x-2">
           {isAuthenticated ? (
             <DropdownMenu>
@@ -107,39 +111,39 @@ export function Navbar() {
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 {user?.role === 'admin' && (
-                   <DropdownMenuItem asChild>
-                      <Link href="/admin/stats">
-                        <LayoutDashboard className="mr-2 h-4 w-4" />
-                        Admin Dashboard
-                      </Link>
-                   </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/admin/stats">
+                      <LayoutDashboard className="mr-2 h-4 w-4" />
+                      Admin Dashboard
+                    </Link>
+                  </DropdownMenuItem>
                 )}
                 {/* Note: I'm checking roles loosely here. Ideally constants. */}
                 {(user?.role === 'agent') && (
-                   <DropdownMenuItem asChild>
-                      <Link href="/agent/listings">
-                        <LayoutDashboard className="mr-2 h-4 w-4" />
-                        Agent Dashboard
-                      </Link>
-                   </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/agent/listings">
+                      <LayoutDashboard className="mr-2 h-4 w-4" />
+                      Agent Dashboard
+                    </Link>
+                  </DropdownMenuItem>
                 )}
                 <DropdownMenuItem asChild>
-                    <Link href="/favourites">
-                        <Heart className="mr-2 h-4 w-4 text-red-500" />
-                        Saved Listings
-                    </Link>
+                  <Link href="/favourites">
+                    <Heart className="mr-2 h-4 w-4 text-red-500" />
+                    Saved Listings
+                  </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                    <Link href="/recommendations">
-                        <Sparkles className="mr-2 h-4 w-4 text-primary" />
-                        For You
-                    </Link>
+                  <Link href="/recommendations">
+                    <Sparkles className="mr-2 h-4 w-4 text-primary" />
+                    For You
+                  </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                    <Link href="/profile">
-                        <User className="mr-2 h-4 w-4" />
-                        Profile
-                    </Link>
+                  <Link href="/profile">
+                    <User className="mr-2 h-4 w-4" />
+                    Profile
+                  </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout} className="text-red-600 focus:text-red-600">
