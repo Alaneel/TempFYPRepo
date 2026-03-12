@@ -8,21 +8,9 @@ valuation chat assistant), several avenues remain for future enhancement.
 \section{Data Pipeline and Feature Enrichment}
 
 \subsection{Geospatial and Proximity Features}
-The current pipeline already leverages the Singapore Land Authority's \textbf{OneMap API} for address geocoding and reverse-geocoding to district codes. However, the valuation models rely primarily on structural attributes (floor area, bedrooms, tenure, age, and district). Future iterations will extend the OneMap integration to compute precise walking distances to key amenities---MRT stations, top-tier primary schools, and the Central Business District (CBD)---and incorporate these as additional model features.
+Our current process uses the Singapore Land Authority's \textbf{OneMap API} for address geocoding and reverse geocoding to generate district codes. However, our rating model is primarily based on building characteristics (living area, number of bedrooms, use, age of the building, and neighborhood). In future versions, we plan to expand OneMap integration to calculate accurate walking routes to important facilities such as MRT stations, top primary schools, and the Central Business District (CBD), and integrate this as an additional model feature.
 
-The expected performance gain is quantifiable from the error analysis in
-Section~\ref{sec:error_analysis}: the dominant residual error source for the
-Condominium Sale model (current MAPE 13.35\%) is identified as
-\textit{within-district micro-location premium}, which is precisely the signal that
-MRT walking distance and school proximity would capture. Studies on Singapore hedonic
-models incorporating proximity features report MAPE reductions of 3--5 percentage
-points for condominium segments \cite{park2015using}. Applying a conservative 3\,pp
-reduction estimate would bring Condominium Sale MAPE from 13.35\% to approximately
-\textbf{10\%}, approaching the HDB Sale model's current accuracy. For the Landed Sale
-segment, plot-level amenity distances are expected to reduce the 26.28\% MAPE to the
-18--20\% range. Implementation requires a one-time batch geocoding pass over the
-53,497 unified listings using the OneMap Routing API (free tier, 250 requests/min),
-followed by feature engineering and model retraining---an estimated two-week effort.
+The expected performance improvement can be quantified by the error analysis in Section~\ref{sec:error_analysis}. The main reason for the residual error of the apartment sales model (current MAPE 13.35\%) is the \textit{micro-location premium in the area}. This premium can be accurately reflected by the distance to the MRT station and the distance to the school. A study on the Singapore hedonistic model showed that the MAPE of the apartment segment could be reduced by 3--5 percentage points after considering the proximity factor \cite{park2015using}. A conservative estimate of 3\,pp would reduce the MAPE of apartment sales from 13.35\% to about \textbf{10\%}, which would be close to the accuracy of the current Housing and Development Board (HDB) sales model. For the landed sales segment, the MAPE is expected to be reduced from 26.28\% to 18--20\% due to the distance to amenities at the plot level. This implementation requires one-time batch geocoding of 53,497 merged records using the OneMap Routing API (free tier, 250 requests/min), followed by feature engineering and model retraining---an estimated two-week effort.
 
 \subsection{Expanded Team Coverage}
 While the PropertyGuru scraper developed by the author is fully operational and covers the majority of the market, the team plans to expand the \texttt{condo\_basic} master records (managed by other team members) to include historical transaction data explicitly linked to current listings.

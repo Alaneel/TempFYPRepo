@@ -590,33 +590,26 @@ under 120 words and to avoid Markdown formatting.
 
 \subsection{Overview and Motivation}
 
-The recommendation objective requires the system to surface listings that are both
-\emph{preference-consistent} (matching the user's stated or inferred tastes) and
-\emph{value-rational} (fairly priced relative to market estimates). Standalone
-collaborative filtering is infeasible at system launch due to the cold-start
-problem: the user base is small and interaction history is sparse. A pure
-content-based approach, while viable, ignores the valuation signal already
-computed by the XGBoost models. The design therefore adopts a
-\textbf{hybrid content-based and valuation-grounded} ranking model that
-combines both information sources into a single score.
+The goal of a recommender system is to present lists that both
+\emph{match user preferences} (i.e., align with explicit or inferred user preferences) and
+\emph{have reasonable value} (pricing consistent with market prices). In the early stages
+of system deployment, due to the cold-start problem (small user base and limited
+interaction history), standalone collaborative filtering methods are impractical. A
+purely content-based approach, while feasible, ignores the \textbf{rating signals}
+already computed by the XGBoost model. The design therefore adopts a
+\textbf{combined content-based and rating-based} ranking model that
+integrates both information sources into a single rating.
 
 \subsection{User Preference Profile}
 
-When a user saves a listing to their favourites (stored in the
-\texttt{user\_favourites} table), the system incrementally updates an in-memory
-preference profile. The profile aggregates the following signals across all
-saved listings:
+When a user saves a property as a favorite (stored in the \texttt{user\_favourites} table), the system incrementally updates an in-memory preference profile. This profile summarizes the following information for all saved properties:
 
 \begin{itemize}
-    \item \textbf{Property type distribution} — frequency map over saved property
-    types (e.g., \{Condominium: 3, HDB: 1\}).
-    \item \textbf{District distribution} — frequency map over saved districts.
-    \item \textbf{Average price} — arithmetic mean of saved listing prices,
-    used as the centre of a price band filter.
-    \item \textbf{Average bedroom count} — arithmetic mean of saved bedroom
-    counts, rounded for scoring.
-    \item \textbf{Transaction mode} — dominant buy/rent mode; mismatched
-    candidates receive a 0.1$\times$ score penalty.
+\item \textbf{Property Type Distribution} — A frequency distribution map of saved property types (e.g., {Condominium: 3, HDB: 1}).
+\item \textbf{District Distribution} — A frequency distribution map of saved districts.
+\item \textbf{Average Price} — The arithmetic mean of the prices of saved properties, used as the centre of a price filter.
+\item \textbf{Average Number of Bedrooms} — The arithmetic mean of the number of bedrooms in saved properties, rounded for scoring.
+\item \textbf{Transaction Pattern} — Dominant buy/rent mode; properties that do not match the transaction pattern receive a \textbf{0.1$\times$ score penalty}.
 \end{itemize}
 
 \subsection{Hybrid Scoring Function}
