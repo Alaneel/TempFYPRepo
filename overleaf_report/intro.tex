@@ -43,46 +43,50 @@ portals; the author's personal contributions are as follows:
     tenure, built year, and agent information.
 
     \item \textbf{Multi-Platform Aggregation and Deduplication Pipeline.}
-    The author designed and implemented the unified aggregation layer
-    (\texttt{pipeline/aggregate.py}) that consumes data from all four scrapers (built by the
-    team), normalises heterogeneous schemas, and applies a composite-key deduplication
-    algorithm. The pipeline ingested \textbf{86,321 raw listings} across four portals
-    (PropertyGuru 55,357; SRX 24,010; 99.co 5,344; EdgeProp 1,610) and produced a clean
-    deduplicated dataset of \textbf{53,497 listings}. The dedup key achieves
-    \textbf{95.5\% address-field coverage}; a title-fallback strategy eliminates all
-    remaining degenerate collisions (2,410 → 0).
+    The author built a unified aggregation layer in \texttt{pipeline/aggregate.py}. This 
+    system processes data from all four team-developed scrapers. It first normalizes 
+    various data schemas, then applies a composite-key algorithm to remove duplicates. 
+    The pipeline ingested \textbf{86,321 raw listings} from four portals. This total 
+    includes 55,357 from PropertyGuru, 24,010 from SRX, 5,344 from 99.co, and 1,610 
+    from EdgeProp. After processing, the pipeline produced a clean deduplicated dataset 
+    of \textbf{53,497 listings}. The deduplication key achieves \textbf{95.5\% 
+    address-field coverage}. A title-fallback strategy then eliminates all remaining 
+    degenerate collisions. This reduced the number of collisions from 2,410 to 0.
 
     \item \textbf{Per-Segment AI Valuation Models with SHAP Explanations.}
-    The author trained \textbf{eight independent XGBoost models} stratified by property type
-    and transaction mode. Best-segment test-set MAPE: \textbf{8.90\%} (HDB Rent) and
-    \textbf{8.96\%} (HDB Sale)---a \textbf{70\%} reduction relative to the mean baseline.
-    Each prediction is accompanied by SHAP attribution factors exposed to the end user.
+    The author trained \textbf{eight independent XGBoost models} stratified by property 
+    type and transaction mode. Best-segment test-set MAPE: \textbf{8.90\%} (HDB Rent) 
+    and \textbf{8.96\%} (HDB Sale)---a \textbf{70\%} reduction relative to the mean 
+    baseline. Each prediction is accompanied by SHAP attribution factors exposed to 
+    the end user.
 
     \item \textbf{LLM-Powered Natural Language Property Search.}
-    The author implemented the Claude-backed semantic search pipeline and conducted a formal
-    evaluation across 47 ground-truth queries, achieving an average \textbf{F1 of 96.4\%}.
+    The author implemented a semantic search pipeline based on Claude. Formal 
+    evaluations were then performed on 47 ground-truth queries. This process achieved 
+    an average \textbf{F1 score of 96.4\%}.
 
     \item \textbf{Agentic Search Enhancements.}
-    Beyond basic intent extraction, the author implemented three agentic behaviours layered
-    on top of the NL search pipeline: (i) \textit{multi-district geographic resolution},
-    which maps proximity expressions such as ``near Orchard MRT'' to a set of adjacent
-    Singapore districts (e.g., D9/D10/D11) rather than a single district, improving recall
-    for location-aware queries; (ii) \textit{progressive filter relaxation}, which
-    automatically retries queries with successively relaxed constraints (price $\to$ tenure
-    $\to$ location) when no results are found, preventing zero-result dead ends; and (iii)
-    \textit{LLM-generated fallback explanations}, where a secondary Claude call produces a
-    natural-language explanation of why the original query yielded no results and what
-    constraints were relaxed.
+    In addition to basic intention extraction, the author implemented three agent 
+    behaviors based on natural language processing: (i) \textit{Geographic resolution 
+    across multiple boroughs}. This associates proximity expressions, such as ``near 
+    Orchard MRT station,'' with a group of neighboring Singaporean boroughs. Examples 
+    include D9, D10, and D11. Instead of targeting a single borough, this broader 
+    mapping improves the hit rate of location-based queries. (ii) \textit{Stepwise 
+    filter relaxation}. If no results are found, queries are automatically retries by 
+    progressively loosening the restrictions (price $\to$ property type $\to$ location). 
+    This prevents dead ends with zero results. (iii) \textit{LLM-generated fallback 
+    explanation}. This uses a second Claude call to explain in natural language why 
+    the original query returned no results and which restrictions were relaxed.
 
     \item \textbf{AI Valuation Chat Assistant.}
-    The author implemented a multi-turn conversational assistant accessible from each
-    property detail page. The assistant is provided with the listing's full attribute set
-    and the XGBoost valuation estimate (including SHAP attribution factors) as context,
-    enabling it to answer questions such as ``Is this fairly priced?'' or ``What factors
-    drive this estimate?'' using grounded, property-specific data. An offline evaluation
-    harness spanning 42 interactions across three property segments (Condominium Sale,
-    HDB Rent, Landed Sale) confirmed \textbf{93\% factual consistency} and
-    \textbf{100\% response relevance}.
+    The assistant is provided with all property attributes and XGBoost-based valuation 
+    estimates (including SHAP attribution factors) as context. This allows it to 
+    answer questions such as ``Is this a fair price?'' and ``What factors influence 
+    this estimate?'' using property-specific data. An offline valuation system 
+    encompassing 42 interactions across three real estate segments (sales of 
+    condominiums, rental apartments in HDB units, and sales of single-family homes) 
+    demonstrated a \textbf{factual consistency of 93\%} and a \textbf{response 
+    relevance of 100\%}.
 
     \item \textbf{Backend API and Frontend Web Application.}
     The author built the FastAPI backend (JWT authentication, Redis caching, RESTful listing,
