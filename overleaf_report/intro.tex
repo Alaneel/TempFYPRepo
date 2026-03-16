@@ -2,23 +2,23 @@
 
 \section{Background and Motivation}
 
-Singapore's housing sector is characterized by a unique \textbf{dual-tier structure}, comprising a highly regulated public housing market managed by the Housing and Development Board (HDB) and a free-market private residential sector. The HDB sector houses approximately 80\% of the resident population, serving as a critical pillar of national social stability, while the private sector caters to higher-income households and investors \cite{tu2004dynamics}. Despite their regulatory separation, these two markets exhibit complex, non-linear interdependencies. The ``asset progression'' aspiration—whereby households upgrade from public to private housing—creates a dynamic flow of capital and demand that links the two tiers \cite{sing2006price}.
+The housing market in Singapore is unique in that it consists of two levels: a public housing market, which is strictly controlled by the Housing and Development Board (HDB), and a private housing market where anyone can buy a house. The HDB sector provides housing for approximately 80\% of the population and plays a crucial role as a pillar of national social stability, while the private sector targets high-income households and investors \cite{tu2004dynamics}. Although these two markets are separated by regulatory requirements, they are closely linked in complex and non-linear ways. The desire for wealth accumulation—that is, the wish of households to move from the public to the private housing market—generates a dynamic flow of capital and demand that connects the two levels \cite{sing2006price}.
 
-In the current digital era, the proliferation of online property portals such as PropertyGuru, 99.co, and SRX has led to an explosion of real estate data. This includes not only transactional records but also unstructured text descriptions, listing metadata, and visual assets. However, this data remains fragmented across disparate platforms, creating significant \textbf{information asymmetry} for stakeholders. Homebuyers, investors, and policymakers alike face challenges in obtaining a holistic view of the market, often relying on disjointed manual searches or simplistic linear analyses that fail to capture the nuances of the dual-market system.
+The rise of online property portals like PropertyGuru, 99.co, and SRX in the digital age has led to an explosion of real estate data. This includes not only records of transactions but also unstructured text descriptions, listing metadata, and visual assets. But this information is still spread out across different platforms, which means that stakeholders don't have all the information they need—creating a significant \textbf{information asymmetry}. People who buy property, investors, and policymakers all have a hard time getting a full picture of the market. They often have to do fragmented manual research or simplified linear analyses that don't show how the dual market system works.
 
 \section{Problem Statement}
 
 Three concrete problems motivated this project:
 
 \begin{enumerate}
-    \item \textbf{Data Fragmentation:} Critical market intelligence is siloed across competing platforms, making cross-sectional analysis difficult.
-    \item \textbf{Methodological Limitations:} Traditional econometric methods (e.g., Hedonic Pricing Models) typically rely on structured variables and linear assumptions, often neglecting the rich insights embedded in unstructured data and non-linear market dynamics.
-    \item \textbf{Search Usability:} Existing portals require users to navigate rigid filter interfaces, creating friction for users who wish to express nuanced, natural-language requirements.
+    \item \textbf{Data Fragmentation:} Important market intelligence is stored on different platforms that compete with each other, which makes it hard to analyze data from different sources.
+    \item \textbf{Limitations of the method:} Traditional econometric methods, like Hedonic Pricing Models, usually depend on structured variables and linear assumptions. These methods often miss out on the valuable information that can be found in unstructured data. Also, they often don't take into account how the market changes in a non-linear way.
+    \item \textbf{Search Usability:} Right now, users have to deal with rigid filter interfaces on portals, which makes it hard for people who want to say what they need in a more natural way.
 \end{enumerate}
 
 \section{Project Objectives}
 
-The system built to address these problems covers the full stack from raw scraping to a user-facing web application. The specific objectives achieved are:
+The system that was made to solve these problems goes all the way from raw scraping to a web app that users can see. The specific goals that were met are:
 
 \begin{enumerate}
     \item \textbf{Unified Data Infrastructure:} Automated web scraping pipelines were designed and implemented to aggregate and harmonise listings from Singapore's major property portals into a single deduplicated repository.
@@ -113,7 +113,7 @@ The remainder of this report is organised as follows:
     \item \textbf{Chapter 3 (Methodology and System Design)} details the system architecture, data acquisition pipelines, deduplication algorithm, AI model design, semantic search pipeline, and personalised recommendation engine design.
     \item \textbf{Chapter 4 (Implementation)} documents the deployed data pipeline, trained valuation models, backend API, frontend web application, and recommendation system implementation.
     \item \textbf{Chapter 5 (Evaluation and Results)} presents quantitative evaluation of the deduplication algorithm, valuation models, natural language search system, agentic enhancements, and the hybrid recommendation engine (NDCG@5, Precision@5).
-    \item \textbf{Chapter 6 (Conclusion)} summarises the contributions, evaluates achievement of project objectives, and reflects on broader impact.
-    \item \textbf{Chapter 7 (Future Work)} outlines the roadmap for further improvement, including proximity feature enrichment, domain-adapted LLMs, and computer vision for condition assessment.
+    \item \textbf{Chapter 6 (Conclusion)} sums up the contributions, looks at how well the project met its goals, and thinks about the bigger picture.
+    \item \textbf{Chapter 7 (Future Work)} lays out the plan for making things better in the future. This includes adding more features to the proximity feature, adapting LLMs to different fields, and using computer vision to assess conditions.
 \end{itemize}
 

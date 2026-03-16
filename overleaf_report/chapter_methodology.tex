@@ -2,7 +2,7 @@
 
 \section{System Architecture}
 
-Five stages make up the overall pipeline: Data Acquisition, Data Processing, Data Storage, Analysis Engine, and Application Layer. The central design decision was to treat the data pipeline as the foundation---everything else (valuation models, NL search, chat assistant) sits on top of a single unified listing repository rather than querying each portal separately.
+The entire data pipeline consists of five stages: data collection, data processing, data storage, an analytics engine, and an application layer. A key design decision was to treat the data pipeline as the foundation. All other functions, such as valuation models, natural search, and chat assistants, are based on a single, integrated real estate information repository, instead of querying each portal individually.
 
 \begin{figure}[!ht]
 \centering
@@ -101,7 +101,7 @@ Five stages make up the overall pipeline: Data Acquisition, Data Processing, Dat
 
 \subsection{Data Acquisition}
 
-This project is developed as part of a team effort. The system integrates data from four major real estate portals: PropertyGuru, 99.co, EdgeProp, and SRX. The author is solely responsible for the PropertyGuru scraper, the aggregation and deduplication pipeline, and all downstream AI and application components described in this report. The scrapers for 99.co, EdgeProp, and SRX were developed by other team members.
+This project was developed as a team effort. The system integrates data from four major real estate portals: PropertyGuru, 99.co, EdgeProp, and SRX. The PropertyGuru scraper, the data aggregation and deduplication pipeline, and all AI and application components described in this report were developed exclusively by the author. The scrapers for 99.co, EdgeProp, and SRX were developed by other team members.
 
 \begin{table}[!ht]
     \centering
@@ -177,10 +177,11 @@ K(\ell) =
 where $\|$ denotes string concatenation and \text{norm} strips punctuation and lowercases the string. The address component achieves \textbf{95.5\%} field coverage; the title fallback ensures 100\% key availability across all 53,497 listings.
 
 \subsection{Data Storage}
-The data storage layer is built upon a PostgreSQL relational database, designed to maintain data integrity while supporting complex analytical queries.
+The data storage layer uses a relational PostgreSQL database to make sure that data is safe and to handle complex analytical queries.
 
 \subsubsection{Entity-Relationship Design}
-The database schema is centered around the separation of transient listing data from persistent property master data. Figure \ref{fig:er_diagram} illustrates the core entities and their relationships.
+The database schema separates temporary object list data from persistent object master data.
+Figure \ref{fig:er_diagram} illustrates the key entities and their relationships.
 
 % ─── Figure 3.2: ER Diagram ───────────────────────────────────────────────────
 % Requires: \usepackage{tikz}
@@ -363,13 +364,11 @@ The \texttt{unified\_listings} table aggregates active rental and sale listings 
 
 \subsection{Per-Segment Stratification}
 
-Eight independent models are trained, one per (property type $\times$ transaction mode) combination:
-$\{$Condominium, HDB, Landed, GCB$\} \times \{$sale, rent$\}$.
-This stratification is preferred over a single global model with property-type indicator variables, because the pricing dynamics of HDB flats (government-regulated, narrow price band) differ fundamentally from those of GCB bungalows (negotiated, multi-million SGD range). A shared model would force a single functional form across these structurally distinct markets, increasing systematic bias.
+For each combination of property type and transaction type, eight independent models are trained: $\{\text{Condominium, HDB, Single-Family Home, GCB}\} \times \{\text{Sale, Rent}\}$. This differentiation is preferable to a single global model with an index variable for the property type. The reason for this is that the price development of HDB flats (small price range due to government regulation) differs fundamentally from that of GCB bungalows (negotiable price range of several million S\$). Using a single model would force the application of a single functional form to these structurally different markets and exacerbate systematic biases.
 
 \subsection{Feature Engineering}
 
-The raw listing attributes are transformed into the feature set shown in Table~\ref{tab:features_design}. The target variable is $\log_{10}(\text{price})$, following standard practice in hedonic pricing models to stabilise variance and reduce the influence of extreme values \cite{park2015using}.
+The raw data for the property attributes are transformed into the features shown in Table 1. The dependent variable is $\log_{10}(\text{price})$. This follows the standard procedures of hedonic pricing models for stabilizing variance and mitigating the influence of extreme values.
 
 \begin{table}[!ht]
     \centering
@@ -396,7 +395,7 @@ The raw listing attributes are transformed into the feature set shown in Table~\
     \end{tabular}
 \end{table}
 
-Room-for-rent listings (\texttt{beds} = 0, average S\$993--S\$1,544/month) are excluded from all rent models, as their pricing dynamics are structurally distinct from whole-unit rentals (S\$3,500--S\$7,500/month). Including them would introduce systematic bias in the lower price range.
+Room rentals (\texttt{number of beds} = 0, average monthly price S\$993--1,544) are excluded from all rental models because their price fluctuations differ structurally from those of entire apartment rentals (monthly price S\$3,500--7,500). Including room rentals would introduce a systematic bias in the lower price segment.
 
 \subsection{Model Selection and Hyperparameters}
 
@@ -462,12 +461,7 @@ where $\phi_0$ is the base value (mean prediction) and $\phi_j$ is the contribut
 
 \subsection{Overview}
 
-The natural language search system transforms a free-text user query into a structured
-JSON filter object that is applied directly as a database \texttt{WHERE} clause. The
-design deliberately avoids model fine-tuning: a general-purpose LLM (Anthropic Claude)
-is prompted with a task-specific system message that encodes the output schema and
-Singapore real estate domain knowledge. This zero-shot approach allows the pipeline to
-be updated by editing the prompt alone, without retraining.
+The natural language search system takes free-text queries that the user defines and turns them into structured JSON filter objects. These objects are then used as \texttt{WHERE} clauses in the database.This design deliberately avoids fine-tuning the model. The generic LLM (Anthropic Claude) is invoked by task-specific system messages that encode the output schema and expertise on the Singapore real estate market. This zero-shot method lets you update the pipeline by just changing the input prompts, so you don't have to retrain it.
 
 \subsection{Output Schema and JSON Filter Contract}
 
@@ -487,23 +481,19 @@ The LLM is instructed to produce a JSON object conforming to the following schem
 }
 \end{verbatim}
 
-The choice to use a \texttt{districts} \emph{array} rather than a scalar
-\texttt{district} field was deliberate. When the backend receives a non-null
-\texttt{districts} list, it generates an SQL \texttt{IN} predicate covering all
-listed districts in a single query; a non-null scalar \texttt{district} by contrast
-produces a single equality constraint. This distinction is what makes multi-district
-geographic resolution work in practice---without the array field, a query like
-``near Orchard MRT'' would have to be broken into separate per-district requests,
-which adds latency and complicates result merging.
+It was on purpose that a \texttt{districts} \emph{array} was chosen over a scalar 
+\texttt{district} field. If the backend gets a list of \texttt{districts} that 
+isn't null, it makes a SQL \texttt{IN} predicate that includes all of the 
+districts in one query. On the other hand, if it gets a scalar \texttt{district} 
+that is not null, it makes a single equality constraint. This difference is what 
+makes multi-district geographic resolution work in the real world. If there were 
+no array fields, queries like ``near Orchard MRT station'' would have to be 
+broken up into separate queries for each borough. This would take longer to 
+process and make it harder to combine the results.
 
 \subsection{System Prompt Design}
 
-The system prompt performs three functions: (i) it constrains the output to valid JSON
-with no prose; (ii) it provides Singapore-specific grounding (HDB flat types, district
-numbering, common area abbreviations such as ``CCR'', ``RCR'', ``OCR''); and (iii) it
-includes eight in-context few-shot examples covering simple, multi-attribute, and
-conversational query forms. The prompt is approximately 900 tokens, well within the
-context window of the deployed model.
+The system query fulfills three functions: (i) it restricts the output to a valid JSON format and excludes flowing text; (ii) it provides Singapore-specific information (e.g., HDB apartment types, district numbers, and the abbreviations for communal areas "CCR," "RCR," and "OCR"); and (iii) it includes eight context examples for simple, multidimensional, and dialog-based queries. The query comprises approximately 900 tokens and fits within the context window of the extended model.
 
 \subsection{Agentic Pipeline Architecture}
 
@@ -579,10 +569,7 @@ construction strategy. For each request, the backend assembles a context block
 containing: the listing's full attribute set (property type, beds, sqft, tenure,
 built year, district, asking price), the XGBoost point estimate and confidence
 interval, the MAPE of the segment model, and the top-5 SHAP factor attributions.
-This grounded context is prepended to the conversation history before each API call,
-ensuring that every response is anchored to quantitative data rather than general
-market knowledge. The assistant is explicitly instructed to respond in plain prose
-under 120 words and to avoid Markdown formatting.
+This specific context is added to the conversation history before each API call to ensure that all answers are based on quantitative data and not general market knowledge. The assistant is told to answer in plain language with no more than 120 words and not to use Markdown formatting.
 
 % ─────────────────────────────────────────────────────────────────────────────
 \section{Personalised Recommendation Engine Design}
@@ -590,15 +577,15 @@ under 120 words and to avoid Markdown formatting.
 
 \subsection{Overview and Motivation}
 
-The goal of a recommender system is to present lists that both
-\emph{match user preferences} (i.e., align with explicit or inferred user preferences) and
-\emph{have reasonable value} (pricing consistent with market prices). In the early stages
-of system deployment, due to the cold-start problem (small user base and limited
-interaction history), standalone collaborative filtering methods are impractical. A
-purely content-based approach, while feasible, ignores the \textbf{rating signals}
-already computed by the XGBoost model. The design therefore adopts a
-\textbf{combined content-based and rating-based} ranking model that
-integrates both information sources into a single rating.
+The goal of the recommendation system is to present lists that correspond to 
+\emph{user preferences} (i.e., explicit or inferred user preferences) and 
+\emph{are priced appropriately} (in line with market rates). In the initial phase 
+of system implementation, a single collaborative filtering method is impractical 
+due to the cold start problem (small user base and limited interaction history). 
+While a content-based approach is possible, it ignores the \textbf{rating signals} 
+already calculated by the XGBoost model. Therefore, this design uses a 
+\textbf{combined ranking model} that integrates both content-based and 
+rating-based information sources into a single evaluation.
 
 \subsection{User Preference Profile}
 
@@ -683,21 +670,16 @@ ranked highest, surfacing actionable opportunities rather than merely familiar o
 
 \subsection{Candidate Pre-filtering}
 
-To bound inference latency, candidates are pre-filtered before scoring:
-(i) only active listings matching the profile's dominant transaction mode are
-considered, and (ii) price is restricted to $[\bar{p} \times 0.4,\; \bar{p} \times 1.6]$.
-XGBoost inference for the bargain score is called once per candidate; model
-loading is cached at server startup via \texttt{joblib}, so per-request latency
-is dominated by the database fetch, not inference.
+To limit inference latency, candidates are pre-filtered before scoring. This means 
+that only active listings that match the profile's main transaction mode are 
+considered, and the price is limited to $[\bar{p} \times 0.4,\; \bar{p} \times 1.6]$. 
+For each candidate, XGBoost inference for the bargain score is called once. 
+\texttt{joblib} caches model loading at server startup, so the database fetch, 
+not inference, is what causes the most latency per request.
 
 \subsection{Evaluation Protocol}
 
-The recommendation engine is evaluated offline using ten synthetic user profiles,
-each constructed by seeding the favourites table with 3--5 listings sharing a
-consistent preference signature. Ground-truth relevance labels are assigned
-hierarchically: a candidate receives label 2 if it matches both the preferred
-property type \emph{and} district, label 1 for type-only match, and label 0
-otherwise. NDCG@$K$ is computed over these graded labels using the standard
+The recommendation engine is evaluated offline using 10 synthetic user profiles. Each profile is created by populating a favorites table with 3 to 5 attributes that share common preference characteristics. Relevance tags are given in order of importance. If a candidate's attribute matches both the type \emph{and} the district, it gets a tag of 2. If it only matches the type, it gets a tag of 1. If it doesn't match either, it gets a tag of 0. NDCG@$K$ is computed over these graded labels using the standard
 formulation:
 \[
     \text{NDCG}@K = \frac{\text{DCG}@K}{\text{IDCG}@K}, \quad

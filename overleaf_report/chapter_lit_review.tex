@@ -2,7 +2,7 @@
 
 \section{Introduction}
 
-Real estate valuation and market analysis integrate economics, data science, and artificial intelligence. This chapter explores the evolution of methodologies in this field, from classic econometric approaches to modern applications such as gradient-boosted machine learning and large language models (LLM). Furthermore, this chapter reviews previous research on the Singapore housing market (a unique two-tiered system) to clarify the specific challenges and research gaps addressed in this project.
+Real estate valuation and market analysis is an interdisciplinary field that combines economics, data science, and artificial intelligence. This chapter examines the evolution of methods in this area, from classical econometric procedures to innovative applications such as gradient-boosted machine learning and large language models (LLMs). Furthermore, it provides an overview of previous research on the Singaporean housing market (a unique two-tier system) to highlight specific challenges and research gaps that this project aims to address.
 
 % ─────────────────────────────────────────────────────────────────────────────
 \section{Traditional Real Estate Valuation: Hedonic Pricing Models}
@@ -201,56 +201,63 @@ users in a way that goes beyond price alone.
 
 \subsection{LLMs as Few-Shot Structured Decoders}
 
-Brown et al.~\cite{brown2020language} established that large autoregressive language models
-achieve strong performance on novel tasks via \textit{few-shot in-context learning}---without
-any gradient updates---by conditioning on a small number of labelled examples in the prompt.
-This capability underpins the natural language search pipeline in this project, where Claude
-is prompted with eight few-shot query--filter pairs to parse free-text property queries into
-structured JSON filters. A zero-shot version (no examples) was tested informally early on and
-produced noticeably more district hallucinations, which is why the final prompt includes
-the in-context examples.
+Brown et al.~\cite{brown2020language} demonstrated that large autoregressive 
+language models can achieve good results on novel tasks through 
+\textit{contextual learning with few training iterations} and without gradient 
+updates, by training on a small number of labeled examples within the prompts. 
+This capability forms the basis of our natural language search pipeline. 
+Claude receives eight query-filter pairs with few training iterations and 
+converts free-form property queries into structured JSON filters. Initially, 
+an informal version without training iterations (without examples) was tested, 
+which apparently led to numerous misinterpretations. Therefore, the final 
+prompts include contextual examples.
 
-Zhao et al.~\cite{zhao2024llm} demonstrated that transformer-based LLMs can extract
-structured fields (price, floor area, tenure, party names) from free-text real estate
-transaction contracts with high field-level F1, outperforming rule-based extractors on
-edge cases such as abbreviated clauses or informal phrasing.
-Their task differs from ours---they go from contract text to structured fields, whereas here
-the input is a user query and the output is a search filter---but the underlying mechanism
-is the same in both cases: an LLM maps unstructured text to a structured schema without
-any task-specific fine-tuning.
+Zhao et al.~\cite{zhao2024llm} showed that a transformer-based LLM can pull out 
+structured fields (like price, living area, ownership details, and contracting 
+parties) from free-text real estate purchase agreements with high field-level F1 
+scores. This is better than rule-based extractors in certain situations, like 
+when clauses are missing or informal language is used. Their task differs from 
+ours in that they transform contract text into structured fields, whereas our 
+input is a user query and the output is a search filter. However, the 
+underlying mechanism is the same in both cases: The LLM maps unstructured 
+text to a structured schema without task-specific modifications.
 
 \subsection{Retrieval-Augmented Generation}
 
-Lewis et al.~\cite{lewis2020retrieval} introduced \textbf{Retrieval-Augmented Generation
-(RAG)}, a framework in which a retrieval component surfaces relevant documents from an
-external corpus, which are then prepended to the LLM's context before generation. The
-valuation chat assistant in this project is architecturally a RAG-adjacent system: a
-\textit{deterministic} retrieval step (database query → listing + valuation context) provides
-the grounding context, and the LLM generates a conversational response conditioned on this
-context. Unlike standard RAG, the retrieval here is exact (primary key lookup) rather than
-approximate, which eliminates the hallucination risk associated with fuzzy document retrieval.
+Lewis et al.~\cite{lewis2020retrieval} introduced \textbf{Search-Enhanced 
+Generation (RAG)}, a framework in which a search component extracts relevant 
+documents from an external corpus and adds them to the LLM context before 
+generation. The evaluation chat assistant in this project is architecturally 
+similar to RAG. A \textit{deterministic} search step (database query → list + 
+evaluation context) provides the underlying context, and the LLM generates 
+interactive responses based on this context. Unlike standard RAG, the search 
+here is exact (primary key search) rather than approximate, thus eliminating 
+the risk of false positives when searching for ambiguous documents.
 
 \subsection{Agentic LLM Pipelines}
 
-Yao et al.~\cite{yao2022react} proposed \textbf{ReAct}, a prompting paradigm that interleaves
-reasoning traces (\textit{Thought}) with environment actions (\textit{Act}) to solve multi-step
-tasks. The progressive filter relaxation behaviour implemented in this project is structurally
-analogous to a single-step ReAct loop: the LLM parses a query (Act), the system executes a
-database query (Observe), and if no results are returned, a subsequent relaxation step is
-triggered (Act again). This design choice—explicit agentic fallback rather than passive
-zero-result deadends—is motivated by the user-facing recall failures documented in the
-literature for conventional web search filters.
+Yao et al.~\cite{yao2022react} proposed \textbf{ReAct}, a proactive paradigm for 
+solving multi-stage tasks through alternating reasoning (\textit{inference traces}) 
+and actions in the environment (\textit{Act}). The stepwise filter relaxation 
+behavior implemented in this project is structurally similar to a single-stage 
+ReAct loop: The LLM analyzes the query (\textit{Act}), the system executes the 
+database query (\textit{Observe}), and if no results are returned, the next 
+relaxation step is triggered (\textit{Again, Act}). This design decision—explicit 
+fallback of the agent instead of passive termination on zero results—is based on 
+errors described in the literature regarding user retrieval of information using 
+traditional web search filters.
 
 % ─────────────────────────────────────────────────────────────────────────────
 \section{The Singapore Housing Market}
 
 \subsection{Dual-Tier Market Structure}
 
-Singapore's residential market is uniquely bifurcated. The public sector, under the Housing and
-Development Board (HDB), houses approximately 80\% of the resident population in a
-government-subsidised leasehold system \cite{hdb2024annual}. Properties are sold on 99-year
-leases, and resale eligibility is regulated by the Minimum Occupation Period (MOP) and CPF Board
-rules tying loan eligibility to remaining lease duration. Tu~\cite{tu2004dynamics} analysed the
+The residential market in Singapore is split in a way that is unique. The Housing and 
+Development Board (HDB) runs the public sector and provides government-subsidized 
+leasehold housing for about 80\% of the people who live there \cite{hdb2024annual}. 
+Properties are sold with 99-year leases, and the Minimum Occupation Period (MOP) 
+and CPF Board rules that tie loan eligibility to the length of the lease determine 
+who can sell them again. Tu~\cite{tu2004dynamics} analysed the
 dynamics of the private housing market and identified significant mean-reverting behaviour in
 price indices, while also documenting the regulatory constraint imposed by HDB policy on private
 sector demand.
@@ -281,8 +288,7 @@ training in future work.
 Landers et al.~\cite{landers2016inconvenient} provide a methodological primer on theory-driven
 web scraping, arguing that automated data collection is appropriate when no public API or
 licensed data source covers the target population and the scraped data is publicly accessible.
-This directly applies to the present project: PropertyGuru does not offer a public API, and all
-scraped attributes (price, floor area, tenure, district) are visible to any anonymous visitor.
+This is directly related to the current project: PropertyGuru does not have a public API, and any anonymous visitor can see all of the scraped attributes (price, floor area, tenure, district).
 The PropertyGuru scraper uses a 1-second inter-request delay and an incremental crawl design,
 roughly in line with what Landers et al.\ describe as a minimal-footprint approach to
 ethical scraping.
@@ -351,15 +357,10 @@ less useful than a full type-and-district match (label~2).
 % ─────────────────────────────────────────────────────────────────────────────
 \section{Research Gaps and Positioning}
 
-Prior work addresses individual components of the present problem in isolation. Four specific
-gaps remain unaddressed in the Singapore context.
+Prior research has addressed the individual components of this problem separately. In the Singaporean context, the following four challenges remain unresolved:
 
-\textbf{Gap 1: Multi-portal data integration.}
-No prior published system aggregates and deduplicates property listings \textit{across all four
-major Singapore portals} (PropertyGuru, 99.co, EdgeProp, SRX) into a single unified dataset.
-Bian et al.~\cite{bian2020comparing} and Fan et al.~\cite{fan2006determinants} each rely on a
-single structured data source (URA REALIS or agency records), which lacks the breadth and
-recency of live multi-portal listing data.
+\textbf{Gap 1: Data integration across multiple portals.}
+So far, no system has been made public that collects real estate data from Singapore's four main portals (PropertyGuru, 99.co, EdgeProp, and SRX), removes duplicates, and combines them into one dataset. Bian et al.~\cite{bian2020comparing} and Fan et al.~\cite{fan2006determinants} each use a single structured data source (URA REALIS or real estate agent records), which does not offer the completeness and timeliness of real-time real estate information collected from multiple portals.
 
 \textbf{Gap 2: Per-prediction SHAP explanations for end users.}
 While Lundberg and Lee~\cite{lundberg2017unified} provide the theoretical foundation and

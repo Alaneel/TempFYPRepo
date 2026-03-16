@@ -6,21 +6,35 @@
 
 \subsection{PropertyGuru Scraper}
 
-The PropertyGuru scraper is the author's primary data acquisition contribution. It is implemented in Python using Selenium for JavaScript-rendered content and BeautifulSoup for HTML parsing. Key design decisions include:
+The author's main contribution to data collection is the PropertyGuru scraper. It 
+is written in Python and uses Selenium for JavaScript-rendered content and 
+BeautifulSoup for parsing HTML. Some important design choices are:
 
 \begin{itemize}
-    \item \textbf{Incremental crawling mode:} A SQLite state database tracks which listing URLs have already been fetched, enabling daily re-runs to capture new or updated listings without re-downloading the entire portal.
-    \item \textbf{Resilient session management:} The scraper detects CAPTCHA challenges and connection drops, backing off and retrying with randomised delays.
-    \item \textbf{Rich attribute extraction:} Per listing, the scraper extracts: title, price, PSF, beds, baths, floor area (sqft), tenure, built year, MRT proximity text, agent name/CEA/URL, listing URL, and posted date.
+    \item \textbf{Incremental crawl mode:} The SQLite status database tracks 
+    which listing URLs have already been accessed, allowing retrievals of new 
+    and updated listings daily without having to download the entire portal again.
+    \item \textbf{Strong session management:} The scraper stops the process 
+    when it finds CAPTCHA authentication errors or connection drops and tries 
+    again after a random amount of time.
+    \item \textbf{Rich attribute extraction:} For each listing, the scraper 
+    gets the title, price, PSF, number of beds and baths, floor area (in square 
+    feet), tenure, year built, MRT proximity text, agent name/CEA/URL, listing 
+    URL, and date the listing was posted.
 \end{itemize}
 
 \subsection{Multi-Platform Aggregation Pipeline (Designed by Author)}
 
-While each platform's scraper is maintained separately, the author designed and implemented the unified aggregation pipeline (\texttt{pipeline/aggregate.py}) that ingests data from all four scrapers into a single canonical schema. This pipeline is the integration point for the team's combined data.
+While each platform's scraper is maintained separately, the author created and 
+put into use the unified aggregation pipeline (\texttt{pipeline/aggregate.py}), 
+which takes data from all four scrapers and puts it into a single canonical 
+schema. Each platform's scraper is kept up to date separately. This pipeline 
+is where the team's data all comes together.
 
-Each platform uses different field names and value formats for the same underlying concepts.
-For example, floor area appears as \texttt{area\_sqft} on PropertyGuru, \texttt{size\_sqft}
-on EdgeProp, and \texttt{sqft} on SRX. A normalisation layer (\texttt{pipeline/aggregate.py})
+The same basic ideas are represented by different field names and value formats 
+on each platform. For instance, PropertyGuru shows floor area as 
+\texttt{area\_sqft}, EdgeProp shows it as \texttt{size\_sqft}, and SRX shows 
+it as \texttt{sqft}. A normalisation layer (\texttt{pipeline/aggregate.py})
 maps each platform's schema to a unified canonical schema, including:
 
 \begin{itemize}
