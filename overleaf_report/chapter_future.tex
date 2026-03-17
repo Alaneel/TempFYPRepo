@@ -1,9 +1,6 @@
 \chapter{Future Work}
 
-While the current system successfully achieves the core objectives of multi-platform
-aggregation, AI valuation, semantic search, and agentic search enhancements (including
-multi-district resolution, progressive filter relaxation, fallback explanations, and the
-valuation chat assistant), several avenues remain for future enhancement.
+The current system has successfully achieved its main goals, including cross-platform integration, AI-powered evaluation, semantic search, and enhanced agent search capabilities (including multi-region support, gradual filter relaxation, fallback explanations, and evaluation chat assistants). However, there is still room for improvement in future enhancements.
 
 \section{Data Pipeline and Feature Enrichment}
 
@@ -18,32 +15,31 @@ While the PropertyGuru scraper developed by the author is fully operational and 
 \section{Advanced AI Modeling}
 
 \subsection{Domain-Adapted Language Model for Property Search}
-The current semantic search pipeline uses a general-purpose LLM (Claude) with a system prompt specifying Singapore real estate context. A promising future direction is to fine-tune a smaller open-source language model (e.g., Llama 3 or Mistral) on a curated dataset of Singapore property queries and their structured filter equivalents. A fine-tuned model would reduce latency and API cost while potentially improving precision on domain-specific expressions such as HDB flat types and Singapore postal district codes.
+The current semantic search pipeline uses a universal language model (Claude) with system requests that specify the context of the Singaporean real estate market. A promising approach for the future would be to fine-tune a smaller, open-source language model (e.g., Llama 3 or Mistral) based on a curated dataset of search queries related to the Singaporean real estate market and the corresponding structured filters. This finely tuned model can improve accuracy while reducing latency and API costs for domain-specific representations such as HDB flat types and postcodes in Singapore.
 
 \subsection{Computer Vision for Condition Assessment}
-Listings often contain rich visual information about interior renovation quality and natural lighting, which currently cannot be quantified by tabular models. We propose utilising a pre-trained Vision Transformer (ViT) or Convolutional Neural Network (CNN) to extract aesthetic embeddings from listing images, allowing the valuation model to distinguish between ``bare'' units and ``designer renovated'' units of identical size and age.
+Real estate information often contains a wealth of visual information about the quality of interior finishes and natural lighting. However, this information cannot currently be quantified using tabular models. Therefore, we propose using a pre-trained Vision Transformer (ViT) or a Convolutional Neural Network (CNN) to extract aesthetic elements from real estate images. This allows the valuation model to differentiate between "unrenovated" and "designer-renovated" properties of similar size and age.
 
 \subsection{Spatio-Temporal Market Forecasting}
-The current gradient-boosted models predict point-in-time valuations based on active listings. By accumulating a longitudinal dataset of historical transactions and expired listings over the coming months, we aim to develop a temporal forecasting model (e.g., using Recurrent Neural Networks or spatio-temporal Graph Neural Networks). This would allow the system to predict forward-looking capital appreciation and rental yield trends.
+The current gradient-boosting model predict valuations at a specific point in time based on current real estate information. By collecting long-term datasets of historical transactions and expired real estate information in the coming months, we aim to develop a time-series forecasting model (e.g., using recurrent neural networks or spatiotemporal graph neural networks). This model will enable the system to predict future asset appreciation and rental yield trends.
 
 \subsection{Automated Listing Freshness and Alert System}
-The current system scrapes listings on an ad-hoc basis. A future enhancement would implement a scheduled crawler with change detection, alerting registered users when listings matching their saved searches are updated in price, withdrawn, or newly added. This moves the platform from a passive search tool to a proactive market monitoring service.
+The current system only scrapes listings when it needs to. In the future, regularly updated crawlers will detect changes and notify registered users when the prices of offers matching their saved search criteria change, or when offers are removed or added. This changes the platform from a tool for passive searching to a service for actively monitoring the market.
 
 \section{Evaluation and Validation Improvements}
 
-\subsection[Larger-Scale External Benchmark for Natural Language Search]{Larger-Scale External Benchmark \\ for Natural Language Search}
+\subsection[Larger-Scale External Benchmark for NL Search]{Larger-Scale External Benchmark for Natural Language Search}
 \label{sec:future_blind_eval}
 
-An 18-query independent blind evaluation across three annotator profiles has been
-completed (Section~\ref{sec:blind_eval}), yielding an adjusted F1 of $\sim$91\% with
-zero complete failures. The next validation milestone is a larger-scale external
-benchmark: a formal evaluation with $N \geq 100$ queries constructed by annotators
-fully independent of the project team, covering a wider range of property types,
-edge-case constraints, and colloquial Singapore English expressions (e.g.,
-``5I flat'', ``DBSS'', ``mickey mouse unit''). A larger, externally adjudicated
-benchmark would provide higher statistical power to detect failure modes and
-support more robust F1 confidence intervals, further strengthening the system's
-credibility as a production-grade search interface.
+Three annotators conducted independent blind evaluations of 18 queries (Section~\ref{sec:blind_eval}). 
+The evaluation found no outright errors, and the adjusted F1 score was approximately 91\%. 
+The next step in the validation process is to conduct a more thorough external benchmark. 
+This formal evaluation uses at least $N \geq 100$ queries. These are created by annotators 
+completely independent of the project team. It includes a wider range of attribute types, 
+edge constraints, and idiomatic expressions of Singaporean English (e.g., ``5I flat'', 
+``DBSS'', ``mickey mouse unit''). External benchmarks improve the statistical power of 
+error pattern recognition. They also lead to more robust F1 confidence intervals. 
+Ultimately, these reviews make the system a more reliable search interface.
 
 \subsection{HDB Lease Risk Badge}
 \label{sec:future_lease_badge}

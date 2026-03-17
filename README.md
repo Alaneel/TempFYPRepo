@@ -1,6 +1,6 @@
-# 🏠 Singapore Real Estate Data Platform
+# 🏠 SingaLiving — Singapore Real Estate AI Platform
 
-A complete data collection, processing, and AI analysis platform for Singapore real estate — featuring multi-platform scrapers, data pipeline, FastAPI backend, Next.js frontend, **semantic search**, and **AI-powered property valuation**.
+A complete data collection, processing, and AI analysis platform for Singapore real estate — featuring multi-platform scrapers, data pipeline, FastAPI backend, Next.js frontend, **semantic search**, **AI-powered property valuation**, and **personalised property recommendations**.
 
 **[中文版 README](README_CN.md)**
 
@@ -36,8 +36,9 @@ This project provides a complete Singapore real estate data and AI platform:
 - **Data Pipeline**: Aggregate, clean and standardize multi-platform data
 - **Backend API**: FastAPI + PostgreSQL + Redis
 - **Frontend UI**: Next.js + TypeScript + TailwindCSS
-- **Semantic Search**: Natural language property search powered by Claude AI
-- **AI Valuation**: Per-property-type price estimation with SHAP interpretability
+- **Semantic Search**: Natural language property search powered by Claude AI, with agentic enhancements (multi-district resolution, progressive filter relaxation, fallback explanations)
+- **AI Valuation**: Per-segment XGBoost price estimation with SHAP interpretability and a multi-turn chat assistant
+- **Personalised Recommendations**: Hybrid content-based + valuation-grounded recommendation engine (NDCG@5 = 0.811)
 
 ---
 
@@ -55,25 +56,28 @@ This project provides a complete Singapore real estate data and AI platform:
 ┌─────────────────────────────────────────────────────────────────┐
 │                   Data Pipeline (pipeline/)                      │
 │  aggregate.py → aggregated.db → ingest.py → PostgreSQL          │
-│  valuation_model.py → 8 per-type ML models (models/valuation/)  │
+│  valuation_model.py → 8 per-segment XGBoost models              │
 └─────────────────────────────────────────────────────────────────┘
                                    │
                                    ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                     Backend API (backend/)                       │
 │   FastAPI + PostgreSQL + Redis                                   │
-│   /api/v1/listings   — browse & filter                          │
-│   /api/v1/listings/semantic-search  — Claude AI NL search       │
+│   /api/v1/listings            — browse & filter                  │
+│   /api/v1/listings/semantic-search  — Claude NL search + agents │
 │   /api/v1/valuation/estimate        — AI price estimation        │
+│   /api/v1/listings/{id}/chat        — valuation chat assistant   │
+│   /api/v1/recommendations           — personalised listings      │
 └─────────────────────────────────────────────────────────────────┘
                                    │
                                    ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                    Frontend UI (frontend/)                        │
 │   Next.js + TypeScript + Leaflet + TailwindCSS                   │
-│   /listings   — browse with AI Search toggle                     │
-│   /listings/[id]  — detail with AI Valuation panel              │
-│   /valuate    — standalone property valuation tool               │
+│   /listings        — browse with AI Search toggle                │
+│   /listings/[id]   — detail with AI Valuation panel + chat       │
+│   /saved           — saved listings                              │
+│   /for-you         — personalised recommendations                │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -313,33 +317,46 @@ Visit **http://localhost:3000**
 Natural language property queries powered by Claude AI.
 
 - On the listings page, toggle **AI Search** to enable
-- Or use the **AI Search** button on the homepage hero
 - Claude parses intent → structured filters → listings query
 - Parsed filters shown as tags below the search bar
+
+**Agentic enhancements:**
+- **Multi-district resolution**: queries like "near Orchard MRT" resolve to districts [9, 10, 11]
+- **Progressive filter relaxation**: zero-result queries auto-relax constraints (price → tenure → district)
+- **Fallback explanations**: LLM-generated natural language explanation when filters are relaxed
 
 **API:** `POST /api/v1/listings/semantic-search`
 
 ### 🏷 AI Valuation
 
-Per-property-type price estimation using LightGBM/XGBoost/RF models trained on 50K+ listings, with district-level location features derived from OneMap reverse geocoding.
+Per-segment XGBoost price estimation trained on 53,497 deduplicated listings, with SHAP feature attribution.
 
-| Model       | Accuracy (MAPE) | R²    |
-| ----------- | --------------- | ----- |
-| Condo Sale  | 13.4%           | 0.923 |
-| Condo Rent  | 14.2%           | 0.914 |
-| HDB Sale    | 9.0%            | 0.888 |
-| HDB Rent    | 8.9%            | 0.784 |
-| Landed Sale | 26.3%           | 0.654 |
-| Landed Rent | 26.2%           | 0.864 |
-| GCB Sale    | 25.3%           | 0.072 |
-| GCB Rent    | 19.8%           | 0.615 |
+| Model       | MAPE   | R²    |
+| ----------- | ------ | ----- |
+| Condo Sale  | 13.4%  | 0.923 |
+| Condo Rent  | 14.2%  | 0.914 |
+| HDB Sale    | 9.0%   | 0.888 |
+| HDB Rent    | 8.9%   | 0.784 |
+| Landed Sale | 26.3%  | 0.654 |
+| Landed Rent | 26.2%  | 0.864 |
+| GCB Sale    | 25.3%  | 0.072 |
+| GCB Rent    | 19.8%  | 0.615 |
 
-**Two usage points:**
+**Usage:**
+1. **Listing detail page** — AI Valuation panel shows estimate vs listed price + SHAP attribution
+2. **Chat assistant** — multi-turn Q&A about valuation, grounded in XGBoost + SHAP context (93% factual consistency across 42 offline interactions)
 
-1. **Listing detail page** — AI Valuation panel in right sidebar shows estimate vs listed price (over/under-priced badge) + SHAP attribution
-2. **`/valuate` page** — Standalone estimator with form inputs
+**API:** `POST /api/v1/valuation/estimate` | `POST /api/v1/listings/{id}/chat`
 
-**API:** `POST /api/v1/valuation/estimate`
+### ⭐ Personalised Recommendations
+
+Hybrid content-based + valuation-grounded recommendation engine.
+
+- Derives user preference profile from saved listings
+- Ranks candidates by a five-component weighted score: property-type affinity, district affinity, price-band similarity, bedroom proximity, and **bargain score** (XGBoost estimate vs asking price)
+- **Offline evaluation** across 10 synthetic profiles: NDCG@5 = 0.811, Precision@5 = 0.800, 100% type-match and district-match at rank 1
+
+**API:** `GET /api/v1/recommendations`
 
 ---
 
@@ -347,46 +364,55 @@ Per-property-type price estimation using LightGBM/XGBoost/RF models trained on 5
 
 ```
 PythonProject/
-├── 99co/                   # 99.co scraper
-├── edgeprop/               # EdgeProp scraper
-├── propertyguru/           # PropertyGuru scraper
-├── srx/                    # SRX scraper
-├── pipeline/               # Data pipeline
-│   ├── aggregate.py                 # Merge multi-platform scraper data
-│   ├── ingest.py                    # Import to PostgreSQL
-│   ├── geocode_listings.py          # Forward geocode (address → lat/lng)
-│   ├── reverse_geocode_district.py  # Reverse geocode (lat/lng → district)
-│   ├── refresh_onemap_token.py      # Auto-refresh OneMap API token
-│   ├── valuation_model.py           # ML training pipeline (8 models)
+├── 99co/                        # 99.co scraper
+├── edgeprop/                    # EdgeProp scraper
+├── propertyguru/                # PropertyGuru scraper
+├── srx/                         # SRX scraper
+├── pipeline/                    # Data pipeline
+│   ├── aggregate.py                  # Merge multi-platform scraper data
+│   ├── ingest.py                     # Import to PostgreSQL
+│   ├── geocode_listings.py           # Forward geocode (address → lat/lng)
+│   ├── reverse_geocode_district.py   # Reverse geocode (lat/lng → district)
+│   ├── refresh_onemap_token.py       # Auto-refresh OneMap API token
+│   ├── valuation_model.py            # ML training pipeline (8 XGBoost models)
+│   ├── chat_eval.py                  # Offline chat assistant evaluation (42 interactions)
 │   └── README.md
-├── backend/                # FastAPI backend
+├── backend/                     # FastAPI backend
 │   ├── app/
 │   │   ├── routers/
-│   │   │   ├── listings.py     # Listings + semantic search
-│   │   │   ├── valuation.py    # AI valuation API  ← NEW
+│   │   │   ├── listings.py           # Listings + semantic search + chat
+│   │   │   ├── valuation.py          # AI valuation API
+│   │   │   ├── recommendations.py    # Personalised recommendation API
 │   │   │   ├── agents.py
 │   │   │   └── auth.py
 │   │   └── services/
-│   │       ├── valuation.py    # Model loader + SHAP  ← NEW
+│   │       ├── valuation.py          # Model loader + SHAP
+│   │       ├── recommendation.py     # Scoring function + NDCG evaluation
 │   │       └── ...
 │   └── README.md
-├── frontend/               # Next.js frontend
+├── frontend/                    # Next.js frontend
 │   ├── app/
 │   │   ├── listings/
-│   │   │   ├── page.tsx         # Listings with AI Search toggle
-│   │   │   └── [id]/page.tsx    # Detail with AI Valuation panel
-│   │   ├── valuate/
-│   │   │   └── page.tsx         # Standalone valuator  ← NEW
-│   │   └── page.tsx             # Homepage with AI Search button
+│   │   │   ├── page.tsx              # Listings with AI Search toggle
+│   │   │   └── [id]/page.tsx         # Detail with AI Valuation panel + chat
+│   │   ├── saved/
+│   │   │   └── page.tsx              # Saved listings
+│   │   ├── for-you/
+│   │   │   └── page.tsx              # Personalised recommendations
+│   │   └── page.tsx                  # Homepage
 │   └── components/
-│       └── features/listings/
-│           └── valuation-panel.tsx  ← NEW
-├── models/                 # Trained models (gitignored, local only)
+├── analysis_hdb_transacted/     # HDB transacted price model comparison (vs asking price)
+├── eval_recommendation/         # Offline NDCG evaluation for recommendation engine
+├── devtools/                    # Development utilities
+│   └── ingest_sqlite.py              # Legacy SQLite ingestion tool
+├── docs/                        # Developer documentation
+│   └── cloudbypass_api_guide.md      # CloudBypass anti-bot API guide
+├── models/                      # Trained models (gitignored, local only)
 │   └── .gitkeep
-├── data/                   # Scraped data (gitignored)
-│   └── own/                # External data (manual placement)
-├── .env.example            # Environment variable template
-├── requirements.txt        # Python dependencies
+├── data/                        # Scraped data (gitignored)
+│   └── own/                          # External data (manual placement)
+├── .env.example                 # Environment variable template
+├── requirements.txt             # Python dependencies
 └── README.md
 ```
 

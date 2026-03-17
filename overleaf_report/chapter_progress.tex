@@ -6,21 +6,29 @@
 
 \subsection{PropertyGuru Scraper}
 
-The PropertyGuru scraper is the author's primary data acquisition contribution. It is implemented in Python using Selenium for JavaScript-rendered content and BeautifulSoup for HTML parsing. Key design decisions include:
+The PropertyGuru Scraper will be the main source for gathering Property Data through coded Python Logic. The Scraper uses Selenium to scrape Websites that render Dynamically with JavaScript. BeautifulSoup will parse HTML. Some important design choices are:
 
 \begin{itemize}
-    \item \textbf{Incremental crawling mode:} A SQLite state database tracks which listing URLs have already been fetched, enabling daily re-runs to capture new or updated listings without re-downloading the entire portal.
-    \item \textbf{Resilient session management:} The scraper detects CAPTCHA challenges and connection drops, backing off and retrying with randomised delays.
-    \item \textbf{Rich attribute extraction:} Per listing, the scraper extracts: title, price, PSF, beds, baths, floor area (sqft), tenure, built year, MRT proximity text, agent name/CEA/URL, listing URL, and posted date.
+    \item \textbf{Incremental crawl mode:} We will track previously visited property URLs for the daily retrieval of new/updated listings through the SQLite Status Database.
+    \item \textbf{Strong session management:} If the scraper encounters a CAPTCHA or connectivity loss, it will halt the scraping process and re-attempt after a pre-defined maximum reasonable random time interval.
+    \item \textbf{Rich attribute extraction:} For each listing, the scraper 
+    gets the title, price, PSF, number of beds and baths, floor area (in square 
+    feet), tenure, year built, MRT proximity text, agent name/CEA/URL, listing 
+    URL, and date the listing was posted.
 \end{itemize}
 
 \subsection{Multi-Platform Aggregation Pipeline (Designed by Author)}
 
-While each platform's scraper is maintained separately, the author designed and implemented the unified aggregation pipeline (\texttt{pipeline/aggregate.py}) that ingests data from all four scrapers into a single canonical schema. This pipeline is the integration point for the team's combined data.
+While each platform's scraper is maintained separately, the author created and 
+put into use the unified aggregation pipeline (\texttt{pipeline/aggregate.py}), 
+which takes data from all four scrapers and puts it into a single canonical 
+schema. Each platform's scraper is kept up to date separately. This pipeline 
+is where the team's data all comes together.
 
-Each platform uses different field names and value formats for the same underlying concepts.
-For example, floor area appears as \texttt{area\_sqft} on PropertyGuru, \texttt{size\_sqft}
-on EdgeProp, and \texttt{sqft} on SRX. A normalisation layer (\texttt{pipeline/aggregate.py})
+The same basic ideas are represented by different field names and value formats 
+on each platform. For instance, PropertyGuru shows floor area as 
+\texttt{area\_sqft}, EdgeProp shows it as \texttt{size\_sqft}, and SRX shows 
+it as \texttt{sqft}. A normalisation layer (\texttt{pipeline/aggregate.py})
 maps each platform's schema to a unified canonical schema, including:
 
 \begin{itemize}
@@ -65,9 +73,18 @@ algorithm, described formally in Algorithm~\ref{alg:dedup}.
 
 \noindent\textbf{Design rationale.}
 \begin{itemize}
-    \item \textbf{Address normalisation with title fallback:} The \texttt{address} field carries 95.5\% coverage across all platforms. For the remaining 4.5\% where address is missing, the listing \texttt{title} (which is the project or building name, with 100\% coverage) is used as a surrogate. This virtually eliminates degenerate keys of the form \texttt{\_beds\_baths\_sqft}, which would falsely collapse unrelated listings.
-    \item \textbf{Source priority ordering:} PropertyGuru listings are retained preferentially due to their higher update frequency and richer metadata (MRT proximity, amenity tags). This is implemented by sorting on source category before deduplication, then discarding all but the first occurrence of each key.
-    \item \textbf{Integer rounding:} Floor area values occasionally differ by 1--2\,sq\,ft between platforms due to rounding conventions. Storing sqft as a rounded integer rather than a float avoids spurious non-matches.
+    \item \textbf{Address normalisation with title fallback:} The \texttt{address} field carries $95.5\%$ coverage across all platforms. For 
+    the remaining $4.5\%$ where the address is missing, the listing \texttt{title} 
+    (which is the project or building name, with $100\%$ coverage) is used as a 
+    surrogate. This virtually eliminates degenerate keys of the form 
+    \texttt{\_beds\_baths\_sqft}, which would falsely collapse unrelated listings.
+    \item \textbf{Source priority ordering:} PPropertyGuru listings are retained preferentially due to their higher update 
+    frequency and richer metadata (MRT proximity, amenity tags). This is 
+    implemented by sorting on source category before deduplication, then 
+    discarding all but the first occurrence of each key.
+    \item \textbf{Integer rounding:} Floor area values occasionally differ by $1$--$2$ sq ft between platforms due 
+    to rounding conventions. Storing sqft as a rounded integer rather than a float 
+    avoids spurious non-matches.
 \end{itemize}
 
 \section{Backend and API}
@@ -146,33 +163,37 @@ gracefully for out-of-distribution queries.
 
 \section{Frontend Application}
 
-The user-facing web application is built with Next.js~15 and deployed locally.
-Key features include:
+The user-facing web application is built with \texttt{Next.js 15} and 
+deployed locally. Key features include:
 \begin{itemize}
     \item A listing search page with both structured filters and a natural-language search bar.
-    \item A listing detail page showing full property information, agent contact details, and an AI Valuation panel (displayed only for whole-unit listings with beds\,$\geq$\,1).
+    \item A listing detail page showing full property information, agent contact details, and an AI Valuation panel (displayed only for whole-unit listings with $\text{beds} \geq 1$).
     \item The AI Valuation panel displays the point estimate, a confidence interval, a verdict badge (overpriced / fair value / below estimate), and a SHAP factor breakdown.
 \end{itemize}
 
 \subsection{HDB Lease Risk Classification}
 \label{sec:lease_badge_impl}
 
-A key observation from the model ablation study (Section~\ref{sec:policy_signal}) was
-that \texttt{property\_age} carries the second-largest SHAP contribution in the HDB Sale
-model---a sensitivity consistent with Singapore's CPF lease-eligibility policy creating a
-demand-side price discontinuity for ageing stock. To make this actionable for users, a
-\textit{Lease Risk Badge} component was added to the listing detail page for all HDB properties.
+One of the most notable observations to come out of our analysis of the model 
+ablation study (Section~\ref{sec:policy_signal}) had \texttt{property\_age} 
+taking the second-largest SHAP contribution in our HDB Sale model. This factor 
+indicates that Singapore’s CPF lease-eligibility policy creates a demand-side 
+price discontinuity for aged homes. To help users understand this factor 
+better, we developed an action-oriented \textit{Lease Risk Badge} component to 
+be displayed on the listing detail page of all HDB properties.
 
 The feature is implemented in two parts:
 \begin{enumerate}
-    \item \begin{sloppypar}\textbf{Backend derived attribute.} The \texttt{ListingResponse} schema computes
-    $\texttt{remaining\_lease} =$ \\ $99 - (\text{CURRENT\_YEAR} - \texttt{built\_year})$ on
-    the fly. It classifies the listing into one of three tiers based on CPF Board rules:
-    Green ($>$60 years, full eligibility), Amber (30--60 years, restricted CPF usage
-    and no HDB loan), or Red ($<$30 years, complete CPF and HDB loan ineligibility).\end{sloppypar}
-    \item \textbf{Frontend UI component.} The Next.js frontend renders a colour-coded
-    badge alongside the property's tenure. Instead of requiring users to look up the
-    remaining lease implications themselves, the badge explicitly surfaces the policy
-    constraint via a dedicated tooltip, directly surfacing the CPF eligibility
-    tier as an actionable decision-support feature for buyers.
+    \item \begin{sloppypar}\textbf{Backend derived attribute.} The 
+    \texttt{ListingResponse} schema performs the calculation of 
+    $\texttt{remaining\_lease} = 99 - (\text{CURRENT\_YEAR} - \texttt{built\_year})$ 
+    on the fly. The listing is classified into one of three tiers in 
+    accordance with CPF Board rules: Green ($>60$ years, full eligibility), 
+    Amber ($30$--$60$ years, restricted CPF usage and no HDB loan), or Red 
+    ($<30$ years, complete CPF and HDB loan ineligibility).\end{sloppypar}
+    \item \textbf{Frontend UI component.} The Next.js frontend renders a 
+    colour-coded badge along with property tenure. Users now have access to 
+    the policy constraint via a dedicated tooltip that surfaces the next step 
+    in their decision-making process and allows them to identify the tier of 
+    CPF eligibility.
 \end{enumerate}
