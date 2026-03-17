@@ -1,6 +1,6 @@
-# 🏠 Singapore Real Estate Data Platform
+# 🏠 SingaLiving — 新加坡房产 AI 平台
 
-一个完整的新加坡房产数据采集、处理和 AI 分析平台，包含多平台爬虫、数据管道、后端 API、前端界面、**语义搜索**和 **AI 智能估价**。
+一个完整的新加坡房产数据采集、处理和 AI 分析平台，包含多平台爬虫、数据管道、后端 API、前端界面、**语义搜索**、**AI 智能估价**和**个性化推荐**。
 
 **[English README](README.md)**
 
@@ -36,8 +36,9 @@
 - **数据管道**：聚合多平台数据，清洗标准化
 - **后端 API**：FastAPI + PostgreSQL + Redis
 - **前端界面**：Next.js + TypeScript + TailwindCSS
-- **语义搜索**：基于 Claude AI 的自然语言房产搜索
-- **AI 估价**：按房产类型分模型的价格预测，附 SHAP 可解释性分析
+- **语义搜索**：基于 Claude AI 的自然语言房产搜索，含三项 Agentic 增强（多区解析、渐进过滤放宽、兜底解释）
+- **AI 估价**：分段 XGBoost 估价模型，附 SHAP 可解释性分析及多轮对话估价助手
+- **个性化推荐**：混合内容+估价推荐引擎（NDCG@5 = 0.811）
 
 ---
 
@@ -55,7 +56,7 @@
 ┌─────────────────────────────────────────────────────────────────┐
 │                    数据处理层 (pipeline/)                        │
 │  aggregate.py → aggregated.db → ingest.py → PostgreSQL          │
-│  valuation_model.py → 8 个分类型 ML 模型 (models/valuation/)    │
+│  valuation_model.py → 8 个分段 XGBoost 模型                     │
 └─────────────────────────────────────────────────────────────────┘
                                    │
                                    ▼
@@ -63,17 +64,20 @@
 │                     后端 API (backend/)                          │
 │   FastAPI + PostgreSQL + Redis                                   │
 │   /api/v1/listings              — 浏览与筛选                     │
-│   /api/v1/listings/semantic-search  — Claude AI 自然语言搜索     │
+│   /api/v1/listings/semantic-search  — Claude 自然语言搜索+Agent  │
 │   /api/v1/valuation/estimate        — AI 价格估算                │
+│   /api/v1/listings/{id}/chat        — 估价对话助手               │
+│   /api/v1/recommendations           — 个性化推荐                 │
 └─────────────────────────────────────────────────────────────────┘
                                    │
                                    ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                     前端界面 (frontend/)                         │
 │   Next.js + TypeScript + Leaflet + TailwindCSS                   │
-│   /listings   — 房源浏览，含 AI 搜索开关                         │
-│   /listings/[id]  — 详情页，含 AI 估价面板                       │
-│   /valuate    — 独立估价工具                                     │
+│   /listings        — 房源浏览，含 AI 搜索开关                    │
+│   /listings/[id]   — 详情页，含 AI 估价面板 + 对话助手           │
+│   /saved           — 已收藏房源                                  │
+│   /for-you         — 个性化推荐页                                │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -387,20 +391,21 @@ npm run dev
 
 ## AI 功能
 
-### 🔍 语义搜索
+### 🔍 语义搜索（Agentic 增强）
 
-基于 Claude AI 的自然语言房产搜索。
+基于 Claude claude-3-5-haiku 的自然语言房产搜索，具备多步骤 Agentic 推理能力。
 
 - 在房源列表页切换 **AI Search** 开关启用
 - 或点击首页英雄区的 **AI Search** 按钮
-- Claude 解析搜索意图 → 结构化筛选条件 → 查询房源
+- Agent 解析搜索意图 → 调用工具 → 结构化筛选条件 → 查询房源
 - 解析出的条件以标签形式显示在搜索栏下方
+- 支持模糊地名匹配（如"靠近 NTU"、"Jurong 附近"）、范围扩展重试、多步骤推理
 
 **API：** `POST /api/v1/listings/semantic-search`
 
 ### 🏷 AI 估价
 
-基于 LightGBM/XGBoost/RF 模型的房产价格估算，在 50K+ 房源数据上训练，采用 OneMap 反向地理编码的地区级位置特征，附带 SHAP 可解释性分析。
+基于分段 XGBoost 模型的房产价格估算，在 50K+ 房源数据上训练，采用 OneMap 反向地理编码的地区级位置特征，附带 SHAP 可解释性分析。
 
 | 模型          | 准确率 (MAPE) | R²    |
 | ------------- | ------------- | ----- |
@@ -416,9 +421,30 @@ npm run dev
 **两个使用入口：**
 
 1. **房源详情页** — 右侧边栏的 AI Valuation 面板，显示估价 vs 挂牌价（溢价/折价标签）和 SHAP 归因分析
-2. **`/valuate` 页面** — 独立估价工具，输入参数即可获取估价
+2. **估价对话助手** — 与 AI 就估价结果进行多轮对话，深入了解影响因素
 
 **API：** `POST /api/v1/valuation/estimate`
+
+### 💬 估价对话助手
+
+基于 Claude 的多轮对话助手，可就特定房源的估价深入问答。
+
+- 在房源详情页的估价面板中启用
+- 支持追问：为什么这个价格？哪些因素影响最大？
+- Agent 可调用工具获取房源数据、估价详情和 SHAP 解释
+
+**API：** `POST /api/v1/listings/{id}/chat`
+
+### ⭐ 个性化推荐
+
+基于协同过滤（SVD）+ 内容相似度的混合推荐系统，根据用户收藏行为生成个性化推荐。
+
+- 用户收藏房源后即可在 `/for-you` 页面查看推荐
+- 混合推荐：协同过滤 + 基于特征的内容相似度
+- 冷启动策略：新用户优先展示热门及高评分房源
+- 离线评估：NDCG@5 = 0.811，Precision@5 = 0.743
+
+**API：** `GET /api/v1/recommendations`
 
 ---
 
@@ -452,7 +478,7 @@ PythonProject/
 │   ├── geocode_listings.py          # 正向地理编码（地址 → 经纬度）
 │   ├── reverse_geocode_district.py  # 反向地理编码（经纬度 → 地区）
 │   ├── refresh_onemap_token.py      # 自动刷新 OneMap Token
-│   ├── valuation_model.py           # ML 训练管道（8 个模型）
+│   ├── valuation_model.py           # ML 训练管道（8 个分段模型）
 │   ├── ingest_agent_list.py         # 单独导入经纪人数据
 │   ├── db_init.py                   # 数据库初始化
 │   ├── export_db.py                 # 导出数据
@@ -463,12 +489,14 @@ PythonProject/
 │   │   ├── main.py         # FastAPI 入口
 │   │   ├── models/         # 数据模型
 │   │   ├── routers/        # API 路由
-│   │   │   ├── listings.py     # 房源 + 语义搜索
-│   │   │   ├── valuation.py    # AI 估价 API
+│   │   │   ├── listings.py         # 房源 + 语义搜索 + 对话
+│   │   │   ├── valuation.py        # AI 估价 API
+│   │   │   ├── recommendations.py  # 个性化推荐 API
 │   │   │   ├── agents.py
 │   │   │   └── auth.py
 │   │   └── services/       # 业务逻辑
-│   │       ├── valuation.py    # 模型加载 + SHAP
+│   │       ├── valuation.py        # 模型加载 + SHAP
+│   │       ├── chat_eval.py        # 对话助手
 │   │       └── ...
 │   ├── docker-compose.yml  # Docker 配置
 │   ├── Dockerfile
@@ -478,9 +506,11 @@ PythonProject/
 │   ├── app/
 │   │   ├── listings/
 │   │   │   ├── page.tsx         # 房源列表，含 AI 搜索开关
-│   │   │   └── [id]/page.tsx    # 详情页，含 AI 估价面板
-│   │   ├── valuate/
-│   │   │   └── page.tsx         # 独立估价工具
+│   │   │   └── [id]/page.tsx    # 详情页，含 AI 估价面板 + 对话助手
+│   │   ├── saved/
+│   │   │   └── page.tsx         # 已收藏房源
+│   │   ├── for-you/
+│   │   │   └── page.tsx         # 个性化推荐页
 │   │   └── page.tsx             # 首页，含 AI 搜索入口
 │   ├── components/
 │   └── package.json
@@ -495,6 +525,12 @@ PythonProject/
 │       ├── landed_rent/    # 有地住宅租赁模型
 │       ├── gcb_sale/       # GCB 销售模型
 │       └── gcb_rent/       # GCB 租赁模型
+│
+├── analysis_hdb_transacted/  # HDB 成交数据分析（EDA）
+├── eval_recommendation/      # 推荐系统离线评估
+├── devtools/               # 开发辅助工具
+│   └── ingest_sqlite.py
+├── docs/                   # 技术文档
 │
 ├── data/                   # 数据目录（已 gitignore）
 │   ├── own/                # 外部数据（需手动放置）

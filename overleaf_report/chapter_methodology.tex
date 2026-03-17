@@ -2,7 +2,7 @@
 
 \section{System Architecture}
 
-The entire data pipeline consists of five stages: data collection, data processing, data storage, an analytics engine, and an application layer. A key design decision was to treat the data pipeline as the foundation. All other functions, such as valuation models, natural search, and chat assistants, are based on a single, integrated real estate information repository, instead of querying each portal individually.
+The stages of the data pipeline include data collection, processing the data, storing the data, using an analytics engine, and applying the stored data via applications. The decision to use the data pipeline as the building block for the entire solution was significant. In particular, all the functionality within the solution (e.g., valuation models, search engine, chat assistant, etc.) utilizes data from a single, unified real estate information source rather than making queries against each of the different portals that provide real estate data.
 
 \begin{figure}[!ht]
 \centering
@@ -101,7 +101,7 @@ The entire data pipeline consists of five stages: data collection, data processi
 
 \subsection{Data Acquisition}
 
-This project was developed as a team effort. The system integrates data from four major real estate portals: PropertyGuru, 99.co, EdgeProp, and SRX. The PropertyGuru scraper, the data aggregation and deduplication pipeline, and all AI and application components described in this report were developed exclusively by the author. The scrapers for 99.co, EdgeProp, and SRX were developed by other team members.
+All components of this development are a collaborative effort of the development team. All four major real estate portals have been utilized: PropertyGuru, 99.co, EdgeProp, and SRX, with the PropertyGuru scraper, data aggregation and deduplication pipelines and any AI and application components detailed in this report being created solely by me, while members of my team developed the scrapers for 99.co, EdgeProp, and SRX.
 
 \begin{table}[!ht]
     \centering
@@ -120,7 +120,7 @@ This project was developed as a team effort. The system integrates data from fou
     \end{tabular}
 \end{table}
 
-The PropertyGuru scraper is implemented in Python using Selenium for dynamic content rendering and BeautifulSoup for HTML parsing. It handles pagination, login-wall detection, and incremental re-crawling via a SQLite state database. Data is stored per-session and synchronised to PostgreSQL via a separate ingest script.
+Python is used to implement the PropertyGuru Scraper in combination with Selenium to render dynamic content and BeautifulSoup to parse the retrieved HTML pages. It also provides paging and login-wall detection, along with repeatedly capturing incremental changes using the SQLite state database for sessions. Lastly, all captured data is saved into a PostgreSQL database at the end of each session by using a separate ingest script.
 
 \subsubsection{Ethical and Legal Considerations}
 All data collected by the PropertyGuru scraper is publicly accessible without
@@ -130,34 +130,35 @@ to minimise server impact: a one-second inter-request delay
 (\texttt{MAX\_WORKERS\,=\,5}), and an incremental update strategy that avoids
 re-crawling unchanged listings.
 
-The data collected falls into two categories. \textit{Factual property attributes}
-(asking price, floor area, bedroom count, tenure, district, and built year) are
-not subject to copyright protection under Singapore law, as copyright does not
-subsist in facts \cite{singapore_copyright_act}. \textit{Agent contact details}
-(name, CEA registration number, and business telephone number) are publicly
-displayed on the PropertyGuru platform and constitute \textit{business contact
-information} explicitly excluded from the scope of the Singapore Personal Data
-Protection Act 2012 (PDPA), which provides that the Act ``generally does not apply
-to business contact information such as an individual's name, position or title,
-business telephone number, business address, [or] business email''
-\cite{pdpc_overview}.
+The Data Screens can be divided into two types: 1. \textit{Factual property 
+attributes} (i.e. Asking Price, Square Footage -- of Lot and Floor, Number of 
+Bedrooms, Tenure, District \& Year Founded) cannot be Copyrighted under 
+Singaporean law because Copyright does NOT apply to Facts~\cite{singapore_copyright_act}. 
+2. \textit{Agent contact information} (i.e. Name, CEA Registration Number \& 
+Business Phone Number) is openly displayed on PropertyGuru’s site \& therefore 
+constitutes \textit{Business Contact Information} that is explicitly excluded 
+by the scope of The Personal Data Protection Act 2012 (PDPA) because the PDPA 
+states: ``the PDPA generally does not apply to Business Contact Information 
+such as an individual's name, position/title, business phone number, business 
+address or business email address''~\cite{pdpc_overview}.
 
-PropertyGuru does not provide a public data API; access is restricted to enterprise
-partners under commercial agreements. The use of a residential proxy service to
-access publicly listed property data is therefore a necessary approach where official
-APIs are unavailable \cite{landers2016inconvenient}. Under the Singapore Computer
-Misuse Act 1993, access is only ``unauthorised'' if the person ``does not have
-consent to access'' the resource; as the scraped pages are served to any member of
-the public without authentication, this threshold is not met. The project's
-data collection practices have been reviewed in the context of its commercial
-development roadmap, and the pipeline is scoped to factual listing attributes
-consistent with the limits identified through that review.
+PropertyGuru does NOT provide a Public Data API; instead, access is limited to 
+Enterprise Partners through Commercial Agreements. Therefore, if there are no 
+Official APIs, using a Residential Proxy Service is necessary to access 
+Publicly Listed Property Data~\cite{landers2016inconvenient}. Access under the 
+Singapore Computer Misuse Act 1993 does not constitute ``Unauthorised Access'' 
+if the person has consent to access the resource. As the Scraped Pages can be 
+accessed by any member of the Public at No Cost to the User \& without 
+Authentication, then the criteria for Unauthorised Access is Not Met. The data 
+collection processes of this Project have been evaluated with respect to its 
+Commercial Development Road Map, and the pipeline has been scoped to true 
+listing attributes in line with the parameters determined in that review.
 
 
 \subsection{Data Processing and Aggregation}
-Raw data fetched from different sources frequently contains inconsistencies and duplicates. The processing module performs the following tasks:
+Data retrieved from various sources typically includes duplicate values and inconsistencies. The Processing Module provides the following services:
 \begin{itemize}
-    \item \textbf{Normalization:} Standardizing field names and formats (e.g., converting "2 beds" and "2 Bedroom" to a standard integer format).
+    \item \textbf{Normalization:} Naming fields consistently; for example "2 Beds" and "2 Bedroom" will be converted to the integer representation as a numeric type in each record.
     \item \textbf{Deduplication:} Identifying and removing duplicate listings via a composite-key algorithm (described below).
     \item \textbf{Linking:} Associating temporary rental/sale listings with persistent property master records (HDB or Condo units).
 \end{itemize}
@@ -344,18 +345,22 @@ A relational database schema is designed to store both static property informati
 \subsection{Property Master Tables}
 To maintain a definitive registry of properties, we define master tables for Housing Development Board (HDB) flats and private condominiums:
 \begin{enumerate}
-    \item \textbf{hdb\_basic:} Stores block-level information for HDB estates (e.g., address, completion year, lease start date).
-    \item \textbf{hdb\_unit:} Stores unit-level details, linking specific units to their respective blocks.
-    \item \textbf{condo\_basic:} Stores project-level information for condominiums (e.g., project name, developer, facilities).
-    \item \textbf{condo\_unit:} Stores specific unit details within each condominium project.
+    \item \textbf{hdb\_basic:} Store information about block levels for land parcels of housing development board (HDB) estate, such as address; year of completion; and when the property was put on a lease.
+    \item \textbf{hdb\_unit:} Store information about each individual unit including which block it belongs to.
+    \item \textbf{condo\_basic:} Store project-level information on all condominiums including name, developer, and available facilities.
+    \item \textbf{condo\_unit:} Store individual-unit details for each condominium of the development.
 \end{enumerate}
 
 \subsection{Listing Tables and Association}
-The \texttt{unified\_listings} table aggregates active rental and sale listings from the web scrapers. A key design consideration is the association between these transient listings and the master tables.
+The \texttt{unified\_listings} table is a collection of the active rental and 
+sales listings scraped from the internet. The primary design consideration for 
+this table is determining how the temporary listings will be related back to 
+the master tables.
 
 \begin{itemize}
-    \item \textbf{Association Logic:} Since online listings provided by agents often lack specific unit numbers for privacy reasons, a direct foreign key constraint is not always possible during the scraping phase.
-    \item \textbf{Agent-Assisted Mapping:} The system supports a "soft link" where the association between a listing and a specific physical unit (e.g., in \texttt{hdb\_unit}) is finalized when an agent arranges a viewing or verifies the property documentation. This design allows for flexible data ingestion while enabling precise tracking as the transaction progresses.
+    \item \textbf{Association Logic:} When scraping for online listings provided by an agent, a specific unit number may not be specified in order to prevent an agent's or landlord's violation of an individual's privacy with direct foreign key constraints.
+    \item \textbf{Agent-Assisted Mapping:} The system supports a ``soft link,'' meaning that an association between a 
+    listing and a particular physical unit (e.g., in \texttt{hdb\_unit}) isn't created until the agent has set up a time to view or confirm the property documentation. The design can accommodate the flexibility required for ingestion while maintaining accurate recordkeeping through the duration of the transaction.
 \end{itemize}
 
 % ─────────────────────────────────────────────────────────────────────────────
@@ -364,7 +369,19 @@ The \texttt{unified\_listings} table aggregates active rental and sale listings 
 
 \subsection{Per-Segment Stratification}
 
-For each combination of property type and transaction type, eight independent models are trained: $\{\text{Condominium, HDB, Single-Family Home, GCB}\} \times \{\text{Sale, Rent}\}$. This differentiation is preferable to a single global model with an index variable for the property type. The reason for this is that the price development of HDB flats (small price range due to government regulation) differs fundamentally from that of GCB bungalows (negotiable price range of several million S\$). Using a single model would force the application of a single functional form to these structurally different markets and exacerbate systematic biases.
+In each property type-transaction type combination, there are eight distinct 
+models that we will be constructing. These will be four property types: 
+$\{\text{Condo, HDB, SFH, GCB}\} \times \{\text{Sale, Rent}\}$. Separating 
+these models will allow for more accurate adjustment of price development 
+compared to creating one global model for all four property type transactions 
+with an adjustment for property type. For example, the development of prices 
+for HDBs will exhibit dramatically different behaviour than that of GCB 
+bungalows because of price range restrictions; HDBs are limited by government 
+regulation and GCBs negotiate their prices at the higher end of the S\$ price 
+range. If you were to use the same one global model for building both HDB and 
+GCB bungalows, you would have to apply the same functional form which would 
+essentially create higher levels of incorrect predictions due to the 
+structural differences between the two property types.
 
 \subsection{Feature Engineering}
 
@@ -461,7 +478,7 @@ where $\phi_0$ is the base value (mean prediction) and $\phi_j$ is the contribut
 
 \subsection{Overview}
 
-The natural language search system takes free-text queries that the user defines and turns them into structured JSON filter objects. These objects are then used as \texttt{WHERE} clauses in the database.This design deliberately avoids fine-tuning the model. The generic LLM (Anthropic Claude) is invoked by task-specific system messages that encode the output schema and expertise on the Singapore real estate market. This zero-shot method lets you update the pipeline by just changing the input prompts, so you don't have to retrain it.
+A natural-language query that can be input by a user and returned as a structure in the database can be created by condensing the user's free-text input into structured JSON filter objects. The structured JSON filter object is then used in the database to perform queries using a \texttt{WHERE} clause. A fine-tuned model was not used in this design; high-level generic models (Anthropic Claude) were called on via system messages specific to the task to obtain the output schema and provide expert-level knowledge of the Singapore real estate market. The zero-shot approach gives you the ability to modify the pipeline without retraining due to the simple ability to change the input prompts.
 
 \subsection{Output Schema and JSON Filter Contract}
 
@@ -481,32 +498,28 @@ The LLM is instructed to produce a JSON object conforming to the following schem
 }
 \end{verbatim}
 
-It was on purpose that a \texttt{districts} \emph{array} was chosen over a scalar 
-\texttt{district} field. If the backend gets a list of \texttt{districts} that 
-isn't null, it makes a SQL \texttt{IN} predicate that includes all of the 
-districts in one query. On the other hand, if it gets a scalar \texttt{district} 
-that is not null, it makes a single equality constraint. This difference is what 
-makes multi-district geographic resolution work in the real world. If there were 
-no array fields, queries like ``near Orchard MRT station'' would have to be 
-broken up into separate queries for each borough. This would take longer to 
-process and make it harder to combine the results.
+The reason for selecting an \emph{array} of district identifiers is that it 
+allows the back end to create a single SQL statement that uses an \texttt{IN} 
+predicate with multiple values, instead of the alternative of creating an 
+equality constraint to each district ID when there is at least one district ID 
+passed to it. By using the districts array, we have achieved a real-world 
+example of how to do multiple geographical lookups for one location; whereas 
+if we did not use array fields, any inquiry regarding ``near Orchard MRT 
+Station'' would have to be split into individual queries for all of the 
+boroughs. This means that these individual queries would take longer to 
+process and require more effort to aggregate the results.
 
 \subsection{System Prompt Design}
 
-The system query fulfills three functions: (i) it restricts the output to a valid JSON format and excludes flowing text; (ii) it provides Singapore-specific information (e.g., HDB apartment types, district numbers, and the abbreviations for communal areas "CCR," "RCR," and "OCR"); and (iii) it includes eight context examples for simple, multidimensional, and dialog-based queries. The query comprises approximately 900 tokens and fits within the context window of the extended model.
+The purpose of the query is threefold: (i) To ensure that our output is in a valid JSON format, while simultaneously not allowing for free text output. (ii) To provide Singapore specific information (HDB apartment types, District Numbers, and Communal Area Abbreviation - CCR/RCR/OCR). (iii) To supply a total of 8 different examples of context for the three different ways of making queries (i.e., simple, multi-dimensional, and conversational). Overall length of the query is approximately 900 tokens, so it fits within the maximum context window for the extended model.
 
 \subsection{Agentic Pipeline Architecture}
 
-Three agentic behaviours are layered on top of the base LLM call, implemented as a
-sequential pipeline in the FastAPI route handler:
+The three types of active behavior (agents) are in addition to the base llim call. These are implemented as three sequential steps within the FastAPI route's handler for llim calls.
 
 \begin{enumerate}
     \item \textbf{Multi-District Geographic Resolution.}
-    After the initial LLM call, if the query contains a proximity expression (e.g.,
-    ``near Orchard MRT'', ``Bukit Timah area''), a second structured prompt maps
-    the location to a set of adjacent districts. The result overwrites the scalar
-    \texttt{district} field with a \texttt{districts} array, broadening the database
-    query to capture all geographically relevant listings.
+    If the first llim call returns no results and the query includes an expression for proximity to some location (i.e., ``near Orchard MRT'' or ``in the Bukit Timah Area''), a 2nd structured prompt will be created to match that location to one or more adjacent districts. After matching to a district(s), the resulting adjacent districts will replace the extracted \texttt{district(s)} (i.e., scalars) in llim, as an array of \texttt{districts}, allowing for database queries to include all listings located within any of the surrounding districts and located spatially within that area.
 
     \item \textbf{Progressive Filter Relaxation.}
     If the database query returns zero results, the pipeline enters a relaxation loop.
@@ -634,24 +647,26 @@ using a weighted sum of five dimensions:
     $\max(0,\,1 - 0.25 \cdot |b_c - \bar{b}|)$, where $\bar{b}$ is the
     rounded average bedroom count.
 
-    \item $s_{\text{bargain}}$: \textbf{valuation-grounded score} — the key
-    differentiator of this hybrid approach. The per-segment XGBoost model
-    (Chapter~4) is called in-process to produce an estimate $\hat{v}$ for
+    \item $s_{\text{bargain}}$: \textbf{valuation-grounded score} — the key differentiator of this hybrid approach. The per-segment XGBoost model 
+    (Chapter~4) is called in-process to produce an estimate $\hat{v}$ for 
     listing $c$. The raw bargain signal is:
     \[
         r = \frac{\hat{v} - p_c}{\hat{v}}, \quad
         s_{\text{bargain}} = \frac{\text{clamp}(r,\,-0.5,\,+0.5) + 0.5}{1}
     \]
-    This maps $r \in [-0.5, +0.5]$ to $[0, 1]$: a score of 1.0 indicates
-    the listing is 50\% below the model estimate (strong bargain); 0.5
-    indicates fair value; 0.0 indicates 50\% above estimate.
+    This maps $r \in [-0.5, +0.5]$ to $[0, 1]$: a score of $1.0$ indicates 
+    the listing is $50\%$ below the model estimate (good value); $0.5$ 
+    indicates fair value; $0.0$ indicates $50\%$ above estimate.
 \end{itemize}
 
-The $s_{\text{bargain}}$ component directly links the recommendation layer to
-the valuation layer: the same XGBoost models trained in Chapter~4 serve as a
-real-time pricing oracle within the ranking function. Listings that are both
-preference-consistent \emph{and} underpriced relative to the model estimate are
-ranked highest, surfacing actionable opportunities rather than merely familiar ones.
+Three functions---$s_{\text{bargain}}$, $s_{\text{preference}}$, and 
+$s_{\text{shopping}}$---evaluate how relevant a listing is relative to the 
+user's stated preferences, as well as how actual costs of purchasing each 
+listing compare with the overall market. All three of these $s$-type scores 
+use the same XGBoost models that were developed in Chapter~4 to serve as a 
+real-time pricing oracle within the ranking function, to rank listings based 
+on both purchase preference consistency and price compared to model 
+estimates, surfacing viable places to shop versus only familiar places.
 
 \begin{figure}[!ht]
     \centering

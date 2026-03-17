@@ -2,18 +2,18 @@
 
 \section{Background and Motivation}
 
-The housing market in Singapore is unique in that it consists of two levels: a public housing market, which is strictly controlled by the Housing and Development Board (HDB), and a private housing market where anyone can buy a house. The HDB sector provides housing for approximately 80\% of the population and plays a crucial role as a pillar of national social stability, while the private sector targets high-income households and investors \cite{tu2004dynamics}. Although these two markets are separated by regulatory requirements, they are closely linked in complex and non-linear ways. The desire for wealth accumulation—that is, the wish of households to move from the public to the private housing market—generates a dynamic flow of capital and demand that connects the two levels \cite{sing2006price}.
+The housing industry in Singapore is distinctively composed of two components: public housing (which is heavily governed by HDB) and private housing (where anyone can purchase residential property). Approximately 80\% of residents live in public housing provided by HDB, thus making HDB an integral foundation for social stability in Singapore. Conversely, private housing provides an alternative for high-income individuals and investors \cite{tu2004dynamics}. Although the two markets exist separately within the framework of their respective regulatory regimes, there are intricate linkages between the two markets that can be described in complex and non-linear terms. Wealth accumulation, in terms of households transitioning from the public to private residential markets, is responsible for stimulating substantial flows of capital and demand between both levels \cite{sing2006price}.
 
-The rise of online property portals like PropertyGuru, 99.co, and SRX in the digital age has led to an explosion of real estate data. This includes not only records of transactions but also unstructured text descriptions, listing metadata, and visual assets. But this information is still spread out across different platforms, which means that stakeholders don't have all the information they need—creating a significant \textbf{information asymmetry}. People who buy property, investors, and policymakers all have a hard time getting a full picture of the market. They often have to do fragmented manual research or simplified linear analyses that don't show how the dual market system works.
+Due to the advent of online real estate portals such as PropertyGuru, 99.co, and SRX in today's digital era, the volume of real estate transaction data has exploded. It includes not just transaction records but unstructured text descriptions attached to listings, metadata from listings, and visual images of those listings. However, real estate data is not centrally located, so real estate market participants currently suffer from a lack of access to complete data, causing significant \textbf{asymmetric information} to exist amongst them. Homebuyers, investors, and public policy decision makers often have difficulty understanding the entire real estate market and whether or not it is functioning properly, due to the fact that they are often limited to doing fragmented manual research and/or performing linear analyses that do not accurately disclose all of the interrelated aspects of how the dual nature of the real estate market functions.
 
 \section{Problem Statement}
 
 Three concrete problems motivated this project:
 
 \begin{enumerate}
-    \item \textbf{Data Fragmentation:} Important market intelligence is stored on different platforms that compete with each other, which makes it hard to analyze data from different sources.
-    \item \textbf{Limitations of the method:} Traditional econometric methods, like Hedonic Pricing Models, usually depend on structured variables and linear assumptions. These methods often miss out on the valuable information that can be found in unstructured data. Also, they often don't take into account how the market changes in a non-linear way.
-    \item \textbf{Search Usability:} Right now, users have to deal with rigid filter interfaces on portals, which makes it hard for people who want to say what they need in a more natural way.
+    \item \textbf{Data Fragmentation:} The limitations of the current market structure limit the ability to access and analyze important market intelligence across multiple platforms that compete for businesses.
+    \item \textbf{Limitations of the method:} Secondly, standard econometric techniques that are widely used in data analysis (Hedonic Price Models) generally have strict reliance upon the use of structure for variable creation and on linear relationships among the variables. As a result, most of the potential value derived from unstructured data is lost when traditional econometric methods are used to analyze data. Additionally, traditional econometric modelling techniques have not been able to account for the dynamics of non-linear relationships that often occur in the market.
+    \item \textbf{Search Usability:} Users currently are restricted from utilizing flexible filtering mechanisms via the portals in order to be able to express their requirements as naturally as possible.
 \end{enumerate}
 
 \section{Project Objectives}
@@ -43,40 +43,50 @@ portals; the author's personal contributions are as follows:
     tenure, built year, and agent information.
 
     \item \textbf{Multi-Platform Aggregation and Deduplication Pipeline.}
-    The author built a unified aggregation layer in \texttt{pipeline/aggregate.py}. This 
-    system processes data from all four team-developed scrapers. It first normalizes 
-    various data schemas, then applies a composite-key algorithm to remove duplicates. 
-    The pipeline ingested \textbf{86,321 raw listings} from four portals. This total 
-    includes 55,357 from PropertyGuru, 24,010 from SRX, 5,344 from 99.co, and 1,610 
-    from EdgeProp. After processing, the pipeline produced a clean deduplicated dataset 
-    of \textbf{53,497 listings}. The deduplication key achieves \textbf{95.5\% 
-    address-field coverage}. A title-fallback strategy then eliminates all remaining 
-    degenerate collisions. This reduced the number of collisions from 2,410 to 0.
+    An aggregation layer has been created at the aggregation level in 
+    \texttt{pipeline\textbackslash aggregate.py} with the objective of combining 
+    the data processed by the four team scrapers into one single database. The 
+    first step is to normalize the many diverse data schemas and then establish 
+    composite keys to remove duplicate property listing records as created by the 
+    four team scrapers. A total of 86,321 raw property listing records have been 
+    ingested from the four sites as follows: PropertyGuru -- 55,357; SRX -- 24,010; 
+    99.co -- 5,344; EdgeProp -- 1,610. After removing all duplicate property 
+    listing records, the aggregate records were cleansed to a total of 53,497 
+    records remaining, and $95.5\%$ of property records were matched by the 
+    address field. Additionally, a title fallback strategy to eliminate any of the 
+    remaining duplicated property listing records remaining as a result of 
+    degenerate collisions has reduced the total number of records created as 
+    duplicates during this process to 0.
 
     \item \textbf{Per-Segment AI Valuation Models with SHAP Explanations.}
-    The author trained \textbf{eight independent XGBoost models} stratified by property 
-    type and transaction mode. Best-segment test-set MAPE: \textbf{8.90\%} (HDB Rent) 
-    and \textbf{8.96\%} (HDB Sale)---a \textbf{70\%} reduction relative to the mean 
-    baseline. Each prediction is accompanied by SHAP attribution factors exposed to 
-    the end user.
+    The author built an independent model using the same 8 XGBoost models. These 8 
+    XGBoost models were independently built using two different methods of 
+    creating the train/test splits---using stratified sampling by property type 
+    and transaction type. The authors also considered the best segment test set 
+    mean absolute percentage error (MAPE) for both HDB (Housing Development Board) 
+    rent and HDB sale to be $8.90\%$ and $8.96\%$ respectively, corresponding to a 
+    reduction of $70\%$ of the mean of the baseline. Finally, each of these 
+    predictions includes associated SHAP attribution factors and can be viewed by 
+    the user.
 
     \item \textbf{LLM-Powered Natural Language Property Search.}
-    The author implemented a semantic search pipeline based on Claude. Formal 
-    evaluations were then performed on 47 ground-truth queries. This process achieved 
-    an average \textbf{F1 score of 96.4\%}.
+    Formal Evaluation was carried out using 47 truth queries to measure the 
+    performance of the semantic search pipeline designed based on Claude. An 
+    average F1 score of $96.4\%$ was achieved in this evaluation.
 
     \item \textbf{Agentic Search Enhancements.}
-    In addition to basic intention extraction, the author implemented three agent 
-    behaviors based on natural language processing: (i) \textit{Geographic resolution 
-    across multiple boroughs}. This associates proximity expressions, such as ``near 
-    Orchard MRT station,'' with a group of neighboring Singaporean boroughs. Examples 
-    include D9, D10, and D11. Instead of targeting a single borough, this broader 
-    mapping improves the hit rate of location-based queries. (ii) \textit{Stepwise 
-    filter relaxation}. If no results are found, queries are automatically retries by 
-    progressively loosening the restrictions (price $\to$ property type $\to$ location). 
-    This prevents dead ends with zero results. (iii) \textit{LLM-generated fallback 
-    explanation}. This uses a second Claude call to explain in natural language why 
-    the original query returned no results and which restrictions were relaxed.
+    In addition to extracting basic intent for a user query, the author has built 
+    three different types of agent NLP behaviours. These behaviours are: 
+    (1)~Geographic resolution across multiple boroughs, whereby all queries will 
+    now return results based on the proximity of the Orchard MRT station to a 
+    collection of surrounding Singapore boroughs (D9, D10, and D11) rather than 
+    limiting the query result set to just one borough; (2)~Stepwise query filter 
+    relaxation, whereby all queries that return zero results undergo a re-execute 
+    using progressively less strict filter criteria, first by price, next by 
+    property type, and last by location; and (3)~A natural language explanation 
+    generated by an LLM explaining the user on why their original query returned 
+    no results, as well as the filter criteria that were relaxed in order to 
+    conduct the query again.
 
     \item \textbf{AI Valuation Chat Assistant.}
     The assistant is provided with all property attributes and XGBoost-based valuation 
@@ -113,7 +123,7 @@ The remainder of this report is organised as follows:
     \item \textbf{Chapter 3 (Methodology and System Design)} details the system architecture, data acquisition pipelines, deduplication algorithm, AI model design, semantic search pipeline, and personalised recommendation engine design.
     \item \textbf{Chapter 4 (Implementation)} documents the deployed data pipeline, trained valuation models, backend API, frontend web application, and recommendation system implementation.
     \item \textbf{Chapter 5 (Evaluation and Results)} presents quantitative evaluation of the deduplication algorithm, valuation models, natural language search system, agentic enhancements, and the hybrid recommendation engine (NDCG@5, Precision@5).
-    \item \textbf{Chapter 6 (Conclusion)} sums up the contributions, looks at how well the project met its goals, and thinks about the bigger picture.
-    \item \textbf{Chapter 7 (Future Work)} lays out the plan for making things better in the future. This includes adding more features to the proximity feature, adapting LLMs to different fields, and using computer vision to assess conditions.
+    \item \textbf{Chapter 6 (Conclusion)} contains a summary of each contribution and an evaluation of the success of the overall project in addressing its stated goals and objectives. It also discusses the benefits of the project within a broader context.
+    \item \textbf{Chapter 7 (Future Work)} describes a plan for future improvement by enhancing features related to proximity detection, developing new uses for LLM technologies across vertical industries, and employing computer vision technology to identify environmental conditions.
 \end{itemize}
 

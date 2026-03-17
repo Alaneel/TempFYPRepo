@@ -1,0 +1,19 @@
+{
+  "year_cutoff": 2024,
+  "transacted": {
+    "mape": 6.31,
+    "test_r2": 0.926,
+    "cv_r2_mean": 0.9295,
+    "cv_r2_std": 0.001,
+    "n_train": 45856,
+    "n_test": 11465
+  },
+  "listing_main_pipeline": {
+    "mape": 8.96,
+    "test_r2": 0.8877,
+    "cv_r2_mean": 0.886,
+    "n_test": 2198
+  },
+  "delta_mape_pp": -2.65,
+  "verdict": "COMPARABLE \u2014 listing prices are a good proxy for transacted prices."
+}

@@ -11,6 +11,12 @@ poc_hdb_transacted/
 # AI Detection Benchmark (local use only — not for public repo)
 ai_detection_benchmark/
 
+# Scraper debug HTML snapshots
+debug_pages/
+
+# AI conversation handoff docs (private)
+CONTEXT_HANDOFF.md
+
 # macOS
 .DS_Store
 *.DS_Store
