@@ -30,6 +30,8 @@ import {
 import { ValuationPanel } from "@/components/features/listings/valuation-panel";
 import { PropertyChatPanel } from "@/components/features/listings/property-chat-panel";
 import MapView from "@/components/features/map/map-view";
+import { MortgageCalculator } from "@/components/features/listings/mortgage-calculator";
+import { ShortlistButton } from "@/components/features/listings/shortlist-button";
 
 export default function ListingDetailPage() {
   const { id } = useParams();
@@ -367,6 +369,12 @@ export default function ListingDetailPage() {
                 />
               </div>
             </div>
+
+            {/* Financial Tools */}
+            {listing.price && listing.price > 0 && (
+              <MortgageCalculator propertyPrice={listing.price} />
+            )}
+
           </div>
 
           {/* Right Column: Price & Agent */}
@@ -471,6 +479,9 @@ export default function ListingDetailPage() {
                       </a>
                     </Button>
                   )}
+
+                  <hr className="my-2 border-gray-100" />
+                  <ShortlistButton listingId={listing.id} />
                 </div>
               </CardContent>
             </Card>

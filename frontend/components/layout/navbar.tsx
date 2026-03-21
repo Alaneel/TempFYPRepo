@@ -40,6 +40,9 @@ const NavLinks = () => (
     <Link href="/directory" className="text-sm font-medium transition-colors hover:text-primary">
       Directory
     </Link>
+    <Link href="/shortlist" className="text-sm font-medium transition-colors hover:text-primary">
+      Compare
+    </Link>
   </>
 );
 
@@ -74,6 +77,7 @@ export function Navbar() {
               <Link href="/agents" onClick={() => setIsOpen(false)} className="text-lg font-medium">Find Agent</Link>
               <Link href="/valuate" onClick={() => setIsOpen(false)} className="text-lg font-medium">Valuate</Link>
               <Link href="/directory" onClick={() => setIsOpen(false)} className="text-lg font-medium">Directory</Link>
+              <Link href="/shortlist" onClick={() => setIsOpen(false)} className="text-lg font-medium text-rose-500">Compare</Link>
             </nav>
           </SheetContent>
         </Sheet>

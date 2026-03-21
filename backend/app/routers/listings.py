@@ -101,7 +101,7 @@ async def get_listings(
     
     return response_data
 
-@router.get("/semantic-search", response_model=PaginatedResponse[ListingResponse])
+@router.get("/semantic-search")
 async def semantic_search_listings(
     q: str = Query(..., description="Natural language search query"),
     page: int = Query(1, ge=1),

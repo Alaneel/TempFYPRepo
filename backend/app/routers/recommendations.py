@@ -326,7 +326,6 @@ def _build_preference_profile(favourites: list) -> dict:
 @router.get("/for-you", response_model=List[RecommendationResponse])
 async def get_recommendations(
     limit: int = 20,
-    current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
 ):
     """

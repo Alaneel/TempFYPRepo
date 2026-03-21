@@ -143,9 +143,6 @@ def parse_nl_query(query: str) -> dict:
             "district": 18
           }
     """
-    if not query or not query.strip():
-        return {}
-
     response = _get_client().messages.create(
         model="claude-sonnet-4-6",
         max_tokens=512,

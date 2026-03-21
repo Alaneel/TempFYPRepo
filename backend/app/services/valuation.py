@@ -25,6 +25,16 @@ import numpy as np
 import pandas as pd
 import joblib
 
+# --- Backward compatibility patch for scikit-learn < 1.4 ---
+try:
+    import sklearn.compose._column_transformer as ct
+    if not hasattr(ct, '_RemainderColsList'):
+        class _RemainderColsList(list):
+            pass
+        ct._RemainderColsList = _RemainderColsList
+except ImportError:
+    pass
+
 # ─── paths ────────────────────────────────────────────────────────────────────
 _PROJECT_ROOT = Path(__file__).parent.parent.parent.parent   # services→app→backend→project
 _MODEL_DIR    = _PROJECT_ROOT / "models" / "valuation"
@@ -126,6 +136,20 @@ def _load_model(seg: str):
             "Run: python pipeline/valuation_model.py"
         )
     _models[seg]  = joblib.load(path)
+    
+    # --- Backward compatibility fix for Scikit-Learn 1.5+ loading old SimpleImputer
+    try:
+        from sklearn.impute import SimpleImputer
+        pre = _models[seg].named_steps.get("pre")
+        if pre is not None and hasattr(pre, "transformers_"):
+            for t_name, t_pipe, _ in pre.transformers_:
+                if hasattr(t_pipe, "steps"):
+                    for s_name, s_obj in t_pipe.steps:
+                        if isinstance(s_obj, SimpleImputer) and not hasattr(s_obj, "_fill_dtype"):
+                            s_obj._fill_dtype = np.dtype("float64")
+    except Exception:
+        pass
+        
     # Load metrics
     metrics_path = _MODEL_DIR / seg / "metrics.json"
     if metrics_path.exists():
