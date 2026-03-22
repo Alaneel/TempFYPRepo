@@ -8,6 +8,7 @@ import { ListingCard } from "@/components/features/listings/listing-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Building, MapPin, Calendar, Ruler, CheckCircle2, Home } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { UnitList } from "@/components/features/directory/unit-list";
 
 export default function HdbDetailPage() {
     const params = useParams();
@@ -127,9 +128,23 @@ export default function HdbDetailPage() {
                     </div>
                 </section>
 
-                {/* Live Listings Section */}
-                <section className="container mx-auto px-4 py-12 max-w-5xl">
-                    <h2 className="text-3xl font-bold tracking-tight mb-8">Active Listings in this Block</h2>
+                {/* Units Directory Section (Permanent) */}
+                <section className="container mx-auto px-4 py-12 max-w-5xl border-t">
+                    <div className="flex items-center gap-2 mb-8">
+                        <Home className="h-6 w-6 text-primary" />
+                        <h2 className="text-3xl font-bold tracking-tight">Master Block Directory</h2>
+                        <Badge variant="secondary" className="ml-2">Permanent Records</Badge>
+                    </div>
+                    <UnitList type="hdb" id={id} />
+                </section>
+
+                {/* Live Listings Section (Temporary/Active) */}
+                <section className="container mx-auto px-4 py-12 max-w-5xl border-t bg-muted/5">
+                    <div className="flex items-center gap-2 mb-8">
+                        <CheckCircle2 className="h-6 w-6 text-orange-500" />
+                        <h2 className="text-3xl font-bold tracking-tight">Active Market Status</h2>
+                        <Badge variant="outline" className="ml-2 border-orange-200 text-orange-700 bg-orange-50">Live Listings</Badge>
+                    </div>
 
                     {isLoadingListings ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

@@ -36,3 +36,26 @@ class CondoBasic(Base):
     
     # Relationships
     listings = relationship("Listing", back_populates="condo")
+    units = relationship("CondoUnit", back_populates="condo", cascade="all, delete-orphan")
+
+class CondoUnit(Base):
+    __tablename__ = 'condo_unit'
+    
+    unit_id = Column(Integer, primary_key=True, autoincrement=True)
+    condo_id = Column(Integer, ForeignKey('condo_basic.condo_id', ondelete='CASCADE'))
+    unit_number = Column(String(10)) # e.g. "12-34"
+    floor_level = Column(Integer)
+    bedrooms = Column(Integer)
+    bathrooms = Column(Integer)
+    direction_facing = Column(String(10)) # N, S, E, W, etc.
+    afternoon_sun = Column(Boolean)
+    unique_unit_description = Column(Text)
+    is_penthouse = Column(Boolean)
+    size_sqm = Column(Float)
+    price = Column(Float)
+    listing_status = Column(String(20))
+    price_per_sqm = Column(Float)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    condo = relationship("CondoBasic", back_populates="units")

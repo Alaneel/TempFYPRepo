@@ -68,10 +68,16 @@ class Listing(Base):
     condo_id = Column(Integer, ForeignKey('condo_basic.condo_id'), nullable=True)
     hdb_id = Column(Integer, ForeignKey('hdb_basic.hdb_id'), nullable=True)
     
+    # New: Unit Linkage (Permanent Unit of Analysis)
+    condo_unit_id = Column(Integer, ForeignKey('condo_unit.unit_id'), nullable=True)
+    hdb_unit_id = Column(Integer, ForeignKey('hdb_unit.unit_id'), nullable=True)
+    
     # Relationships
     agent = relationship("Agent", back_populates="listings")
     condo = relationship("CondoBasic", back_populates="listings")
     hdb = relationship("HdbBasic", back_populates="listings")
+    condo_unit = relationship("CondoUnit", backref="listings")
+    hdb_unit = relationship("HdbUnit", backref="listings")
     # favourited_by = relationship("UserFavourite", back_populates="listing", cascade="all, delete-orphan")
     
     # Match metadata

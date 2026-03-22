@@ -1,16 +1,17 @@
 """
 Unified Database Setup for Real Estate Application
 ===================================================
-This script sets up the final application database (real_estate_app) with
+This script sets up the final application database (real_estate_fyp) with
 properly structured tables:
 - agents: Agent information
-- listings: Property listings with foreign key to agents
-- condo_basic: Condo/HDB basic information (sourced directly from data/basic/property_basic.csv)
+- listings: Live property listings (scraped from 4 major portals)
+- condo_basic & hdb_basic: Master Directory Reference Tables (Static Ground Truth)
 
-The listings table is enriched with condo_basic data by matching:
-  listing.title  ==  condo_basic.condo_name  (case-insensitive exact match, with substring fallback)
+The listings table is enriched with master directory data by matching:
+  listing.title  ==  condo_basic.condo_name (Condos)
+  listing.address == hdb_basic matching logic (HDBs)
 
-Note: condo_basic is ingested directly from CSV before listings, similar to agent_list.
+Note: Master directories provide coordinates and facilities for the messy scraped data.
 """
 
 import os
@@ -25,9 +26,9 @@ import re
 # --- Configuration ---
 DB_HOST = os.getenv('DB_HOST', 'localhost')
 DB_PORT = os.getenv('DB_PORT', '5432')
-DB_NAME = os.getenv('DB_NAME', 'real_estate_app')
-DB_USER = os.getenv('DB_USER', 'alanwang')
-DB_PASS = os.getenv('DB_PASS', '')
+DB_NAME = os.getenv('DB_NAME', 'real_estate_fyp')
+DB_USER = os.getenv('DB_USER', 'postgres')
+DB_PASS = os.getenv('DB_PASS', 'postgres')
 
 DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
@@ -136,6 +137,38 @@ class HdbBasic(Base):
     four_room_qty = Column(Integer)
     five_room_qty = Column(Integer)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    
+    units = relationship("HdbUnit", back_populates="hdb")
+
+class HdbUnit(Base):
+    __tablename__ = 'hdb_unit'
+    unit_id = Column(Integer, primary_key=True, autoincrement=True)
+    hdb_id = Column(Integer, ForeignKey('hdb_basic.hdb_id'))
+    unit_number = Column(String(10))
+    floor_level = Column(Integer)
+    direction_facing = Column(String(10))
+    afternoon_sun = Column(Boolean)
+    size_sqm = Column(Float)
+    price = Column(Float)
+    price_per_sqm = Column(Float)
+    
+    hdb = relationship("HdbBasic", back_populates="units")
+
+class CondoUnit(Base):
+    __tablename__ = 'condo_unit'
+    unit_id = Column(Integer, primary_key=True, autoincrement=True)
+    condo_id = Column(Integer, ForeignKey('condo_basic.condo_id'))
+    unit_number = Column(String(10))
+    floor_level = Column(Integer)
+    bedrooms = Column(Integer)
+    bathrooms = Column(Integer)
+    direction_facing = Column(String(10))
+    afternoon_sun = Column(Boolean)
+    size_sqm = Column(Float)
+    price = Column(Float)
+    price_per_sqm = Column(Float)
+    
+    condo = relationship("CondoBasic", backref="units")
 
 
 class Listing(Base):
@@ -204,6 +237,10 @@ class Listing(Base):
     hdb_id = Column(Integer, ForeignKey('hdb_basic.hdb_id'), nullable=True)
     hdb = relationship("HdbBasic", backref="listings")
     
+    # Unit-Level Master Directory Linkage
+    condo_unit_id = Column(Integer, ForeignKey('condo_unit.unit_id'), nullable=True)
+    hdb_unit_id = Column(Integer, ForeignKey('hdb_unit.unit_id'), nullable=True)
+    
     # Match metadata (for tracking enrichment)
     match_score = Column(Float)
     match_method = Column(String(50))
@@ -255,6 +292,24 @@ def get_int(val):
         return int(digits[0]) if digits else None
     except:
         return None
+
+def extract_unit_info(text_to_search):
+    """
+    Extracts unit number and floor level from listing address/title.
+    Pattern: #12-345 or #12-34 or #12 345
+    Returns: (unit_number, floor_level)
+    """
+    if not text_to_search:
+        return None, None
+    
+    # Common patterns: #12-345, #12-34, #12/345, #12 345
+    match = re.search(r'#\s*(\d{2})[-/\s](\d{2,4})\b', text_to_search)
+    if match:
+        floor = int(match.group(1))
+        unit = f"{match.group(1)}-{match.group(2)}"
+        return unit, floor
+    
+    return None, None
 
 
 def load_sqlite_data():
@@ -624,6 +679,48 @@ def ingest_all_data(df, engine):
                 # Add to a counter if needed
                 pass
             
+            # 2.6 Extract Unit Information and Link to Master Unit (Permanent Unit of Analysis)
+            unit_number, floor_level = extract_unit_info(f"{title} {safe_str(row.get('address'))}")
+            
+            hdb_unit_id = None
+            condo_unit_id = None
+            
+            if hdb and unit_number:
+                # Find or create HDB Unit
+                hdb_unit = session.query(HdbUnit).filter_by(hdb_id=hdb.hdb_id, unit_number=unit_number).first()
+                if not hdb_unit:
+                    hdb_unit = HdbUnit(hdb_id=hdb.hdb_id, unit_number=unit_number, floor_level=floor_level)
+                    session.add(hdb_unit)
+                    session.flush()
+                hdb_unit_id = hdb_unit.unit_id
+                
+                # Enrich HDB Unit with latest listing data
+                hdb_unit.price = to_python_type(row.get('price'))
+                hdb_unit.price_per_sqm = to_python_type(row.get('psf')) / 0.092903 if row.get('psf') else None
+                if row.get('sqft'):
+                    hdb_unit.size_sqm = to_python_type(row.get('sqft')) * 0.092903
+
+            elif condo and unit_number:
+                # Find or create Condo Unit
+                condo_unit = session.query(CondoUnit).filter_by(condo_id=condo.id, unit_number=unit_number).first()
+                if not condo_unit:
+                    condo_unit = CondoUnit(
+                        condo_id=condo.id, 
+                        unit_number=unit_number, 
+                        floor_level=floor_level,
+                        bedrooms=get_int(row.get('beds')),
+                        bathrooms=get_int(row.get('baths'))
+                    )
+                    session.add(condo_unit)
+                    session.flush()
+                condo_unit_id = condo_unit.unit_id
+                
+                # Enrich Condo Unit with latest listing data
+                condo_unit.price = to_python_type(row.get('price'))
+                condo_unit.price_per_sqm = to_python_type(row.get('psf')) / 0.092903 if row.get('psf') else None
+                if row.get('sqft'):
+                    condo_unit.size_sqm = to_python_type(row.get('sqft')) * 0.092903
+
             # 3. Create Listing
             listing = Listing(
                 title=title,
@@ -647,6 +744,7 @@ def ingest_all_data(df, engine):
                 
                 # Enriched from condo_basic if matched
                 condo_id=condo.id if condo else None,
+                condo_unit_id=condo_unit_id,
                 
                 # Enriched from condo OR hdb
                 postal_code=condo.postal_code if condo else (hdb.postal_code if hdb else None),
@@ -669,6 +767,7 @@ def ingest_all_data(df, engine):
                 facilities_json=condo.facilities_json if condo else None,
                 
                 hdb_id=hdb.hdb_id if hdb else None,
+                hdb_unit_id=hdb_unit_id,
                 built_year=safe_str(row.get('built_year')) or (str(hdb.year_completed) if hdb and hdb.year_completed else None),
                 
                 match_score=match_score,

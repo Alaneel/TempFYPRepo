@@ -6,7 +6,9 @@ import { useParams } from "next/navigation";
 import { Navbar } from "@/components/layout/navbar";
 import { ListingCard } from "@/components/features/listings/listing-card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 import { Building2, MapPin, Calendar, Ruler, Info } from "lucide-react";
+import { UnitList } from "@/components/features/directory/unit-list";
 
 export default function CondoDetailPage() {
     const params = useParams();
@@ -93,9 +95,23 @@ export default function CondoDetailPage() {
                     </div>
                 </section>
 
-                {/* Live Listings Section */}
-                <section className="container mx-auto px-4 py-12 max-w-5xl">
-                    <h2 className="text-3xl font-bold tracking-tight mb-8">Current Active Listings</h2>
+                {/* Units Directory Section (Permanent) */}
+                <section className="container mx-auto px-4 py-12 max-w-5xl border-t">
+                    <div className="flex items-center gap-2 mb-8">
+                        <Building2 className="h-6 w-6 text-primary" />
+                        <h2 className="text-3xl font-bold tracking-tight">Master Property Directory</h2>
+                        <Badge variant="secondary" className="ml-2">Permanent Records</Badge>
+                    </div>
+                    <UnitList type="condo" id={id} />
+                </section>
+
+                {/* Live Listings Section (Temporary/Active) */}
+                <section className="container mx-auto px-4 py-12 max-w-5xl border-t bg-muted/5">
+                    <div className="flex items-center gap-2 mb-8">
+                        <Info className="h-6 w-6 text-orange-500" />
+                        <h2 className="text-3xl font-bold tracking-tight">Current Market Activity</h2>
+                        <Badge variant="outline" className="ml-2 border-orange-200 text-orange-700 bg-orange-50">Active Listings</Badge>
+                    </div>
 
                     {isLoadingListings ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

@@ -29,3 +29,27 @@ class HdbResponse(HdbBase):
 
     class Config:
         from_attributes = True
+
+class HdbUnitBase(BaseModel):
+    unit_number: Optional[str] = None
+    floor_level: Optional[int] = None
+    room_type: Optional[str] = None
+    direction_facing: Optional[str] = None
+    afternoon_sun: Optional[bool] = None
+    unique_unit_description: Optional[str] = None
+    size_sqm: Optional[float] = None
+    price: Optional[float] = None
+    listing_status: Optional[str] = None
+    price_per_sqm: Optional[float] = None
+    remaining_years: Optional[int] = None
+
+class HdbUnitResponse(HdbUnitBase):
+    unit_id: int
+    hdb_id: int
+    created_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+class HdbUnitUpdate(HdbUnitBase):
+    pass

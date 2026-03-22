@@ -11,6 +11,10 @@ from app.schemas.hdb import HdbResponse
 from app.schemas.listing import ListingResponse
 from app.schemas.common import PaginatedResponse
 from app.services.listing import ListingService
+from app.services.auth import get_current_agent
+from app.models.agent import Agent
+from app.models.agent_list import AgentList
+from app.models.user import User
 
 router = APIRouter()
 
@@ -101,3 +105,110 @@ async def get_hdb_listings(
     listings = await service.get_listings(skip=skip, limit=limit, hdb_id=hdb_id)
     total = await service.get_total_count(hdb_id=hdb_id)
     return {"total": total, "page": page, "limit": limit, "data": listings}
+
+# --- Unit Level Endpoints ---
+
+from app.models.hdb import HdbUnit
+from app.models.condo import CondoUnit
+from app.schemas.hdb import HdbUnitResponse, HdbUnitUpdate
+from app.schemas.condo import CondoUnitResponse, CondoUnitUpdate
+
+@router.get("/condos/{condo_id}/units", response_model=List[CondoUnitResponse])
+async def get_condo_units(
+    condo_id: int,
+    db: AsyncSession = Depends(get_db)
+):
+    stmt = select(CondoUnit).where(CondoUnit.condo_id == condo_id).order_by(CondoUnit.unit_number)
+    result = await db.execute(stmt)
+    return result.scalars().all()
+
+@router.patch("/condos/units/{unit_id}", response_model=CondoUnitResponse)
+async def update_condo_unit(
+    unit_id: int,
+    unit_update: CondoUnitUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_agent)
+):
+    # Verify the agent against the CEA registry (AgentList)
+    agent_stmt = select(Agent).where(Agent.user_id == current_user.id)
+    agent_result = await db.execute(agent_stmt)
+    agent_profile = agent_result.scalar_one_or_none()
+    
+    if not agent_profile or not agent_profile.cea:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User must have a linked agent profile and a valid CEA number."
+        )
+    
+    # Check if CEA number is valid in our registry
+    cea_verify_stmt = select(AgentList).where(AgentList.cea_number == agent_profile.cea)
+    cea_result = await db.execute(cea_verify_stmt)
+    if not cea_result.scalar_one_or_none():
+         raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Agent verification failed: CEA Number {agent_profile.cea} not found in official registry."
+        )
+
+    stmt = select(CondoUnit).where(CondoUnit.unit_id == unit_id)
+    result = await db.execute(stmt)
+    unit = result.scalar_one_or_none()
+    if not unit:
+        raise HTTPException(status_code=404, detail="Unit not found")
+    
+    update_data = unit_update.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(unit, key, value)
+    
+    await db.commit()
+    await db.refresh(unit)
+    return unit
+
+@router.get("/hdbs/{hdb_id}/units", response_model=List[HdbUnitResponse])
+async def get_hdb_units(
+    hdb_id: int,
+    db: AsyncSession = Depends(get_db)
+):
+    stmt = select(HdbUnit).where(HdbUnit.hdb_id == hdb_id).order_by(HdbUnit.unit_number)
+    result = await db.execute(stmt)
+    return result.scalars().all()
+
+@router.patch("/hdbs/units/{unit_id}", response_model=HdbUnitResponse)
+async def update_hdb_unit(
+    unit_id: int,
+    unit_update: HdbUnitUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_agent)
+):
+    # Verify the agent against the CEA registry (AgentList)
+    agent_stmt = select(Agent).where(Agent.user_id == current_user.id)
+    agent_result = await db.execute(agent_stmt)
+    agent_profile = agent_result.scalar_one_or_none()
+    
+    if not agent_profile or not agent_profile.cea:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User must have a linked agent profile and a valid CEA number."
+        )
+    
+    # Check if CEA number is valid in our registry
+    cea_verify_stmt = select(AgentList).where(AgentList.cea_number == agent_profile.cea)
+    cea_result = await db.execute(cea_verify_stmt)
+    if not cea_result.scalar_one_or_none():
+         raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Agent verification failed: CEA Number {agent_profile.cea} not found in official registry."
+        )
+
+    stmt = select(HdbUnit).where(HdbUnit.unit_id == unit_id)
+    result = await db.execute(stmt)
+    unit = result.scalar_one_or_none()
+    if not unit:
+        raise HTTPException(status_code=404, detail="Unit not found")
+    
+    update_data = unit_update.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(unit, key, value)
+    
+    await db.commit()
+    await db.refresh(unit)
+    return unit
