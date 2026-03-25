@@ -20,69 +20,72 @@
         }
         .reveal { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; color: var(--text-dark); }
         .reveal h1, .reveal h2, .reveal h3 { color: var(--text-dark); font-weight: 700; text-transform: none; }
-        .reveal h1 { font-size: 2.0em; }
-        .reveal h2 { font-size: 1.5em; }
-        .reveal h3 { font-size: 1.15em; }
-        .reveal p, .reveal li { font-size: 0.72em; line-height: 1.5; }
-        .reveal table { font-size: 0.65em; margin: 0.5em auto; }
-        .reveal table th { background: var(--accent); color: #fff; padding: 0.4em 0.8em; }
-        .reveal table td { padding: 0.35em 0.8em; border-bottom: 1px solid #e0e0e0; }
+        .reveal h1 { font-size: 1.6em; }
+        .reveal h2 { font-size: 1.2em; margin-bottom: 0.3em; }
+        .reveal h3 { font-size: 0.95em; }
+        .reveal p, .reveal li { font-size: 0.62em; line-height: 1.45; }
+        .reveal ul, .reveal ol { margin: 0.2em 0; }
+        .reveal table { font-size: 0.55em; margin: 0.3em auto; }
+        .reveal table th { background: var(--accent); color: #fff; padding: 0.3em 0.6em; }
+        .reveal table td { padding: 0.25em 0.6em; border-bottom: 1px solid #e0e0e0; }
         .reveal table tr:nth-child(even) td { background: #fafafa; }
 
         /* ── Title slide ── */
         .title-slide { background: linear-gradient(135deg, var(--bg-dark) 0%, #16213e 100%) !important; }
         .title-slide h1, .title-slide h2, .title-slide p { color: #fff !important; }
-        .title-slide h1 { font-size: 2.4em; margin-bottom: 0.1em; }
+        .title-slide h1 { font-size: 1.9em; margin-bottom: 0.1em; }
         .title-slide .accent { color: var(--accent); }
-        .title-slide .meta { font-size: 0.55em; opacity: 0.8; margin-top: 1.5em; }
+        .title-slide .meta { font-size: 0.48em; opacity: 0.8; margin-top: 1em; }
 
         /* ── Section headers ── */
         .section-header { background: var(--accent) !important; }
         .section-header h2, .section-header p { color: #fff !important; }
-        .section-header .contrib-num { font-size: 3em; font-weight: 800; opacity: 0.3; position: absolute; right: 80px; top: 40px; }
+        .section-header .contrib-num { font-size: 2.5em; font-weight: 800; opacity: 0.3; position: absolute; right: 60px; top: 30px; }
 
         /* ── Helpers ── */
         .highlight { color: var(--accent); font-weight: 700; }
-        .stat-big { font-size: 2.2em; font-weight: 800; color: var(--accent); line-height: 1.1; }
-        .stat-label { font-size: 0.6em; color: #666; }
-        .stat-grid { display: flex; justify-content: center; gap: 2.5em; margin: 1em 0; }
+        .stat-big { font-size: 1.8em; font-weight: 800; color: var(--accent); line-height: 1.1; }
+        .stat-label { font-size: 0.52em; color: #666; }
+        .stat-grid { display: flex; justify-content: center; gap: 2em; margin: 0.6em 0; }
         .stat-box { text-align: center; }
-        .tag { display: inline-block; background: var(--accent); color: #fff; padding: 0.15em 0.6em; border-radius: 4px; font-size: 0.65em; margin: 0.1em; }
-        .tag-outline { display: inline-block; border: 2px solid var(--accent); color: var(--accent); padding: 0.15em 0.6em; border-radius: 4px; font-size: 0.65em; margin: 0.1em; }
+        .tag { display: inline-block; background: var(--accent); color: #fff; padding: 0.12em 0.5em; border-radius: 4px; font-size: 0.58em; margin: 0.08em; }
+        .tag-outline { display: inline-block; border: 2px solid var(--accent); color: var(--accent); padding: 0.12em 0.5em; border-radius: 4px; font-size: 0.58em; margin: 0.08em; }
         .tag-green { background: var(--green); }
         .tag-red { background: var(--red); }
         .tag-blue { background: var(--blue); }
-        .card { background: var(--bg-card); border-radius: 8px; padding: 0.8em 1em; margin: 0.4em 0; border-left: 4px solid var(--accent); }
+        .card { background: var(--bg-card); border-radius: 8px; padding: 0.5em 0.8em; margin: 0.3em 0; border-left: 4px solid var(--accent); }
         .card-green { border-left-color: var(--green); }
         .card-red { border-left-color: var(--red); }
-        .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5em; text-align: left; }
-        .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1em; text-align: left; }
+        .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1em; text-align: left; }
+        .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.8em; text-align: left; }
         .img-shadow { box-shadow: 0 4px 20px rgba(0,0,0,0.15); border-radius: 8px; }
-        .footnote { font-size: 0.45em; color: #999; position: absolute; bottom: 30px; left: 60px; }
+        .footnote { font-size: 0.4em; color: #999; position: absolute; bottom: 20px; left: 40px; }
         .fragment-appear { visibility: hidden; }
         .fragment-appear.visible { visibility: visible; }
 
         /* ── Architecture diagram ── */
-        .arch-layer { background: var(--bg-card); border-radius: 8px; padding: 0.6em; margin: 0.3em 0; text-align: center; font-size: 0.6em; }
+        .arch-layer { background: var(--bg-card); border-radius: 8px; padding: 0.4em; margin: 0.2em 0; text-align: center; font-size: 0.52em; }
         .arch-layer.mine { border: 2px solid var(--accent); background: #fef5e7; }
         .arch-layer.team { border: 2px solid #bdc3c7; opacity: 0.7; }
-        .arch-arrow { font-size: 1.2em; color: #999; margin: 0.1em 0; }
+        .arch-arrow { font-size: 1em; color: #999; margin: 0.05em 0; }
 
         /* ── Demo slide ── */
         .demo-slide { background: var(--bg-dark) !important; }
         .demo-slide h2, .demo-slide p, .demo-slide li { color: #fff !important; }
-        .demo-step { display: flex; align-items: flex-start; gap: 0.8em; margin: 0.4em 0; }
-        .demo-num { background: var(--accent); color: #fff; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.7em; flex-shrink: 0; }
-        .demo-text { font-size: 0.65em; color: #ccc; }
+        .demo-step { display: flex; align-items: flex-start; gap: 0.6em; margin: 0.3em 0; }
+        .demo-num { background: var(--accent); color: #fff; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.6em; flex-shrink: 0; }
+        .demo-text { font-size: 0.58em; color: #ccc; }
         .demo-text strong { color: #fff; }
 
         /* ── Summary slide ── */
         .summary-slide { background: linear-gradient(135deg, var(--bg-dark) 0%, #16213e 100%) !important; }
         .summary-slide h2, .summary-slide p { color: #fff !important; }
         .summary-slide table th { background: var(--accent); }
-        .summary-slide table td { color: #ddd; border-bottom: 1px solid #334; }
-        .summary-slide table { font-size: 0.6em; }
-        .summary-slide .closing { font-size: 0.8em; color: var(--accent); font-style: italic; margin-top: 1em; }
+        .summary-slide table td { color: #fff; border-bottom: 1px solid #334; }
+        .summary-slide table tr:nth-child(even) td { background: rgba(255,255,255,0.08); }
+        .summary-slide table tr:nth-child(odd) td { background: rgba(255,255,255,0.02); }
+        .summary-slide table { font-size: 0.52em; }
+        .summary-slide .closing { font-size: 0.7em; color: var(--accent); font-style: italic; margin-top: 0.6em; }
 
         /* Speaker notes styling */
         .reveal .speaker-notes { font-size: 0.7em; }
@@ -117,7 +120,7 @@
 <!-- ============================================================ -->
 <section>
     <h2>The Problem</h2>
-    <p style="font-size:0.85em; font-style:italic; color:#666; margin-bottom:0.8em;">
+    <p style="font-size:0.78em; font-style:italic; color:#666; margin-bottom:0.5em;">
         "You're about to make the biggest financial decision of your life — <br>with fragmented, outdated information."
     </p>
 
@@ -136,7 +139,7 @@
         </div>
     </div>
 
-    <p class="fragment" style="margin-top:1em; font-size:0.85em;">
+    <p class="fragment" style="margin-top:0.4em; font-size:0.75em;">
         <strong class="highlight">SingaLiving</strong> solves all three. Let me show you how.
     </p>
 
@@ -368,17 +371,17 @@
                 </table>
             </div>
             <div>
-                <div class="card card-green">
-                    <h3>Why the Asymmetry?</h3>
+                <div class="card card-green" style="padding:0.4em 0.6em;">
+                    <h3 style="margin-bottom:0.2em;">Why the Asymmetry?</h3>
                     <p><strong>CPF Lease-Eligibility Policy:</strong> HDB flats with &lt;60 years remaining lease cannot receive full CPF financing → <strong>demand cliff</strong> for older flats</p>
-                    <p style="margin-top:0.5em;">Landed properties are mostly <strong>freehold</strong> → age barely matters</p>
+                    <p style="margin-top:0.3em;">Landed properties are mostly <strong>freehold</strong> → age barely matters</p>
                 </div>
             </div>
         </div>
 
-        <div class="card" style="margin-top:0.5em; text-align:center;">
-            <strong>Key Insight:</strong> The model learned the CPF-induced price discontinuity <em>entirely from data</em> — no CPF feature was explicitly engineered.<br>
-            <span style="font-size:0.85em;">Feature ablation validates domain knowledge, not just accuracy.</span>
+        <div class="card" style="margin-top:0.3em; padding:0.3em 0.6em; text-align:center; font-size:0.55em;">
+            <strong>Key Insight:</strong> The model learned the CPF-induced price discontinuity <em>entirely from data</em> — no CPF feature was explicitly engineered.
+            Feature ablation validates domain knowledge, not just accuracy.
         </div>
 
         <aside class="notes">
@@ -663,9 +666,11 @@
         hash: true,
         slideNumber: 'c/t',
         showSlideNumber: 'speaker',
-        width: 1200,
+        width: 1100,
         height: 700,
-        margin: 0.06,
+        margin: 0.08,
+        minScale: 0.2,
+        maxScale: 1.5,
         transition: 'slide',
         transitionSpeed: 'default',
         plugins: [ RevealNotes ],
