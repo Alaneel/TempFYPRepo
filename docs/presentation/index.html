@@ -1,0 +1,680 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SingaLiving — FYP Oral Presentation</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/white.css">
+    <style>
+        /* ── Global ── */
+        :root {
+            --accent: #e67e22;
+            --accent-dark: #d35400;
+            --bg-dark: #1a1a2e;
+            --bg-card: #f8f9fa;
+            --text-dark: #2c3e50;
+            --green: #27ae60;
+            --red: #e74c3c;
+            --blue: #2980b9;
+        }
+        .reveal { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; color: var(--text-dark); }
+        .reveal h1, .reveal h2, .reveal h3 { color: var(--text-dark); font-weight: 700; text-transform: none; }
+        .reveal h1 { font-size: 2.0em; }
+        .reveal h2 { font-size: 1.5em; }
+        .reveal h3 { font-size: 1.15em; }
+        .reveal p, .reveal li { font-size: 0.72em; line-height: 1.5; }
+        .reveal table { font-size: 0.65em; margin: 0.5em auto; }
+        .reveal table th { background: var(--accent); color: #fff; padding: 0.4em 0.8em; }
+        .reveal table td { padding: 0.35em 0.8em; border-bottom: 1px solid #e0e0e0; }
+        .reveal table tr:nth-child(even) td { background: #fafafa; }
+
+        /* ── Title slide ── */
+        .title-slide { background: linear-gradient(135deg, var(--bg-dark) 0%, #16213e 100%) !important; }
+        .title-slide h1, .title-slide h2, .title-slide p { color: #fff !important; }
+        .title-slide h1 { font-size: 2.4em; margin-bottom: 0.1em; }
+        .title-slide .accent { color: var(--accent); }
+        .title-slide .meta { font-size: 0.55em; opacity: 0.8; margin-top: 1.5em; }
+
+        /* ── Section headers ── */
+        .section-header { background: var(--accent) !important; }
+        .section-header h2, .section-header p { color: #fff !important; }
+        .section-header .contrib-num { font-size: 3em; font-weight: 800; opacity: 0.3; position: absolute; right: 80px; top: 40px; }
+
+        /* ── Helpers ── */
+        .highlight { color: var(--accent); font-weight: 700; }
+        .stat-big { font-size: 2.2em; font-weight: 800; color: var(--accent); line-height: 1.1; }
+        .stat-label { font-size: 0.6em; color: #666; }
+        .stat-grid { display: flex; justify-content: center; gap: 2.5em; margin: 1em 0; }
+        .stat-box { text-align: center; }
+        .tag { display: inline-block; background: var(--accent); color: #fff; padding: 0.15em 0.6em; border-radius: 4px; font-size: 0.65em; margin: 0.1em; }
+        .tag-outline { display: inline-block; border: 2px solid var(--accent); color: var(--accent); padding: 0.15em 0.6em; border-radius: 4px; font-size: 0.65em; margin: 0.1em; }
+        .tag-green { background: var(--green); }
+        .tag-red { background: var(--red); }
+        .tag-blue { background: var(--blue); }
+        .card { background: var(--bg-card); border-radius: 8px; padding: 0.8em 1em; margin: 0.4em 0; border-left: 4px solid var(--accent); }
+        .card-green { border-left-color: var(--green); }
+        .card-red { border-left-color: var(--red); }
+        .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5em; text-align: left; }
+        .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1em; text-align: left; }
+        .img-shadow { box-shadow: 0 4px 20px rgba(0,0,0,0.15); border-radius: 8px; }
+        .footnote { font-size: 0.45em; color: #999; position: absolute; bottom: 30px; left: 60px; }
+        .fragment-appear { visibility: hidden; }
+        .fragment-appear.visible { visibility: visible; }
+
+        /* ── Architecture diagram ── */
+        .arch-layer { background: var(--bg-card); border-radius: 8px; padding: 0.6em; margin: 0.3em 0; text-align: center; font-size: 0.6em; }
+        .arch-layer.mine { border: 2px solid var(--accent); background: #fef5e7; }
+        .arch-layer.team { border: 2px solid #bdc3c7; opacity: 0.7; }
+        .arch-arrow { font-size: 1.2em; color: #999; margin: 0.1em 0; }
+
+        /* ── Demo slide ── */
+        .demo-slide { background: var(--bg-dark) !important; }
+        .demo-slide h2, .demo-slide p, .demo-slide li { color: #fff !important; }
+        .demo-step { display: flex; align-items: flex-start; gap: 0.8em; margin: 0.4em 0; }
+        .demo-num { background: var(--accent); color: #fff; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.7em; flex-shrink: 0; }
+        .demo-text { font-size: 0.65em; color: #ccc; }
+        .demo-text strong { color: #fff; }
+
+        /* ── Summary slide ── */
+        .summary-slide { background: linear-gradient(135deg, var(--bg-dark) 0%, #16213e 100%) !important; }
+        .summary-slide h2, .summary-slide p { color: #fff !important; }
+        .summary-slide table th { background: var(--accent); }
+        .summary-slide table td { color: #ddd; border-bottom: 1px solid #334; }
+        .summary-slide table { font-size: 0.6em; }
+        .summary-slide .closing { font-size: 0.8em; color: var(--accent); font-style: italic; margin-top: 1em; }
+
+        /* Speaker notes styling */
+        .reveal .speaker-notes { font-size: 0.7em; }
+    </style>
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+
+<!-- ============================================================ -->
+<!-- SLIDE 1: TITLE                                                -->
+<!-- ============================================================ -->
+<section class="title-slide" data-background-color="#1a1a2e">
+    <h1>🏠 <span class="accent">SingaLiving</span></h1>
+    <h2 style="font-weight:400; font-size:1.1em;">Singapore Real Estate AI Platform</h2>
+    <p style="font-size:0.7em; margin-top:1em;">
+        From Fragmented Portals to Intelligent Property Insights
+    </p>
+    <div class="meta">
+        <p><strong>Wang Yangming</strong> · CCDS25-0111</p>
+        <p>Supervisor: Prof Zhang Jie &nbsp;|&nbsp; Examiner: Prof Tao Dacheng</p>
+        <p>FYP Oral Examination · 08 May 2026</p>
+    </div>
+    <aside class="notes">
+        Open with energy. Make eye contact. Don't read this slide.
+        "Good morning, professors. My name is Wang Yangming. Today I'll present SingaLiving — an AI platform that transforms Singapore's fragmented property market into a unified intelligent system."
+    </aside>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE 2: PROBLEM STATEMENT                                    -->
+<!-- ============================================================ -->
+<section>
+    <h2>The Problem</h2>
+    <p style="font-size:0.85em; font-style:italic; color:#666; margin-bottom:0.8em;">
+        "You're about to make the biggest financial decision of your life — <br>with fragmented, outdated information."
+    </p>
+
+    <div class="three-col">
+        <div class="card card-red">
+            <h3>📊 Data Fragmentation</h3>
+            <p>4 competing portals, different schemas, massive cross-platform duplication, no unified view</p>
+        </div>
+        <div class="card card-red">
+            <h3>📉 Methodological Limits</h3>
+            <p>Traditional Hedonic Price Models assume linearity — unable to capture non-linear market dynamics</p>
+        </div>
+        <div class="card card-red">
+            <h3>🔍 Search Usability</h3>
+            <p>Users are forced to use rigid dropdown filters — impossible to express natural preferences</p>
+        </div>
+    </div>
+
+    <p class="fragment" style="margin-top:1em; font-size:0.85em;">
+        <strong class="highlight">SingaLiving</strong> solves all three. Let me show you how.
+    </p>
+
+    <aside class="notes">
+        TIMING: 1.5 min total for this slide. Go fast.
+        "Singapore has one of the most expensive property markets in the world. Yet as a buyer, you face a fragmented landscape — four competing portals, each with its own format, no unified price benchmark, and no AI assistance. Three concrete problems motivated this project. [Read cards briefly]. SingaLiving solves all three."
+    </aside>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE 3: ARCHITECTURE                                         -->
+<!-- ============================================================ -->
+<section>
+    <h2>System Architecture</h2>
+    <p style="font-size:0.6em; margin-bottom:0.5em;">
+        <span class="tag">★ My contribution</span>
+        <span class="tag" style="background:#bdc3c7;">Team contribution</span>
+    </p>
+
+    <div style="max-width:800px; margin:0 auto;">
+        <div class="arch-layer" style="display:grid; grid-template-columns:repeat(5,1fr); gap:0.3em;">
+            <div style="background:var(--accent);color:#fff;border-radius:6px;padding:0.4em;font-weight:700;">PropertyGuru ★</div>
+            <div style="background:#bdc3c7;border-radius:6px;padding:0.4em;">99.co</div>
+            <div style="background:#bdc3c7;border-radius:6px;padding:0.4em;">EdgeProp</div>
+            <div style="background:#bdc3c7;border-radius:6px;padding:0.4em;">SRX</div>
+            <div style="background:#eee;border-radius:6px;padding:0.4em;">External</div>
+        </div>
+        <div class="arch-arrow">▼</div>
+        <div class="arch-layer mine">
+            <strong>Data Pipeline ★</strong><br>
+            aggregate.py → ingest.py → PostgreSQL &nbsp;|&nbsp; valuation_model.py → 8 XGBoost models
+        </div>
+        <div class="arch-arrow">▼</div>
+        <div class="arch-layer mine">
+            <strong>Backend API ★</strong> — FastAPI + PostgreSQL + Redis<br>
+            <span class="tag" style="font-size:0.85em;">/listings</span>
+            <span class="tag" style="font-size:0.85em;">/semantic-search ★</span>
+            <span class="tag" style="font-size:0.85em;">/valuation ★</span>
+            <span class="tag" style="font-size:0.85em;">/chat ★</span>
+            <span class="tag" style="font-size:0.85em;">/recommendations ★</span>
+        </div>
+        <div class="arch-arrow">▼</div>
+        <div class="arch-layer mine">
+            <strong>Frontend ★</strong> — Next.js + TypeScript + Leaflet<br>
+            <span class="tag-outline">/listings</span>
+            <span class="tag-outline">/listings/[id]</span>
+            <span class="tag-outline">/saved</span>
+            <span class="tag-outline">/for-you</span>
+        </div>
+    </div>
+
+    <aside class="notes">
+        TIMING: 1.5 min. Don't explain every box — just show the layers.
+        "Four layers. Everything in orange is my work: the PropertyGuru scraper — 99.7% of all data — the entire pipeline, all AI endpoints, and the frontend integration. My teammates built the other three scrapers."
+    </aside>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE 4: CONTRIBUTION 1 — DATA INFRASTRUCTURE                 -->
+<!-- ============================================================ -->
+<section>
+    <section class="section-header" data-background-color="#e67e22">
+        <div class="contrib-num">1</div>
+        <h2>Unified Data Infrastructure</h2>
+        <p>Scraping, Aggregation & Deduplication</p>
+    </section>
+
+    <section>
+        <h2>Data Scale</h2>
+
+        <div class="stat-grid">
+            <div class="stat-box">
+                <div class="stat-big">86,321</div>
+                <div class="stat-label">Raw Records (4 portals)</div>
+            </div>
+            <div class="stat-box" style="font-size:2em; padding-top:0.3em;">→</div>
+            <div class="stat-box">
+                <div class="stat-big">53,497</div>
+                <div class="stat-label">Clean, Deduplicated</div>
+            </div>
+        </div>
+
+        <table>
+            <thead>
+                <tr><th>Source</th><th>Raw</th><th>Post-Dedup</th><th>Retention</th></tr>
+            </thead>
+            <tbody>
+                <tr><td><strong>PropertyGuru ★</strong></td><td>55,357</td><td><strong>53,352</strong></td><td>96.4%</td></tr>
+                <tr><td>SRX</td><td>24,010</td><td>91</td><td>0.4%</td></tr>
+                <tr><td>99.co</td><td>5,344</td><td>36</td><td>0.7%</td></tr>
+                <tr><td>EdgeProp</td><td>1,610</td><td>18</td><td>1.1%</td></tr>
+            </tbody>
+        </table>
+
+        <p><span class="tag tag-green">99.7%</span> of final dataset comes from PropertyGuru (my scraper)</p>
+
+        <aside class="notes">
+            TIMING: 45 sec on this sub-slide.
+            "86,321 raw records from four portals. After deduplication: 53,497 unique listings. PropertyGuru contributes 99.7% — this is why I prioritised it as the primary scraper."
+        </aside>
+    </section>
+
+    <section>
+        <h2>Deduplication: Title-Fallback Key</h2>
+
+        <div class="two-col">
+            <div>
+                <h3>Composite Key Design</h3>
+                <p><code>address + beds + baths + sqft</code></p>
+                <p><span class="tag tag-green">95.5%</span> address coverage</p>
+                <p>Remaining 4.5% → <strong>title fallback</strong></p>
+                <p><span class="tag tag-green">100%</span> title coverage</p>
+            </div>
+            <div>
+                <h3>Ablation Result</h3>
+                <table>
+                    <thead>
+                        <tr><th>Key Strategy</th><th>Degenerate Keys</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Address only</td><td><span style="color:var(--red);font-weight:700;">2,410</span></td></tr>
+                        <tr><td>Address + Title ★</td><td><span style="color:var(--green);font-weight:700;">0</span></td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card" style="margin-top:0.8em;">
+            <strong>Key insight:</strong> 2,410 listings would collapse into indistinguishable keys without the title fallback — all eliminated.
+        </div>
+
+        <aside class="notes">
+            TIMING: 2 min 15 sec.
+            "4.5% of listings have no address. A naive address-only key creates 2,410 degenerate collisions — listings that become impossible to tell apart. My title-fallback eliminates all of them. Zero false merges."
+        </aside>
+    </section>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE 5: CONTRIBUTION 2 — AI VALUATION                        -->
+<!-- ============================================================ -->
+<section>
+    <section class="section-header" data-background-color="#e67e22">
+        <div class="contrib-num">2</div>
+        <h2>AI Property Valuation</h2>
+        <p>Per-Segment XGBoost + SHAP Interpretability</p>
+    </section>
+
+    <section>
+        <h2>Per-Segment Model Design</h2>
+
+        <div class="card" style="text-align:center; margin-bottom:1em;">
+            <strong>8 independent XGBoost models</strong><br>
+            <span class="tag">Condo Sale</span> <span class="tag">Condo Rent</span>
+            <span class="tag">HDB Sale</span> <span class="tag">HDB Rent</span>
+            <span class="tag">Landed Sale</span> <span class="tag">Landed Rent</span>
+            <span class="tag">GCB Sale</span> <span class="tag">GCB Rent</span>
+        </div>
+
+        <div class="two-col">
+            <div>
+                <h3>Why Segment?</h3>
+                <p>HDB vs GCB: 10–100× price difference</p>
+                <p>Different features matter for each segment</p>
+                <p>Pooling would destroy accuracy for both</p>
+            </div>
+            <div>
+                <h3>Key Features</h3>
+                <p>property_age, floor_area, district,<br>
+                   beds/baths, tenure, property_type</p>
+                <p style="font-size:0.85em; color:#888;">District from OneMap reverse geocoding</p>
+            </div>
+        </div>
+
+        <aside class="notes">
+            TIMING: 45 sec.
+            "Rather than one universal model, I trained 8 independent XGBoost models stratified by type and transaction mode. HDB and GCB obey fundamentally different pricing dynamics — pooling them destroys accuracy for both."
+        </aside>
+    </section>
+
+    <section>
+        <h2>Model Performance</h2>
+
+        <table>
+            <thead>
+                <tr><th>Segment</th><th>MAPE</th><th>R²</th><th>vs Baseline</th></tr>
+            </thead>
+            <tbody>
+                <tr><td><strong>HDB Sale</strong></td><td><strong>8.96%</strong></td><td>0.897</td><td><span class="tag tag-green">−70% vs mean</span></td></tr>
+                <tr><td><strong>HDB Rent</strong></td><td><strong>8.90%</strong></td><td>0.798</td><td><span class="tag tag-green">−70%</span></td></tr>
+                <tr><td><strong>Condo Sale</strong></td><td>11.2%</td><td><strong>0.945</strong></td><td><span class="tag tag-green">−35% vs Ridge</span></td></tr>
+                <tr><td>Condo Rent</td><td>9.8%</td><td>0.933</td><td>—</td></tr>
+                <tr><td>Landed Sale</td><td>24.8%</td><td>0.627</td><td style="color:#999;">sparse + heterogeneous</td></tr>
+                <tr><td>GCB Sale</td><td>22.0%</td><td>0.376</td><td style="color:#999;">sparse + heterogeneous</td></tr>
+            </tbody>
+        </table>
+
+        <div class="stat-grid" style="margin-top:0.5em;">
+            <div class="stat-box">
+                <div class="stat-big" style="color:var(--green);">−70%</div>
+                <div class="stat-label">MAPE reduction vs baseline</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-big" style="color:var(--green);">0.945</div>
+                <div class="stat-label">Best R² (Condo Sale, n=16,728)</div>
+            </div>
+        </div>
+
+        <aside class="notes">
+            TIMING: 1 min.
+            "HDB models under 9% MAPE — 70% reduction from baseline, 35% better than Ridge. Condo Sale R² 0.945 on 16,000+ samples. Landed and GCB MAPE is higher — sparse data plus luxury heterogeneity. I address concrete improvements in future work."
+        </aside>
+    </section>
+
+    <section>
+        <h2>SHAP Ablation: The Model Understands Economics ⭐</h2>
+
+        <div class="two-col">
+            <div>
+                <h3>Remove <code>property_age</code></h3>
+                <table>
+                    <thead>
+                        <tr><th>Segment</th><th>With</th><th>Without</th><th>Δ MAPE</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td><strong>HDB Sale</strong></td><td>8.96%</td><td>~139%</td><td><span style="color:var(--red);font-weight:700;">+130 pp</span></td></tr>
+                        <tr><td>Landed Sale</td><td>24.8%</td><td>~26%</td><td>+1.2 pp</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div>
+                <div class="card card-green">
+                    <h3>Why the Asymmetry?</h3>
+                    <p><strong>CPF Lease-Eligibility Policy:</strong> HDB flats with &lt;60 years remaining lease cannot receive full CPF financing → <strong>demand cliff</strong> for older flats</p>
+                    <p style="margin-top:0.5em;">Landed properties are mostly <strong>freehold</strong> → age barely matters</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="card" style="margin-top:0.5em; text-align:center;">
+            <strong>Key Insight:</strong> The model learned the CPF-induced price discontinuity <em>entirely from data</em> — no CPF feature was explicitly engineered.<br>
+            <span style="font-size:0.85em;">Feature ablation validates domain knowledge, not just accuracy.</span>
+        </div>
+
+        <aside class="notes">
+            TIMING: 2 min. THIS IS THE MOST IMPORTANT SLIDE. Slow down here.
+            "Here's the most interesting — and I'd argue the most academically significant — finding. [PAUSE]
+            When I remove property_age from HDB Sale, MAPE jumps by 130 percentage points. [PAUSE — let the number sink in]. But for Landed, just 1.2.
+            Why? Singapore's CPF policy. Buyers cannot use CPF to finance HDB flats with less than 60 years remaining on their lease. This creates a demand cliff — older HDB prices collapse. The model learned this price discontinuity entirely from data, without any CPF feature being engineered.
+            Feature ablation doesn't just measure accuracy — it validates that the model has captured real economic structure. It's not a black box."
+        </aside>
+    </section>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE 6: CONTRIBUTION 3 — SEMANTIC SEARCH + AGENTIC           -->
+<!-- ============================================================ -->
+<section>
+    <section class="section-header" data-background-color="#e67e22">
+        <div class="contrib-num">3</div>
+        <h2>Semantic Search + Agentic Enhancements</h2>
+        <p>LLM-Powered Natural Language Property Search</p>
+    </section>
+
+    <section>
+        <h2>Natural Language → Structured Filters</h2>
+
+        <div class="card" style="text-align:center; font-size:0.75em; margin-bottom:0.8em;">
+            <strong style="color:var(--blue);">User query:</strong>
+            <em>"expat looking for 3BR condo near international school Bukit Timah max 6000"</em>
+        </div>
+
+        <div style="text-align:center; font-size:1.2em; color:#999;">▼ Claude ▼</div>
+
+        <div class="card card-green" style="text-align:center; font-size:0.7em;">
+            <span class="tag tag-blue">district: D10, D11, D21</span>
+            <span class="tag tag-blue">beds: 3</span>
+            <span class="tag tag-blue">type: condo</span>
+            <span class="tag tag-blue">price_max: 6,000</span>
+            <span class="tag tag-blue">listing_type: rent</span>
+        </div>
+
+        <p style="font-size:0.7em; color:#888; margin-top:0.5em;">
+            ⚠ This query is <strong>impossible</strong> on traditional portal dropdown filters — no "international school" field, no "expat" intent understanding.
+        </p>
+
+        <div class="stat-grid" style="margin-top:0.5em;">
+            <div class="stat-box">
+                <div class="stat-big">96.4%</div>
+                <div class="stat-label">F1 Score (47 queries)</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-big">~91%</div>
+                <div class="stat-label">Blind F1 (18 queries, 3 annotators)</div>
+            </div>
+        </div>
+
+        <aside class="notes">
+            TIMING: 1 min.
+            "The system uses Claude to translate free-text queries into structured filters. This example — 'expat', 'international school', 'Bukit Timah' — is impossible on traditional portals. No dropdown can represent these. Claude correctly extracts D10, D11, D21, three bedrooms, condo, rental under 6,000.
+            96.4% F1 on 47 queries, zero complete failures. Blind evaluation by 3 annotators confirmed 91%."
+        </aside>
+    </section>
+
+    <section>
+        <h2>Three Agentic Enhancements</h2>
+        <p style="font-size:0.7em; color:#888;">A naive LLM wrapper returns 0 results and says nothing → user lost.</p>
+
+        <div class="three-col" style="margin-top:0.8em;">
+            <div class="card">
+                <h3>🗺 Geographic Resolution</h3>
+                <p>"near Orchard" → <strong>D9 + D10 + D11</strong></p>
+                <p style="font-size:0.85em; color:#888;">Agent recognises MRT stations and landmarks, auto-expands to adjacent districts</p>
+            </div>
+            <div class="card" style="border-left-color:var(--green);">
+                <h3>🔄 Progressive Relaxation</h3>
+                <p>0 results? Relax in order:</p>
+                <p><span class="tag">Price</span> → <span class="tag">Type</span> → <span class="tag">Location</span></p>
+                <p><span class="tag tag-green">12/12 recovery</span></p>
+                <p style="font-size:0.85em; color:#888;">Location relaxed last (hardest buyer constraint)</p>
+            </div>
+            <div class="card" style="border-left-color:var(--blue);">
+                <h3>💬 Fallback Explanation</h3>
+                <p>LLM explains <em>what</em> was relaxed and <em>why</em></p>
+                <p><span class="tag tag-blue">&lt; 800ms latency</span></p>
+                <p style="font-size:0.85em; color:#888;">Full transparency — users stay informed</p>
+            </div>
+        </div>
+
+        <p class="fragment" style="margin-top:0.6em; font-size:0.8em;">
+            Together: passive LLM wrapper → <strong class="highlight">intelligent agent with zero dead ends</strong>
+        </p>
+
+        <aside class="notes">
+            TIMING: 3 min total, ~1 min per enhancement. Spend most time on Progressive Relaxation (has eval data).
+            "Three agentic behaviours. First, geographic resolution: 'near Orchard' expands to D9, D10, D11.
+            Second — the most important — progressive filter relaxation. If zero results, relax in priority order: price first, then type, finally location. Location last because it's the hardest constraint. 100% recovery across 12 over-constrained test cases.
+            Third, fallback explanation: LLM explains what changed, under 800ms.
+            Together, these turn a passive wrapper into an agent that never leaves users at a dead end."
+        </aside>
+    </section>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE 7: CONTRIBUTION 4 — CHAT + RECOMMENDATIONS              -->
+<!-- ============================================================ -->
+<section>
+    <section class="section-header" data-background-color="#e67e22">
+        <div class="contrib-num">4</div>
+        <h2>Chat Assistant & Recommendations</h2>
+        <p>Conversational AI + Personalised Discovery</p>
+    </section>
+
+    <section>
+        <h2>Valuation Chat Assistant</h2>
+
+        <div class="two-col">
+            <div>
+                <h3>System Design</h3>
+                <p>Claude receives as context:</p>
+                <ul>
+                    <li>All listing attributes</li>
+                    <li>XGBoost valuation estimate</li>
+                    <li>SHAP importance ranking</li>
+                </ul>
+                <p style="margin-top:0.5em;">Users ask:</p>
+                <p style="font-style:italic; color:var(--blue);">"Is this a fair price?"</p>
+                <p style="font-style:italic; color:var(--blue);">"What's dragging the value down?"</p>
+            </div>
+            <div>
+                <h3>Evaluation (42 interactions)</h3>
+                <div class="stat-grid" style="flex-direction:column; gap:1em;">
+                    <div class="stat-box">
+                        <div class="stat-big" style="color:var(--green);">93%</div>
+                        <div class="stat-label">Factual Accuracy</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-big" style="color:var(--green);">100%</div>
+                        <div class="stat-label">Response Relevance</div>
+                    </div>
+                </div>
+                <p style="font-size:0.65em; color:#888; margin-top:0.5em;">7% failures = SHAP rank errors only<br>0% price errors</p>
+            </div>
+        </div>
+
+        <div class="card card-green" style="margin-top:0.5em; text-align:center;">
+            <strong>Prompt Engineering Insight:</strong> Accuracy improved 76% → 93% by adding safeguard instructions alone — no model weight changes.
+        </div>
+
+        <aside class="notes">
+            TIMING: 1.5 min.
+            "The chat assistant is grounded in real data — Claude receives listing attributes, XGBoost valuation, and SHAP ranking. An interesting finding: factual accuracy improved from 76% to 93% just by adding targeted prompt safeguards — no model changes. Prompt engineering is measurable engineering.
+            42 interactions, 93% factual accuracy — the 7% were SHAP rank errors, zero price errors. 100% relevance."
+        </aside>
+    </section>
+
+    <section>
+        <h2>Personalised Recommendations</h2>
+
+        <div class="two-col">
+            <div>
+                <h3>5-Dimensional Similarity</h3>
+                <p>From user's saved listings → preference profile:</p>
+                <div style="margin:0.5em 0;">
+                    <span class="tag">Property Type</span>
+                    <span class="tag">District</span>
+                    <span class="tag">Price</span>
+                    <span class="tag">Bedrooms</span>
+                    <span class="tag" style="background:var(--green);">Value-for-Money ★</span>
+                </div>
+                <p style="font-size:0.85em; color:#888;">★ 5th dimension uses XGBoost valuation ÷ asking price — the recommendation engine is <strong>grounded in the valuation model</strong></p>
+
+                <div class="card" style="margin-top:0.5em;">
+                    <strong>Cold start:</strong> &lt; 3 saves → popularity-weighted content similarity
+                </div>
+            </div>
+            <div>
+                <h3>Offline Evaluation</h3>
+                <p style="font-size:0.7em; color:#888;">10 synthetic user profiles</p>
+                <div class="stat-grid" style="flex-direction:column; gap:0.8em; margin-top:0.5em;">
+                    <div class="stat-box">
+                        <div class="stat-big">0.811</div>
+                        <div class="stat-label">NDCG@5</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-big">100%</div>
+                        <div class="stat-label">Top-1 type + district match</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <aside class="notes">
+            TIMING: 1.5 min.
+            "The recommendation engine uses five-dimensional weighted similarity from the user's saved properties. The fifth dimension — value-for-money — is the ratio of XGBoost valuation to asking price. So recommendations are grounded in the valuation model, not independent.
+            NDCG@5 of 0.811, and the top-ranked listing achieved 100% type and district match for every test profile. For new users with fewer than 3 saves, we fall back to popularity-weighted content similarity."
+        </aside>
+    </section>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE 8: LIVE DEMO                                            -->
+<!-- ============================================================ -->
+<section class="demo-slide" data-background-color="#1a1a2e">
+    <h2>🖥 Live Demo</h2>
+    <p style="font-size:0.65em; opacity:0.7;">AI features only — scrapers run for hours</p>
+
+    <div style="max-width:650px; margin:1em auto 0;">
+        <div class="demo-step fragment">
+            <div class="demo-num">1</div>
+            <div class="demo-text"><strong>Semantic Search</strong> — type a natural language query, watch filters auto-generate</div>
+        </div>
+        <div class="demo-step fragment">
+            <div class="demo-num" style="background:var(--red);">2</div>
+            <div class="demo-text"><strong>Agentic Fallback ⭐</strong> — intentionally break it with an impossible query → watch the agent relax constraints and explain</div>
+        </div>
+        <div class="demo-step fragment">
+            <div class="demo-num">3</div>
+            <div class="demo-text"><strong>AI Valuation Panel</strong> — model estimate vs asking price, premium/discount badge, SHAP factors</div>
+        </div>
+        <div class="demo-step fragment">
+            <div class="demo-num">4</div>
+            <div class="demo-text"><strong>Chat Assistant</strong> — <em>"Is this a fair price?"</em> → grounded in SHAP factors</div>
+        </div>
+        <div class="demo-step fragment">
+            <div class="demo-num">5</div>
+            <div class="demo-text"><strong>For You</strong> — personalised recommendations from saved listings</div>
+        </div>
+    </div>
+
+    <p class="fragment" style="font-size:0.55em; color:#666; margin-top:1em;">
+        Backup: If system is unavailable, screenshots from evaluation chapter are prepared.
+    </p>
+
+    <aside class="notes">
+        TIMING: 2.5 min. Pre-open all browser tabs!
+        "Let me show you the system live. I'll skip scrapers — they run for hours.
+        [Demo 1] Semantic search — natural language query, filters appear automatically.
+        [Demo 2] Now let me intentionally break it. This query is too specific — watch the agent relax price first, then explain what changed. No dead ends.
+        [Demo 3-4] Detail page — valuation panel, SHAP attribution. I ask the chat 'is this fair?' — it cites the SHAP factors.
+        [Demo 5] For You page — personalised recommendations."
+    </aside>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE 9: SUMMARY                                              -->
+<!-- ============================================================ -->
+<section class="summary-slide" data-background-color="#1a1a2e">
+    <h2>Summary of Contributions</h2>
+
+    <table>
+        <thead>
+            <tr><th>Contribution</th><th>Result</th><th>Key Metric</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>Data Infrastructure</td><td>53,497 unified listings, zero false merges</td><td>86K → 53K</td></tr>
+            <tr><td>AI Valuation</td><td>8 per-segment XGBoost + SHAP</td><td>HDB MAPE 8.9%, −70%</td></tr>
+            <tr><td>Semantic Search</td><td>Claude NL → SQL filters</td><td>F1 96.4% / 91% blind</td></tr>
+            <tr><td>Agentic Enhancements</td><td>Geo-resolution / Relaxation / Explanation</td><td>100% zero-result recovery</td></tr>
+            <tr><td>Chat Assistant</td><td>XGBoost + SHAP grounded dialogue</td><td>93% factual, 100% relevant</td></tr>
+            <tr><td>Recommendations</td><td>Content + valuation hybrid engine</td><td>NDCG@5 = 0.811</td></tr>
+        </tbody>
+    </table>
+
+    <p class="closing fragment">
+        "From raw HTML to personalised, AI-powered real estate insights."
+    </p>
+
+    <p class="fragment" style="font-size:1.4em; margin-top:0.5em; color:#fff;">Thank you.</p>
+
+    <aside class="notes">
+        TIMING: 30 sec. Just show the table, read the closing line, say thank you, stop.
+        "SingaLiving transforms four fragmented portals into one intelligent platform — from raw HTML to personalised, AI-powered real estate insights. Thank you."
+    </aside>
+</section>
+
+</div><!-- /.slides -->
+</div><!-- /.reveal -->
+
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/notes/notes.js"></script>
+<script>
+    Reveal.initialize({
+        hash: true,
+        slideNumber: 'c/t',
+        showSlideNumber: 'speaker',
+        width: 1200,
+        height: 700,
+        margin: 0.06,
+        transition: 'slide',
+        transitionSpeed: 'default',
+        plugins: [ RevealNotes ],
+        // Keyboard shortcuts
+        keyboard: {
+            // Press 'b' to black out screen
+            66: () => { document.querySelector('.reveal').classList.toggle('blackout'); }
+        }
+    });
+</script>
+</body>
+</html>
